@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560" fill="none">
+  <rect width="1400" height="560" fill="#eeeee9"/>
+  <g stroke="#d8d9d3" stroke-width="1">
+    <path d="M0 80H1400M0 480H1400M80 0V560M1320 0V560"/>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="110" y="125" width="340" height="310" rx="4" fill="#fffefa"/>
+    <text x="145" y="177" fill="#686b66" font-size="15" letter-spacing="3">01 / CREATE</text>
+    <path d="M145 215H198V280H145V215Z M157 234H185 M157 246H185 M157 258H175" stroke="#2453df" stroke-width="2"/>
+    <text x="145" y="353" fill="#20241f" font-size="39" font-weight="500">Write the story.</text>
+    <text x="145" y="393" fill="#686b66" font-size="16">ONE QUARTER AT A TIME</text>
+    <rect x="530" y="125" width="340" height="310" rx="4" fill="#2453df"/>
+    <text x="565" y="177" fill="#fff" font-size="15" letter-spacing="3">02 / PRESENT</text>
+    <path d="M565 215H625V258H565V215Z M595 258V278 M580 278H610 M584 229L607 240L584 250V229Z" stroke="#fff" stroke-width="2"/>
+    <text x="565" y="353" fill="#fff" font-size="39" font-weight="500">Share the view.</text>
+    <text x="565" y="393" fill="#fff" font-size="16">A SHARED PERSPECTIVE</text>
+    <rect x="950" y="125" width="340" height="310" rx="4" fill="#fffefa"/>
+    <text x="985" y="177" fill="#686b66" font-size="15" letter-spacing="3">03 / ARCHIVE</text>
+    <path d="M985 220H1045V235H985V220Z M990 235V278H1040V235 M1007 249H1023" stroke="#2453df" stroke-width="2"/>
+    <text x="985" y="353" fill="#20241f" font-size="39" font-weight="500">Keep the record.</text>
+    <text x="985" y="393" fill="#686b66" font-size="16">A FOUNDATION FOR WHAT'S NEXT</text>
+  </g>
+  <g stroke="#686b66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M475 280H505M497 272L505 280L497 288 M895 280H925M917 272L925 280L917 288"/>
+  </g>
+</svg>

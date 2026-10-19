@@ -1,0 +1,153 @@
+import { getQuarter, getQuarterMetadata } from "@/data/quarters";
+
+export const metadata = getQuarterMetadata(getQuarter("2026-q4"));
+
+<Presentation quarter={getQuarter("2026-q4")}>
+
+<Hero
+  quarter={getQuarter("2026-q4")}
+  title="조금 더 선명한 다음을 위해."
+  description="2026년의 마지막 분기. 이번 분기의 진행사항을 정리하고, 함께 검토할 주제와 다음 걸음을 기록합니다."
+/>
+
+<Slide id="summary" number="01" label="Quarterly Summary" tone="soft">
+
+<SectionTitle
+  title="이번 분기, 세 가지의 기록."
+  description="무엇을 진행했고, 무엇을 배웠는지 돌아봅니다. 아래 내용은 실제 분기 기록으로 교체할 수 있는 작성 예시입니다."
+/>
+
+<div className="summary-grid">
+<div>
+<span className="item-index">01 / FOUNDATION</span>
+
+### 기록의 기반
+
+주요 진행사항을 한곳에서 살펴볼 수 있도록 웹 프레젠테이션의 기본 구조를 마련합니다.
+
+</div>
+<div>
+<span className="item-index">02 / PERSPECTIVE</span>
+
+### 검토의 기준
+
+중요한 주제를 좁히고, 서로 다른 후보안을 같은 기준에서 비교할 수 있도록 정리합니다.
+
+</div>
+<div>
+<span className="item-index">03 / CONTINUITY</span>
+
+### 다음으로의 연결
+
+분기가 바뀌어도 기록이 이어지도록 보관 방식과 다음 분기 계획을 함께 살펴봅니다.
+
+</div>
+</div>
+
+</Slide>
+
+<Slide id="status" number="02" label="Project Status">
+
+<SectionTitle
+  title="지금, 어디쯤 와 있을까요."
+  description="현재 프로젝트의 상태를 정리하는 공간입니다. 완료한 일과 진행 중인 일을 구분해 다음 우선순위를 확인합니다."
+/>
+
+<TwoColumn>
+<div>
+<span className="status-tag">정리 완료 · 예시</span>
+
+### 기본 방향
+
+- 분기별로 독립적인 프레젠테이션 작성
+- 지난 자료를 연도와 분기별로 보관
+- 다양한 화면에서 편안하게 읽는 구성
+
+</div>
+<div>
+<span className="status-tag status-tag-neutral">검토 중 · 예시</span>
+
+### 구체화할 내용
+
+- 실제 진행사항과 참고 이미지 정리
+- 핵심 검토 항목과 비교 기준 선정
+- 다음 분기에 이어갈 작업의 우선순위
+
+</div>
+</TwoColumn>
+
+</Slide>
+
+<Slide id="key-topic" number="03" label="Key Topic" tone="soft">
+
+<SectionTitle
+  title="하나의 기록이, 다음의 기준으로."
+  description="이번 분기의 주요 검토 주제는 기록의 연속성입니다. 내용을 쉽게 작성하고 공유한 뒤, 다음 분기에도 다시 참고할 수 있는 흐름을 생각합니다."
+/>
+
+<ImageBlock
+  src="/images/2026-q4/content-flow.svg"
+  alt="프레젠테이션 콘텐츠의 세 단계: 이번 분기 작성, 웹으로 공유, 분기별 아카이브에 보관."
+  width={1400}
+  height={560}
+  caption="작성 → 공유 → 보관. 한 분기의 내용을 다음 논의를 위한 출발점으로 남깁니다."
+/>
+
+</Slide>
+
+<Slide id="comparison" number="04" label="Comparison">
+
+<SectionTitle
+  title="같은 목표, 두 가지 접근."
+  description="후보안은 장점과 고려할 점을 함께 적습니다. 아래는 다음 분기 콘텐츠 구성 방식을 비교하는 예시입니다."
+/>
+
+<TwoColumn>
+<div className="comparison-option">
+<span className="item-index">OPTION A</span>
+
+### 핵심 중심으로 간결하게
+
+주요 진행사항과 결정이 필요한 주제에 집중합니다.
+
+<dl className="comparison-facts">
+<div><dt>장점</dt><dd>전체 흐름을 빠르게 파악할 수 있습니다.</dd></div>
+<div><dt>고려할 점</dt><dd>세부 근거를 별도로 정리해야 합니다.</dd></div>
+</dl>
+
+</div>
+<div className="comparison-option comparison-option-highlight">
+<span className="item-index">OPTION B</span>
+
+### 맥락과 근거를 충분하게
+
+검토 배경과 참고 자료를 본문에서 함께 설명합니다.
+
+<dl className="comparison-facts">
+<div><dt>장점</dt><dd>논의의 배경을 충분히 이해할 수 있습니다.</dd></div>
+<div><dt>고려할 점</dt><dd>읽는 분량과 자료 준비 시간이 늘어납니다.</dd></div>
+</dl>
+
+</div>
+</TwoColumn>
+
+</Slide>
+
+<Slide id="next-step" number="05" label="Next Step" tone="accent">
+
+<SectionTitle
+  title="다음 분기를 향한 작은 걸음."
+  description="지금의 기록을 바탕으로 다음에 집중할 일을 정합니다. 계획은 작고 구체적인 단위로 나눕니다."
+/>
+
+<ol className="next-steps">
+<li><span aria-hidden="true">01</span><div><h3>이번 분기 내용 확정</h3><p>실제 진행사항과 검토 결과를 반영해 기록을 마무리합니다.</p></div></li>
+<li><span aria-hidden="true">02</span><div><h3>다음 우선순위 선정</h3><p>이어갈 주제와 새롭게 확인할 항목을 정리합니다.</p></div></li>
+<li><span aria-hidden="true">03</span><div><h3>2027 Q1 준비</h3><p>다음 프레젠테이션에 담을 자료와 일정을 준비합니다.</p></div></li>
+</ol>
+
+<a href="#cover" className="text-link mt-12">처음으로 돌아가기 <span aria-hidden="true">↑</span></a>
+
+</Slide>
+
+</Presentation>
