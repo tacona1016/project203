@@ -5,6 +5,9 @@ import { SectionTitle } from "@/components/presentation/SectionTitle";
 import { ImageBlock } from "@/components/presentation/ImageBlock";
 import { TwoColumn } from "@/components/presentation/TwoColumn";
 import { Presentation } from "@/components/presentation/Presentation";
+import { MetricGrid } from "@/components/presentation/MetricGrid";
+import { Timeline } from "@/components/presentation/Timeline";
+import { Checklist } from "@/components/presentation/Checklist";
 
 const presentationComponents = {
   Hero,
@@ -13,6 +16,9 @@ const presentationComponents = {
   ImageBlock,
   TwoColumn,
   Presentation,
+  MetricGrid,
+  Timeline,
+  Checklist,
 } satisfies MDXComponents;
 
 export function useMDXComponents(components: MDXComponents = {}): MDXComponents {

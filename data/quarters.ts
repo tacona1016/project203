@@ -15,8 +15,8 @@ export const quarters: readonly Quarter[] = [
     slug: "2026-q4",
     year: 2026,
     quarter: 4,
-    title: "Quarterly Presentation",
-    description: "이번 분기의 흐름을 돌아보고, 다음을 위한 방향을 함께 살펴봅니다.",
+    title: "Project Kick-off",
+    description: "10명의 친구가 함께할 장기 프로젝트. 토지를 고르기 전에, 공동의 방향과 평가 기준부터 정합니다.",
     publishedAt: "2026-10-19",
   },
 ];

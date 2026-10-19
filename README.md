@@ -13,9 +13,9 @@ npm run dev
 ```
 
 - 홈: http://localhost:3000
-- 초기 프레젠테이션: http://localhost:3000/quarter/2026-q4
+- 2026 Q4 Project Kick-off: http://localhost:3000/quarter/2026-q4
 
-최초 설치에서 생성되는 `package-lock.json`은 저장소에 함께 보관하고, 이후 동일 환경을 재현할 때는 `npm ci`를 사용합니다. 초기 생성 환경(2026-10-19)에는 npm이 없고 외부 패키지 다운로드도 차단되어 있어 설치와 lockfile 생성은 수행하지 못했습니다.
+의존성 버전은 `package-lock.json`에 고정되어 있습니다. 동일 환경을 재현할 때는 `npm ci`를 사용합니다.
 
 ```powershell
 npm run lint
@@ -24,7 +24,7 @@ npm run build
 npm run start
 ```
 
-`typecheck`는 Next.js 라우트 타입을 먼저 생성하고 TypeScript를 검사합니다. `build`는 MDX 컴파일과 페이지의 프로덕션 빌드도 검사합니다. ESLint는 TypeScript·TSX·설정 파일을 검사하며, MDX는 빌드에서 검사합니다. 현재 환경에서는 위 명령의 성공 여부가 검증되지 않았습니다.
+`typecheck`는 Next.js 라우트 타입을 먼저 생성하고 TypeScript를 검사합니다. `build`는 MDX 컴파일과 페이지의 프로덕션 빌드도 검사합니다. ESLint는 TypeScript·TSX·설정 파일을 검사하며, MDX는 빌드에서 검사합니다.
 
 ## 주요 파일
 
@@ -33,8 +33,8 @@ npm run start
 | `app/layout.tsx` | 한국어 문서, 공통 메타데이터, 본문 건너뛰기 링크 |
 | `app/page.tsx` | 최신 분기 Current와 연도별 전체 Archive |
 | `app/globals.css` | Tailwind 테마 토큰, 타이포그래피, 공통·반응형 스타일 |
-| `app/quarter/2026-q4/page.mdx` | Cover부터 Next Step까지 여섯 섹션의 한국어 샘플 |
-| `components/presentation/` | MDX용 Hero, Slide, SectionTitle, ImageBlock, TwoColumn, Presentation |
+| `app/quarter/2026-q4/page.mdx` | 프로젝트 방향·토지 평가 기준·공동소유 검토를 담은 9개 섹션의 킥오프 자료 |
+| `components/presentation/` | MDX용 기본 레이아웃과 MetricGrid, Timeline, Checklist |
 | `components/SiteHeader.tsx` | 고정 상단 탐색, 홈 링크, 현재 프레젠테이션의 분기 표시 |
 | `components/QuarterCover.tsx` | 분기 데이터로 그리는 공통 표지 그래픽 |
 | `data/quarters.ts` | 분기 메타데이터, 최신순 정렬, 페이지 메타데이터 생성 |
@@ -124,6 +124,9 @@ export const metadata = getQuarterMetadata(getQuarter("2027-q1"));
 - `SectionTitle`: `title`이 필요하고 `description`은 선택 사항입니다.
 - `TwoColumn`: 두 개의 직계 자식 블록을 넣습니다. 768px 이상에서는 2열, 작은 화면에서는 1열입니다.
 - `ImageBlock`: `src`, `alt`, 원본 이미지의 `width`·`height`가 필요합니다. `caption`은 선택 사항입니다. Next.js Image를 사용하며 원본 비율을 유지합니다.
+- `MetricGrid`: `metrics`에 `{ value, label, description? }` 배열을 전달합니다. 숫자·조건을 큰 타이포그래피로 표시합니다.
+- `Timeline`: `steps`에 `{ title, description?, current? }` 배열을 전달합니다. 순서대로 Phase 번호가 붙고 `current: true`인 단계에는 현재 위치가 표시됩니다.
+- `Checklist`: `groups`에 `{ title, items: string[] }` 배열을 전달합니다. 체크 표시는 읽기·인쇄용이며 입력, 클릭 상태, 저장 기능이 없습니다.
 
 JSX 블록과 Markdown 본문 사이에는 빈 줄을 넣습니다. 짧은 본문은 Markdown으로 작성하고, 레이아웃이 필요한 곳에만 컴포넌트를 사용합니다. 표지의 h1 아래에는 SectionTitle의 h2, 세부 항목의 h3를 사용합니다. 기본 폰트는 시스템 폰트이며, 빌드 중 외부 폰트 다운로드가 필요하지 않습니다.
 
