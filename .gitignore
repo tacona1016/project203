@@ -1,0 +1,4 @@
+node_modules/
+.next/
+.verification/
+next-env.d.ts
