@@ -1,5 +1,6 @@
 -- 신규 DB의 초기 설치용입니다. 호환되는 초기 스키마에서 재실행이 가능합니다.
--- 기존 DB는 migrations/20261019_poll_slug.sql → seed.sql을 실행하세요.
+-- 새 DB는 이 파일 → migrations/20261021_participants_and_vote_modes.sql → seed_participants.sql → seed.sql 순서입니다.
+-- 기존 DB는 최신 migration만 실행합니다. 이 과거 기반 스키마를 최신 migration 이후 재실행하지 마세요.
 begin;
 
 create table if not exists public.polls (

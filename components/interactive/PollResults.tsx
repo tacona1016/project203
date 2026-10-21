@@ -1,13 +1,13 @@
-import type { PollOption } from "@/lib/supabase/types";
+import type { PollOption, PollResultsData } from "@/lib/supabase/types";
 
-export function PollResults({ options, counts }: { options: PollOption[]; counts: Record<string, number> }) {
-  const total = options.reduce((sum, option) => sum + (counts[option.id] ?? 0), 0);
+export function PollResults({ options, results }: { options: PollOption[]; results: PollResultsData }) {
+  const { counts, total_votes: total, participant_count: participantCount } = results;
 
   return (
     <div className="poll-results" aria-label="현재 투표 결과">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="m-0! text-lg!">현재 결과</h3>
-        <span className="text-sm text-muted">총 {total}표</span>
+        <span className="text-sm text-muted">참여자 {participantCount}명 · 총 {total}표</span>
       </div>
       <ol className="mt-7 grid gap-6">
         {options.map((option) => {

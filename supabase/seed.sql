@@ -1,4 +1,4 @@
--- schema.sql 이후 실행합니다. 재실행해도 기존 투표·댓글은 변경하지 않습니다.
+-- 최신 participants_and_vote_modes migration 이후 실행합니다. 기존 투표·댓글은 유지합니다.
 begin;
 
 do $$
@@ -51,5 +51,7 @@ begin
       (target_poll_id, '유지관리 비용', 5);
   end if;
 end $$;
+
+update public.polls set allow_repeat_vote = false where slug = 'land-priority';
 
 commit;

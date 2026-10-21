@@ -1,40 +1,23 @@
 "use client";
 
-import { useId, useState } from "react";
-import { participants } from "@/data/participants";
-import { selectParticipant, useSelectedParticipant } from "@/lib/useSelectedParticipant";
+import { useParticipant } from "./ParticipantProvider";
 
 export function NameSelector() {
-  const selectedName = useSelectedParticipant();
-  const [editing, setEditing] = useState(false);
-  const [storageWarning, setStorageWarning] = useState(false);
-  const id = useId();
+  const { participant, isLoading, changeParticipant } = useParticipant();
 
   return (
     <div className="name-selector">
-      {selectedName && !editing ? (
+      {participant ? (
         <div className="name-current">
-          <span>{selectedName}</span>
+          <span>{participant.display_name}</span>
           <span aria-hidden="true">·</span>
-          <button type="button" onClick={() => setEditing(true)} aria-label="선택한 이름 변경">변경</button>
+          <button type="button" onClick={changeParticipant} aria-label="선택한 이름 변경" aria-haspopup="dialog">변경</button>
         </div>
       ) : (
-        <>
-          <label htmlFor={id} className="sr-only">이름 선택</label>
-          <select
-            id={id}
-            value={selectedName ?? ""}
-            onChange={(event) => {
-              setStorageWarning(!selectParticipant(event.target.value));
-              setEditing(false);
-            }}
-          >
-            <option value="" disabled>이름을 선택해주세요</option>
-            {participants.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-        </>
+        <button type="button" className="text-link" onClick={changeParticipant} disabled={isLoading} aria-haspopup="dialog">
+          {isLoading ? "이름 확인 중..." : "이름 선택"}
+        </button>
       )}
-      {storageWarning && <p role="status" className="form-note">이 브라우저에서는 이름이 다음 방문까지 저장되지 않습니다.</p>}
     </div>
   );
 }

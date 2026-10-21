@@ -32,7 +32,7 @@ export function Comments({ quarter, initialComments }: { quarter: string; initia
     }
   }
 
-  async function submit(name: string, content: string) {
+  async function submit(participantId: string, content: string) {
     const client = getSupabaseClient();
     if (!client || pending) return false;
     setPending(true);
@@ -40,7 +40,7 @@ export function Comments({ quarter, initialComments }: { quarter: string; initia
     setMessage("");
     let saved: Comment;
     try {
-      saved = await insertComment(client, quarter, name, content);
+      saved = await insertComment(client, quarter, participantId, content);
     } catch {
       setError("등록에 실패했습니다. 다시 시도해주세요.");
       setPending(false);

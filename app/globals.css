@@ -49,6 +49,28 @@
 }
 
 @layer components {
+  .participant-dialog {
+    width: min(30rem, calc(100% - 2.5rem));
+    max-height: calc(100svh - 2.5rem);
+    margin: auto;
+    overflow-y: auto;
+    padding: clamp(1.5rem, 5vw, 3rem);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    border: 0;
+  }
+  .participant-dialog::backdrop { background: rgb(32 36 31 / 45%); }
+  .participant-select {
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0.75rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-size: 1rem;
+  }
+
   .header-inner {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

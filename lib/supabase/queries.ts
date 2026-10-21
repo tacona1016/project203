@@ -1,21 +1,35 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isParticipant } from "@/data/participants";
-import type { Database, DatabaseId, PollData, PollOption } from "./types";
+import type { Database, DatabaseId, PollData } from "./types";
 import { reportPollLoadError } from "./poll-errors";
 
 type Client = SupabaseClient<Database>;
 export const COMMENTS_PAGE_SIZE = 20;
 
-export async function getVoteCounts(client: Client, pollId: DatabaseId, options: PollOption[]) {
-  // COUNT로 집계해 Supabase의 기본 SELECT 행 제한에도 결과가 잘리지 않습니다.
-  const entries = await Promise.all(options.map(async (option) => {
-    const { count, error } = await client.from("votes")
-      .select("id", { count: "exact", head: true })
-      .eq("poll_id", pollId).eq("option_id", option.id);
-    if (error) throw error;
-    return [option.id, count ?? 0] as const;
-  }));
-  return Object.fromEntries(entries);
+export async function getParticipants(client: Client) {
+  const { data, error } = await client.from("participants").select("*")
+    .eq("is_active", true).order("display_order").order("display_name");
+  if (error) throw error;
+  return data;
+}
+
+export async function getActiveParticipant(client: Client, id: string) {
+  const { data, error } = await client.from("participants").select("*")
+    .eq("id", id).eq("is_active", true).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function getPollResults(client: Client, pollId: DatabaseId) {
+  const { data, error } = await client.rpc("get_poll_results", { p_poll_id: pollId });
+  if (error) throw error;
+  return data;
+}
+
+export async function hasVoted(client: Client, pollId: DatabaseId, participantId: string) {
+  const { count, error } = await client.from("votes").select("id", { count: "exact", head: true })
+    .eq("poll_id", pollId).eq("participant_id", participantId);
+  if (error) throw error;
+  return (count ?? 0) > 0;
 }
 
 export async function getPoll(client: Client, pollSlug: string): Promise<PollData> {
@@ -28,23 +42,25 @@ export async function getPoll(client: Client, pollSlug: string): Promise<PollDat
   if (optionsResult.error) throw optionsResult.error;
   if (!optionsResult.data.length) throw new Error("POLL_OPTIONS_MISSING");
   // 결과 조회에 실패해도 질문과 선택지는 표시합니다. 실패를 0표로 표현하지 않습니다.
-  const counts = await getVoteCounts(client, pollId, optionsResult.data).catch((error) => {
+  const results = await getPollResults(client, pollId).catch((error) => {
     reportPollLoadError(pollSlug, "results", error);
     return null;
   });
-  return { poll: pollResult.data, options: optionsResult.data, counts };
+  return { poll: pollResult.data, options: optionsResult.data, results };
 }
 
-export async function insertVote(client: Client, pollId: DatabaseId, optionId: DatabaseId, name: string) {
-  if (!isParticipant(name)) throw new Error("Select a participant first.");
-  const { error } = await client.from("votes").insert({
-    poll_id: pollId, option_id: optionId, participant_name: name,
+export async function submitVote(client: Client, pollId: DatabaseId, optionId: DatabaseId, participantId: string) {
+  const { data, error } = await client.rpc("submit_vote", {
+    p_poll_id: pollId, p_option_id: optionId, p_participant_id: participantId,
   });
   if (error) throw error;
+  return data.status;
 }
 
+const commentFields = "id,quarter,participant_id,content,created_at,participant:participants!comments_participant_id_fkey(id,display_name)" as const;
+
 export async function getComments(client: Client, quarter: string, offset = 0) {
-  const { data, error } = await client.from("comments").select("*")
+  const { data, error } = await client.from("comments").select(commentFields)
     .eq("quarter", quarter)
     .order("created_at", { ascending: false }).order("id", { ascending: false })
     .range(offset, offset + COMMENTS_PAGE_SIZE - 1);
@@ -52,13 +68,13 @@ export async function getComments(client: Client, quarter: string, offset = 0) {
   return data;
 }
 
-export async function insertComment(client: Client, quarter: string, name: string, value: string) {
+export async function insertComment(client: Client, quarter: string, participantId: string, value: string) {
   const content = value.trim();
-  if (!isParticipant(name) || !content || Array.from(content).length > 1000) {
+  if (!participantId || !content || Array.from(content).length > 1000) {
     throw new Error("Invalid comment.");
   }
   const { data, error } = await client.from("comments")
-    .insert({ quarter, participant_name: name, content }).select("*").single();
+    .insert({ quarter, participant_id: participantId, content }).select(commentFields).single();
   if (error) throw error;
   return data;
 }

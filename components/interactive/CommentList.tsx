@@ -14,7 +14,7 @@ export function CommentList({ comments }: { comments: Comment[] }) {
         <li key={comment.id}>
           <article>
             <header className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="m-0! text-base!">{comment.participant_name}</h3>
+              <h3 className="m-0! text-base!">{comment.participant.display_name}</h3>
               <time className="text-xs text-muted" dateTime={comment.created_at}>
                 {formatter.format(new Date(comment.created_at))}
               </time>
