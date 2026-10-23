@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentQuarter } from "@/data/quarters";
 import { requireAccessSession } from "@/lib/auth/session";
+import { PrivateSiteImage } from "@/components/PrivateSiteImage";
 
 export default async function HomePage() {
   await requireAccessSession("/");
@@ -17,6 +18,7 @@ export default async function HomePage() {
       <SiteHeader />
       <main id="main-content" tabIndex={-1} className="site-container">
         <section className="home-intro" aria-labelledby="site-title">
+          <PrivateSiteImage image="homeHero" alt="203 PROJECT의 공간과 풍경" className="private-home-photo" />
           <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
             <p className="eyebrow text-muted">A QUARTERLY PERSPECTIVE</p>
             <span className="eyebrow hidden text-muted sm:block">EST. 2026</span>

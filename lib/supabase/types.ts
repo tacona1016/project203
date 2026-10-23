@@ -1,3 +1,5 @@
+import type { BoardPage, BoardPost, BoardComment } from "@/lib/board/types";
+
 // 기존 숫자 ID를 유지하고 SDK·폼에서 사용하는 문자열/숫자 표현을 처리합니다.
 export type DatabaseId = string | number;
 
@@ -109,6 +111,13 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      get_board_page: { Args: { p_search: string; p_page: number }; Returns: BoardPage };
+      get_board_post: { Args: { p_id: DatabaseId }; Returns: BoardPost | null };
+      get_board_comments: { Args: { p_post_id: DatabaseId; p_page: number }; Returns: BoardComment[] };
+      write_board_post: { Args: { p_id: DatabaseId | null; p_actor_id: string; p_is_admin: boolean; p_title: string; p_content: string; p_post_type: string; p_is_pinned: boolean }; Returns: { id: DatabaseId } };
+      delete_board_post: { Args: { p_id: DatabaseId; p_actor_id: string; p_is_admin: boolean }; Returns: { success: boolean } };
+      create_board_comment: { Args: { p_post_id: DatabaseId; p_actor_id: string; p_content: string }; Returns: { id: DatabaseId } };
+      delete_board_comment: { Args: { p_post_id: DatabaseId; p_id: DatabaseId; p_actor_id: string; p_is_admin: boolean }; Returns: { success: boolean } };
       submit_vote: {
         Args: { p_poll_id: DatabaseId; p_option_id: DatabaseId; p_participant_id: string };
         Returns: { status: VoteStatus };

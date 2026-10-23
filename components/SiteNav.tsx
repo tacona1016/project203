@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const items = [["/", "HOME"], ["/archive", "ARCHIVE"], ["/polls", "POLLS"], ["/admin", "ADMIN"]] as const;
+const items = [["/", "HOME"], ["/archive", "ARCHIVE"], ["/polls", "POLLS"], ["/board", "BOARD"], ["/admin", "ADMIN"]] as const;
 export function SiteNav() {
   const pathname = usePathname();
   return <nav aria-label="주요 탐색" className="site-nav">{items.map(([href, label]) => {

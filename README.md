@@ -140,6 +140,8 @@ JSX 블록과 Markdown 본문 사이에는 빈 줄을 넣습니다. 짧은 본�
 
 ## 사이트 구조
 
+BOARD의 게시글·관리자 공지·댓글·개인 본인 확인·신규 SQL 적용은 [게시판 운영 안내](docs/board.md)를 참조합니다. 디자인 사진은 [비공개 이미지 안내](private-assets/README.md)에 따라 VSCode에서 추가하며 웹 업로드는 제공하지 않습니다.
+
 | 경로 | 역할 |
 | --- | --- |
 | `/` | 프로젝트 소개, 최신 Presentation, 진행 중인 Poll 요약 |
@@ -148,6 +150,8 @@ JSX 블록과 Markdown 본문 사이에는 빈 줄을 넣습니다. 짧은 본�
 | `/polls` | 현재 분기의 Poll 목록과 과거 분기 Poll Archive |
 | `/polls/2026-q4` | 해당 분기의 진행 중/예정 및 종료된 Poll 목록 |
 | `/polls/[slug]` | 기존 Poll 상세 URL: 투표·선택 변경·결과 |
+| `/board` | 자유게시판·관리자 공지·검색·페이지네이션 |
+| `/board/new`, `/board/[id]`, `/board/[id]/edit` | 게시글 작성·상세·수정과 댓글 |
 | `/admin` | 별도 비밀번호와 Poll dashboard |
 | `/admin/polls` | Poll 목록·종료·재개·숨김 |
 | `/admin/polls/new` | 새 Poll 생성 |
@@ -175,10 +179,11 @@ Presentation 안의 Poll은 제거하고 독립 페이지로 옮겼습니다. �
 | `SITE_ACCESS_PASSWORD` | server secret | 기존 공용 비밀번호 |
 | `SITE_SESSION_SECRET` | server secret | 기존 30일 access session 서명 |
 | `ADMIN_PASSWORD` | server secret | 새 관리자 비밀번호 |
+| `BOARD_PARTICIPANT_PASSWORDS` | server secret | BOARD 개인 비밀번호의 participant UUID → 비밀번호 JSON 매핑 |
 | `SUPABASE_SECRET_KEY` | server secret | 기존 Supabase 서버 전용 키 |
 | `NEXT_PUBLIC_SUPABASE_URL` | public config | 기존 Project URL |
 
-분기별 Poll 개편에는 **새 환경변수가 없습니다**. 기존 다섯 값을 유지합니다. 관리자 키는 SITE_SESSION_SECRET에서 목적이 다른 HMAC 키로 파생하여 사이트 쿠키와 상호 사용할 수 없습니다. 별도 `project203_admin` 쿠키/서명 토큰은 8시간에 만료하고, 사이트의 `project203_access`는 기존처럼 30일입니다. 모두 HttpOnly·SameSite=Lax·Path=/·production Secure를 사용합니다.
+사이트 접근과 Poll은 기존 다섯 값을 유지합니다. BOARD 작성에는 서버 전용 `BOARD_PARTICIPANT_PASSWORDS`를 추가합니다. 관리자 키는 SITE_SESSION_SECRET에서 목적이 다른 HMAC 키로 파생하여 사이트 쿠키와 상호 사용할 수 없습니다. 별도 `project203_admin` 쿠키/서명 토큰은 8시간에 만료하고, 사이트의 `project203_access`는 기존처럼 30일입니다. 모두 HttpOnly·SameSite=Lax·Path=/·production Secure를 사용합니다.
 
 Admin은 사이트 인증과 관리자 인증을 모두 요구하지만 participant 선택과 무관합니다. 일반 페이지는 participant 선택 후 이용합니다. 사이트 잠그기는 두 쿠키를 지우며 participant localStorage는 보존합니다. 관리자 잠그기는 관리자 쿠키만 지웁니다. SITE_SESSION_SECRET 교체 후 재배포하면 두 종류의 기존 세션이 모두 무효화됩니다.
 
@@ -262,7 +267,7 @@ Node 기본 test runner로 세션 경계·서명 변조·관리자/사이트 쿠
 
 ## Vercel 배포
 
-기존 다섯 환경변수를 Production 및 필요한 Preview 범위에서 유지합니다. 분기 개편으로 추가할 값은 없습니다. 로컬도 같은 변수 이름을 사용합니다. 비밀번호 값은 환경별로 관리합니다.
+기존 다섯 환경변수를 Production 및 필요한 Preview 범위에서 유지하고, BOARD 작성용 `BOARD_PARTICIPANT_PASSWORDS`를 서버 Secret으로 추가합니다. 로컬도 같은 변수 이름을 사용합니다. 비밀번호 값은 환경별로 관리합니다.
 
 최신 migration을 검토하고 SQL Editor에서 실행한 뒤 변경을 배포 브랜치에 commit/push합니다. 기존 Git 연동이 빌드·배포합니다. 환경변수만 변경해도 최신 Production Deployment에서 Redeploy가 필요합니다. 이전 공개 배포도 전환하거나 비활성화하세요. 사이트 접근부터 Admin 생성·투표·댓글까지 배포 URL에서 확인합니다.
 

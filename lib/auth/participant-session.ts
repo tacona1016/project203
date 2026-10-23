@@ -32,6 +32,12 @@ export async function requireParticipantSelection(expectedId: string) {
   if (actual.toString("base64url") !== signed || actual.length !== expected.length || !timingSafeEqual(actual, expected)) throw new HttpError(403, "이름을 다시 선택해주세요.");
 }
 
+export async function getSelectedParticipantId(): Promise<string | null> {
+  const id = ((await cookies()).get(cookieName)?.value ?? "").split(".")[0];
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null;
+  try { await requireParticipantSelection(id); return id; } catch { return null; }
+}
+
 export async function clearParticipantSelection() {
   (await cookies()).set(cookieName, "", { ...options, maxAge: 0 });
 }
