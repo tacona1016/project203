@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "check:supabase": "node scripts/check-supabase.mjs"
   },
   "dependencies": {

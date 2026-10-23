@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getSupabaseClient } from "@/lib/supabase/client";
-import { COMMENTS_PAGE_SIZE, getComments, insertComment } from "@/lib/supabase/queries";
+import { COMMENTS_PAGE_SIZE, getComments, insertComment } from "@/lib/site-api";
 import type { Comment } from "@/lib/supabase/types";
 import { CommentForm } from "./CommentForm";
 import { CommentList } from "./CommentList";
@@ -16,12 +15,11 @@ export function Comments({ quarter, initialComments }: { quarter: string; initia
   const [error, setError] = useState(initialComments ? "" : "의견을 불러오지 못했습니다. 다시 시도해주세요.");
 
   async function refresh(append = false) {
-    const client = getSupabaseClient();
-    if (!client || pending) return;
+    if (pending) return;
     setPending(true);
     setError("");
     try {
-      const next = await getComments(client, quarter, append ? comments.length : 0);
+      const next = await getComments(quarter, append ? comments.length : 0);
       setComments(append ? [...comments, ...next.filter((item) => !comments.some((previous) => previous.id === item.id))] : next);
       setHasMore(next.length === COMMENTS_PAGE_SIZE);
       setLoaded(true);
@@ -33,14 +31,13 @@ export function Comments({ quarter, initialComments }: { quarter: string; initia
   }
 
   async function submit(participantId: string, content: string) {
-    const client = getSupabaseClient();
-    if (!client || pending) return false;
+    if (pending) return false;
     setPending(true);
     setError("");
     setMessage("");
     let saved: Comment;
     try {
-      saved = await insertComment(client, quarter, participantId, content);
+      saved = await insertComment(quarter, participantId, content);
     } catch {
       setError("등록에 실패했습니다. 다시 시도해주세요.");
       setPending(false);
@@ -51,7 +48,7 @@ export function Comments({ quarter, initialComments }: { quarter: string; initia
     setLoaded(true);
     setMessage("댓글이 등록되었습니다.");
     try {
-      const latest = await getComments(client, quarter);
+      const latest = await getComments(quarter);
       setComments(latest);
       setHasMore(latest.length === COMMENTS_PAGE_SIZE);
     } catch {

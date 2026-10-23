@@ -4,8 +4,10 @@ import { QuarterCover } from "@/components/QuarterCover";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getSortedQuarters } from "@/data/quarters";
+import { requireAccessSession } from "@/lib/auth/session";
 
-export default function HomePage() {
+export default async function HomePage() {
+  await requireAccessSession("/");
   const quarters = getSortedQuarters();
   const current = quarters[0];
   const years = [...new Set(quarters.map((quarter) => quarter.year))].sort((a, b) => b - a);

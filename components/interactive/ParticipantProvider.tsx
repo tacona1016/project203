@@ -2,8 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { getSupabaseClient } from "@/lib/supabase/client";
-import { getActiveParticipant, getParticipants } from "@/lib/supabase/queries";
+import { getActiveParticipant, getParticipants } from "@/lib/site-api";
 import type { Participant } from "@/lib/supabase/types";
 import { PARTICIPANT_STORAGE_KEY, readLegacyName, readSelection, saveSelection } from "@/lib/participant-storage";
 import { ParticipantDialog } from "./ParticipantDialog";
@@ -37,9 +36,8 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const currentRequest = ++requestId.current;
-    const client = getSupabaseClient();
     try {
-      const activeParticipants = await (client ? getParticipants(client) : Promise.reject(new Error("Supabase is not configured.")));
+      const activeParticipants = await getParticipants();
       if (currentRequest !== requestId.current) return;
       const stored = readSelection();
       const legacyName = stored ? null : readLegacyName();
@@ -74,9 +72,7 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
   }, [refresh, cancelRefresh]);
 
   async function selectParticipant(id: string) {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("지금은 이름을 선택할 수 없습니다.");
-    const selected = await getActiveParticipant(client, id);
+    const selected = await getActiveParticipant(id);
     if (!selected) {
       await refresh();
       throw new Error("현재 선택할 수 없는 이름입니다. 다른 이름을 선택해주세요.");

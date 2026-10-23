@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { getSupabaseClient } from "@/lib/supabase/client";
-import { getPoll, getPollResults, hasVoted, submitVote } from "@/lib/supabase/queries";
+import { getPoll, getPollResults, hasVoted, submitVote } from "@/lib/site-api";
 import type { PollData } from "@/lib/supabase/types";
 import { getPollLoadErrorMessage, reportPollLoadError } from "@/lib/supabase/poll-errors";
 import { useParticipant } from "./ParticipantProvider";
@@ -34,23 +33,21 @@ export function PollForm({ pollId, initialData, initialError = "" }: {
   useEffect(() => {
     if (repeatAllowed || !participantId || databaseId === undefined) return;
     let current = true;
-    const client = getSupabaseClient();
-    const request = client ? hasVoted(client, databaseId, participantId) : Promise.reject(new Error("Not configured"));
+    const request = hasVoted(pollId, participantId);
     request.then((voted) => {
       if (current) setChecks((previous) => ({ ...previous, [participantId]: voted ? "voted" : "ready" }));
     }).catch(() => {
       if (current) setChecks((previous) => ({ ...previous, [participantId]: "error" }));
     });
     return () => { current = false; };
-  }, [repeatAllowed, participantId, databaseId, checkVersion]);
+  }, [repeatAllowed, participantId, databaseId, checkVersion, pollId]);
 
   async function refresh() {
-    const client = getSupabaseClient();
-    if (!client || pending) return;
+    if (pending) return;
     setPending(true);
     setError("");
     try {
-      setData(await getPoll(client, pollId));
+      setData(await getPoll(pollId));
       setCheckVersion((value) => value + 1);
     } catch (error) {
       reportPollLoadError(pollId, "poll", error);
@@ -65,14 +62,12 @@ export function PollForm({ pollId, initialData, initialError = "" }: {
     if (pending || !data) return;
     if (!participant) { setError("먼저 이름을 선택해주세요."); return; }
     if (!optionId) { setError("선택지를 하나 선택해주세요."); return; }
-    const client = getSupabaseClient();
-    if (!client) { setError("지금은 투표를 등록할 수 없습니다."); return; }
 
     setPending(true);
     setMessage("");
     setError("");
     try {
-      const status = await submitVote(client, data.poll.id, optionId, participant.id);
+      const status = await submitVote(pollId, optionId, participant.id);
       if (status === "inactive_participant") {
         setError("현재 선택할 수 없는 이름입니다. 이름을 다시 선택해주세요.");
         invalidateParticipant();
@@ -90,7 +85,7 @@ export function PollForm({ pollId, initialData, initialError = "" }: {
       setMessage(status === "success" ? "투표가 등록되었습니다." : "이미 참여한 투표입니다.");
       setOptionId("");
       try {
-        const results = await getPollResults(client, data.poll.id);
+        const results = await getPollResults(pollId);
         setData((previous) => previous ? { ...previous, results } : previous);
       } catch {
         setError(status === "success"

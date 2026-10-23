@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Quarter } from "@/data/quarters";
 import { NameSelector } from "@/components/interactive/NameSelector";
+import { LockSiteButton } from "@/components/access/LockSiteButton";
 
 type SiteHeaderProps = {
   quarter?: Quarter;
@@ -28,7 +29,7 @@ export function SiteHeader({ quarter }: SiteHeaderProps) {
             <a href="#archive" className="nav-link">Archive</a>
           )}
         </nav>
-        <NameSelector />
+        <div className="header-user"><NameSelector /><LockSiteButton /></div>
       </div>
     </header>
   );

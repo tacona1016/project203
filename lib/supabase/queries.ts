@@ -1,4 +1,6 @@
+import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { HttpError } from "@/lib/auth/http";
 import type { Database, DatabaseId, PollData } from "./types";
 import { reportPollLoadError } from "./poll-errors";
 
@@ -23,6 +25,13 @@ export async function getPollResults(client: Client, pollId: DatabaseId) {
   const { data, error } = await client.rpc("get_poll_results", { p_poll_id: pollId });
   if (error) throw error;
   return data;
+}
+
+export async function getPollId(client: Client, slug: string) {
+  const { data, error } = await client.from("polls").select("id").eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new HttpError(404, "투표를 찾지 못했습니다.");
+  return data.id;
 }
 
 export async function hasVoted(client: Client, pollId: DatabaseId, participantId: string) {
@@ -71,8 +80,10 @@ export async function getComments(client: Client, quarter: string, offset = 0) {
 export async function insertComment(client: Client, quarter: string, participantId: string, value: string) {
   const content = value.trim();
   if (!participantId || !content || Array.from(content).length > 1000) {
-    throw new Error("Invalid comment.");
+    throw new HttpError(400, "댓글은 1~1000자로 작성해주세요.");
   }
+  // The server key bypasses RLS, so validate the selected identity explicitly.
+  if (!await getActiveParticipant(client, participantId)) throw new HttpError(400, "현재 선택할 수 없는 이름입니다. 다시 선택해주세요.");
   const { data, error } = await client.from("comments")
     .insert({ quarter, participant_id: participantId, content }).select(commentFields).single();
   if (error) throw error;

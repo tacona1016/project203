@@ -37,10 +37,10 @@ npm run start
 | `components/presentation/` | MDX용 기본 레이아웃과 MetricGrid, Timeline, Checklist |
 | `components/interactive/` | 이름 선택, 투표·결과, 댓글 입력·목록 UI |
 | `components/interactive/ParticipantProvider.tsx` | DB 참가자 목록, 선택 Context와 필수 모달 |
-| `lib/supabase/` | 공개 키 클라이언트, 조회·등록 함수, DB 타입 |
+| `lib/supabase/` | 서버 전용 클라이언트, 조회·등록 함수, DB 타입 |
 | `lib/participant-storage.ts` | 참가자 UUID 저장과 구버전 이름 선택 이관 |
 | `supabase/schema.sql`, `supabase/seed.sql` | 테이블·권한·RLS 초기 설정과 Q4 샘플 투표 |
-| `.env.example` | 로컬·Vercel에 필요한 공개 환경변수 예시 |
+| `.env.example` | 로컬·Vercel 환경변수의 빈 템플릿 |
 | `components/SiteHeader.tsx` | 고정 상단 탐색, 홈 링크, 현재 프레젠테이션의 분기 표시 |
 | `components/QuarterCover.tsx` | 분기 데이터로 그리는 공통 표지 그래픽 |
 | `data/quarters.ts` | 분기 메타데이터, 최신순 정렬, 페이지 메타데이터 생성 |
@@ -136,51 +136,58 @@ export const metadata = getQuarterMetadata(getQuarter("2027-q1"));
 
 JSX 블록과 Markdown 본문 사이에는 빈 줄을 넣습니다. 짧은 본문은 Markdown으로 작성하고, 레이아웃이 필요한 곳에만 컴포넌트를 사용합니다. 표지의 h1 아래에는 SectionTitle의 h2, 세부 항목의 h3를 사용합니다. 기본 폰트는 시스템 폰트이며, 빌드 중 외부 폰트 다운로드가 필요하지 않습니다.
 
-## Supabase 설정과 마이그레이션
+## 비공개 접근과 환경변수
 
-기존 운영 DB는 다음 순서로 Supabase SQL Editor에서 파일 전체를 실행합니다.
+`/access`에서 공용 비밀번호를 서버로 제출합니다. `proxy.ts`가 일반 페이지와 이미지 접근을 검사하고, 홈·Presentation·모든 데이터 API는 서버에서 세션을 다시 확인합니다. 인증 전에는 참가자 Provider도 실행하지 않습니다.
 
-1. `supabase/migrations/20261021_participants_and_vote_modes.sql`
-2. `supabase/seed_participants.sql` — 기존 코드의 친구 10명을 DB로 옮기는 초기 seed
-3. 필요하면 `supabase/seed.sql` — Q4 투표가 없는 환경의 초기 데이터
+프로젝트 루트에 `.env.local`을 만들고 다음 네 값을 설정합니다. 실제 값은 코드나 문서에 기록하지 않습니다.
 
-새 DB는 `supabase/schema.sql`을 먼저 실행한 뒤 위 순서를 따릅니다. slug가 없는 초기 DB는 최신 migration 전에 `supabase/migrations/20261019_poll_slug.sql`도 실행합니다. 예전 권한 migration과 기반 schema를 최신 migration 이후에 재실행하지 마세요. 예전 파일은 투표의 직접 INSERT 권한을 다시 열 수 있습니다.
+| 변수 | 구분 | 용도 |
+| --- | --- | --- |
+| `SITE_ACCESS_PASSWORD` | server secret | 공용 비밀번호 |
+| `SITE_SESSION_SECRET` | server secret | 세션 서명, 32바이트 이상 |
+| `SUPABASE_SECRET_KEY` | server secret | Supabase Dashboard의 API Keys → Secret key |
+| `NEXT_PUBLIC_SUPABASE_URL` | public config | Supabase Project URL |
 
-이번 migration은 기존 숫자 ID와 투표·댓글을 보존합니다. 과거 `participant_name`별로 참가자를 만들고 UUID를 연결합니다. 같은 이름은 같은 참가자로 이관되며 과거 이름이 달랐던 동일인은 자동 병합하지 않습니다. 빈 이름은 비활성 `이름 미지정`으로 연결합니다. 기존 이름 열은 이관 전 기록으로 남지만 새 입력과 표시에는 사용하지 않습니다.
+`.env.example`에는 빈 항목만 있습니다. 기존 `NEXT_PUBLIC_SUPABASE_ANON_KEY`·Publishable Key는 사용하지 않으므로 로컬·Vercel 설정에서 제거할 수 있습니다. 환경변수가 없어도 빌드는 성공하지만 입장과 데이터 접근은 차단됩니다. `.env.local`은 Git에서 제외됩니다.
 
-기존 중복 표도 삭제하지 않습니다. Q4는 `allow_repeat_vote = false`로 전환하므로 기존 표가 있는 참가자는 더 참여할 수 없습니다. 과거 중복 표 때문에 기존 자료에서는 참여자 수와 총 투표 수가 다를 수 있습니다.
+세션 서명값은 다음 명령을 **본인의 로컬 터미널에서** 생성하여 비밀 환경변수에 보관합니다.
 
-DB migration을 적용하면 구버전 앱의 직접 투표 INSERT는 거부됩니다. 준비된 앱 변경과 함께 배포하세요. migration을 검증하는 트랜잭션 테스트는 롤백하며 실제 적용과 별개입니다.
-
-### 환경변수
-
-프로젝트 루트의 `.env.local`과 Vercel Project Settings에 같은 공개 값을 설정합니다.
-
-```dotenv
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_PUBLIC_PUBLISHABLE_OR_ANON_KEY
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-새 환경변수나 패키지는 필요하지 않습니다. `.env.local`은 Git에서 제외됩니다. secret 또는 service_role 키는 사용하지 않습니다. 환경변수가 없어도 빌드는 가능하지만 홈에서는 이름 목록 재시도 안내가 표시됩니다.
+Node.js 표준 `crypto`의 HMAC-SHA256과 `timingSafeEqual`을 사용합니다. 토큰에는 authorized·issuedAt·expiresAt만 포함합니다. HttpOnly, SameSite=Lax, Path=/, production Secure 쿠키와 서명 토큰 모두 발급부터 정확히 30일에 만료하며 자동 연장하지 않습니다. 비밀번호는 쿠키·localStorage·URL에 저장하지 않습니다.
+
+비밀번호만 변경하면 기존 세션은 유지됩니다. `SITE_SESSION_SECRET`을 변경하고 재배포하면 이전 키로 서명한 모든 세션이 무효화됩니다. Header의 **사이트 잠그기**는 현재 브라우저의 쿠키만 지우고 참가자 선택은 보존합니다.
+
+## Supabase 설치와 권한 전환
+
+기존 참가자·투표 방식 migration이 적용된 운영 DB는 **`supabase/migrations/20261023000000_private_site_access.sql`만 검토 후 SQL Editor에서 전체 실행**합니다. 자동 실행하지 않습니다. 기존 데이터·ID는 변경하지 않습니다. seed 재실행도 필요하지 않습니다.
+
+새 DB의 실행 순서:
+
+1. `supabase/schema.sql`
+2. `supabase/migrations/20261019_poll_slug.sql`
+3. `supabase/migrations/20261021_participants_and_vote_modes.sql`
+4. `supabase/seed_participants.sql`, `supabase/seed.sql`
+5. `supabase/migrations/20261023000000_private_site_access.sql` — 항상 마지막
+
+private migration은 다섯 테이블의 anon/authenticated 테이블·열 권한, 연결 sequence 권한과 기존 RPC 공개 실행 권한을 회수합니다. RLS·기존 정책을 보존하면서 restrictive 차단 정책을 추가합니다. `submit_vote`는 기존 검증·잠금을 유지하고 SECURITY INVOKER로 변경하여 서버 역할에만 실행을 허용합니다.
+
+Browser → 세션 검증 API → server-only Supabase client 순서입니다. `lib/site-api.ts`에는 내부 fetch만 있고 SDK·키가 없습니다. 모든 보호 API는 세션을 검사하고, 쓰기는 same-origin 및 입력값도 검사합니다. 서버 키는 RLS를 우회하므로 댓글의 활성 참가자는 서버가 명시적으로 확인합니다. 임의 SQL·테이블 조작 endpoint는 없습니다.
+
+migration 전에는 기존 공개 키로 DB 직접 접근이 가능합니다. migration 후에는 구버전 앱의 직접 Supabase 요청이 거부됩니다. 환경변수·앱 배포·DB 권한 전환을 함께 준비하세요. 이전 Preview/Production 배포도 전환하거나 비활성화해야 합니다. 옛 schema·권한 migration을 이후에 재실행하지 마세요.
 
 ### 참가자 관리
 
-친구 목록은 Supabase Table Editor의 `participants`에서 관리합니다.
+Supabase Table Editor의 `participants`에서 `display_name`, `display_order`, `is_active`를 관리합니다. 이름은 행을 삭제·재생성하지 말고 수정합니다. UUID가 유지되므로 이전 댓글에도 변경된 이름이 표시됩니다. 비활성 행은 선택 목록에서 제외하며 기존 작성자 표시는 유지됩니다.
 
-- `display_name`: 표시 이름. 이름을 수정해도 UUID가 유지되어 과거 댓글에도 새 이름이 표시됩니다.
-- `display_order`: 목록 순서.
-- `is_active = false`: 선택 목록에서 제외. 기존 기록과 작성자 표시는 유지됩니다.
-- 기존 참가자의 이름을 바꿀 때는 행을 삭제·재생성하지 말고 이름만 수정합니다.
+비밀번호 인증 후 홈페이지에 처음 들어가면 필수 이름 선택 모달이 표시됩니다. `project203_participant` localStorage에 `{ id, display_name }`을 저장하고 재방문 시 활성 목록과 대조합니다. Header의 **변경**으로 다시 선택합니다. 구버전 이름 저장 값도 활성 참가자와 일치하면 자동 이관합니다.
 
-`seed_participants.sql`은 초기 이관용입니다. Dashboard에서 이름을 개별 수정한 뒤 예전 seed를 반복 실행하면 이전 이름이 추가될 수 있으므로 재실행하지 마세요.
-
-홈에 처음 방문하면 필수 이름 선택 모달이 표시됩니다. 선택 정보는 `project203_participant`에 `{ id, display_name }`으로 저장하고 재방문할 때 DB의 활성 목록과 대조합니다. 이름 변경은 Header의 **변경**을 사용합니다. 구버전의 이름 저장 값도 활성 참가자와 일치하면 자동 이관됩니다. localStorage가 차단된 브라우저는 현재 탭에서만 선택을 유지합니다.
-
-이름 선택은 Authentication이 아닙니다. 다른 참가자 ID를 선택하거나 localStorage를 바꿀 수 있습니다. **1인 1표는 선택된 participant_id 기준**이며 실제 사람의 신원을 검증하지 않습니다.
+이름 선택은 본인 인증이 아닙니다. **1인 1표는 선택된 participant_id 기준**이며 다른 이름 선택을 방지하지 않습니다. 공용 비밀번호도 개인 신원을 검증하지 않습니다.
 
 ### 투표 방식과 MDX
-
-`polls.allow_repeat_vote`가 투표 방식을 결정합니다.
 
 ```sql
 -- 1인 1표: 기본값. 첫 투표 이후 재투표·변경 불가
@@ -190,7 +197,7 @@ update public.polls set allow_repeat_vote = false where slug = 'land-priority';
 update public.polls set allow_repeat_vote = true where slug = 'YOUR_POLL_SLUG';
 ```
 
-새 투표는 SQL에서 실제 생성된 ID로 선택지를 연결합니다.
+새 투표는 실제 생성된 ID로 선택지를 연결합니다.
 
 ```sql
 with new_poll as (
@@ -203,52 +210,42 @@ select new_poll.id, choice.label, choice.display_order
 from new_poll cross join (values ('접근성', 1), ('토지 조건', 2)) choice(label, display_order);
 ```
 
-중복 허용 투표는 위 INSERT의 마지막 값을 `true`로 설정합니다. MDX에서는 slug를 전달하며 컴포넌트 코드는 수정하지 않습니다.
+MDX에서는 slug를 전달하며 컴포넌트 코드는 수정하지 않습니다.
 
 ```mdx
 <Poll pollId="2027-q1-priority" />
 <CommentSection quarter="2027-q1" />
 ```
 
-투표는 `submit_vote` RPC로만 등록합니다. DB에서 활성 참가자, Poll, 선택지 소속, 투표 방식을 검증하고 Poll 행 잠금으로 동시 첫 투표를 직렬화합니다. `get_poll_results`는 호출자의 SELECT 권한과 RLS로 표 수·참여자 수를 집계합니다. Chart 라이브러리나 Realtime은 사용하지 않습니다.
+표는 서버를 거쳐 `submit_vote` RPC로만 등록합니다. DB가 활성 참가자, Poll, 선택지 소속, 투표 방식을 검증하고 Poll 행 잠금으로 동시 첫 투표를 직렬화합니다. 결과는 참여자 수와 총 표 수를 구분합니다.
 
-댓글은 현재 참가자 UUID로 저장하고 참가자 테이블을 join해 표시합니다. 앞뒤 공백 제거 후 1~1000자로 제한하며, DB도 비활성 참가자의 등록과 잘못된 내용을 차단합니다. 최신순 20개씩 조회합니다.
+댓글은 현재 참가자 UUID로 저장하고 이름을 join합니다. 앞뒤 공백 제거 후 1~1000자로 제한하며 최신순 20개씩 조회합니다. 수정·삭제·Realtime은 추가하지 않습니다.
 
-### 권한
-
-익명 역할은 참가자·Poll·선택지·표·댓글을 읽을 수 있고 댓글을 추가할 수 있습니다. 참가자 선택 목록은 활성 행만 조회하지만 과거 댓글의 이름 표시를 위해 참가자 읽기는 비활성 행도 허용합니다.
-
-votes의 직접 INSERT, 기존 데이터의 UPDATE/DELETE, Poll·선택지·참가자 변경은 허용하지 않습니다. 공개 `submit_vote`는 제한된 작업을 위한 의도적인 SECURITY DEFINER RPC이며 입력 검증, 빈 search_path, 명시적인 EXECUTE 부여를 사용합니다. 로그인·세션·쿠키·API Route·Server Action은 추가하지 않습니다.
-
-## 검증과 로컬 실행
+## 검증
 
 ```powershell
-npm ci
-npm run dev
+npm test
 npm run check:supabase
 npm run typecheck
 npm run lint
 npm run build
 ```
 
-PowerShell 실행 정책에 걸리면 `npm.cmd`를 사용합니다. 진단 명령은 공개 키로 조회만 하고 값을 출력하지 않습니다. 실제 DB 변경과 등록 시험은 별도로 구분합니다.
+PowerShell에서 실행 정책에 걸리면 `npm.cmd`를 사용합니다. Node.js 기본 test runner는 30일 만료 경계·변조·키 교체·비밀번호 비교를 검사합니다. 진단 명령은 서버 키로 조회만 하며 키·본문을 출력하지 않습니다.
 
-- 홈 첫 방문, 이름 선택 전 접근 차단, 키보드 탐색과 Escape 처리를 확인합니다.
-- 새로고침·브라우저 재접속 시 선택 유지, 이름 변경, 비활성 참가자 재선택을 확인합니다.
-- 1인 1표의 첫 투표·재투표 차단, 다른 참가자의 별도 투표를 확인합니다.
-- 중복 허용 투표에서 같은 참가자가 여러 번 참여하는지 확인합니다.
-- 댓글 등록, 이름 변경 반영, 빈 내용·1000자 초과 차단을 확인합니다.
+- 인증 없는 홈·분기 접근은 `/access`, 보호 API 직접 호출은 401인지 확인합니다.
+- 틀린 비밀번호·올바른 비밀번호·원래 페이지 복귀·새로고침·재접속·잠그기를 확인합니다.
+- 이름 선택·변경·저장, 단일/중복 투표, 댓글 등록·목록과 입력 검증을 확인합니다.
 - Desktop/Tablet/Mobile에서 홈·Archive·MDX와 가로 넘침을 확인합니다.
-- DB 회귀 테스트는 `supabase/tests/participants_and_vote_modes.sql`을 SQL Editor에서 실행합니다. 시험 데이터는 롤백합니다.
+- private migration 적용 후 `supabase/tests/private_site_access.sql`로 공개 권한 회수를 검사합니다. 데이터 변경 없는 assertion입니다.
+- 이전 `participants_and_vote_modes.sql` 테스트는 공개 anon 구조 전용이므로 private migration 이후 운영 DB에서 실행하지 않습니다.
 
 ## Vercel 배포
 
-1. DB migration과 초기 참가자 seed를 적용합니다.
-2. 변경한 파일을 기존 배포 브랜치에 commit/push합니다.
-3. 기존 두 환경변수를 Production/Preview 범위에 등록합니다. Node.js 22 이상을 사용합니다.
-4. 환경변수를 변경한 경우 새 배포를 생성하거나 Redeploy합니다.
-5. 배포 사이트에서도 이름 선택·투표 방식·댓글을 확인합니다.
+1. Project Settings → Environment Variables에 위 네 값을 Production 및 필요한 Preview 범위에 등록합니다. 비밀 값 세 개는 Secret, URL은 Config로 관리합니다.
+2. migration을 검토하고 적용·배포 시간을 정합니다. DB 권한 전환 전까지 데이터는 완전히 비공개가 아닙니다.
+3. 변경을 배포 브랜치에 commit/push하여 기존 Git 연동으로 새 배포를 만듭니다. 환경변수만 변경한 경우에도 Redeploy합니다. Node.js 22 이상을 사용합니다.
+4. SQL Editor에서 private migration 전체를 실행하고 권한 assertion을 확인합니다.
+5. 배포 URL에서 비밀번호 → 이름 → 투표·댓글과 잠그기를 확인합니다. 이전 공개 배포도 전환합니다.
 
-DB 적용과 앱 배포를 함께 진행하고, 이전 배포의 공개 환경변수는 새 배포 없이는 바뀌지 않는다는 점을 확인합니다.
-
-공식 참고: [Database Functions](https://supabase.com/docs/guides/database/functions), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [Next.js MDX](https://nextjs.org/docs/app/guides/mdx).
+공식 참고: [Next.js Proxy](https://nextjs.org/docs/app/api-reference/file-conventions/proxy), [Authentication](https://nextjs.org/docs/app/guides/authentication), [Supabase API keys](https://supabase.com/docs/guides/api/api-keys), [Data API security](https://supabase.com/docs/guides/api/securing-your-api).
