@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { HttpError } from "@/lib/auth/http";
 import type { Database, DatabaseId, PollData } from "./types";
-import { reportPollLoadError } from "./poll-errors";
+import { canShowPollResults } from "@/lib/polls";
 
 type Client = SupabaseClient<Database>;
 export const COMMENTS_PAGE_SIZE = 20;
@@ -21,41 +21,34 @@ export async function getActiveParticipant(client: Client, id: string) {
   return data;
 }
 
-export async function getPollResults(client: Client, pollId: DatabaseId) {
-  const { data, error } = await client.rpc("get_poll_results", { p_poll_id: pollId });
+export async function getParticipation(client: Client, pollId: DatabaseId, participantId: string) {
+  if (!await getActiveParticipant(client, participantId)) throw new HttpError(400, "현재 선택할 수 없는 이름입니다.");
+  const { data, count, error } = await client.from("votes").select("option_id,text_response", { count: "exact" })
+    .eq("poll_id", pollId).eq("participant_id", participantId).order("id").limit(1);
   if (error) throw error;
-  return data;
+  return { option_id: data[0]?.option_id ?? null, text_response: data[0]?.text_response ?? null, vote_count: count ?? 0 };
 }
 
-export async function getPollId(client: Client, slug: string) {
-  const { data, error } = await client.from("polls").select("id").eq("slug", slug).maybeSingle();
+export async function getPollCatalog(client: Client, includeHidden = false) {
+  const { data, error } = await client.rpc("get_poll_catalog", { p_include_hidden: includeHidden });
+  if (error) throw error;
+  // Defense in depth: do not serialize unpublished aggregates, including in RSC props.
+  return data.map((summary) => includeHidden || canShowPollResults(summary.poll, summary.status) ? summary : { ...summary, results: null });
+}
+
+export async function getPoll(client: Client, slug: string, includeHidden = false): Promise<PollData> {
+  // One DB statement supplies metadata, status and only the outcomes allowed by policy.
+  const { data, error } = await client.rpc("get_poll_detail", { p_slug: slug, p_admin: includeHidden });
   if (error) throw error;
   if (!data) throw new HttpError(404, "투표를 찾지 못했습니다.");
-  return data.id;
+  if (data.poll.poll_type === "choice" && !data.options.length) throw new Error("POLL_OPTIONS_MISSING");
+  return includeHidden || canShowPollResults(data.poll, data.status) ? data : { ...data, results: null, responses: null };
 }
 
-export async function hasVoted(client: Client, pollId: DatabaseId, participantId: string) {
-  const { count, error } = await client.from("votes").select("id", { count: "exact", head: true })
-    .eq("poll_id", pollId).eq("participant_id", participantId);
+export async function submitTextResponse(client: Client, pollId: DatabaseId, participantId: string, text: string) {
+  const { data, error } = await client.rpc("submit_text_response", { p_poll_id: pollId, p_participant_id: participantId, p_text_response: text });
   if (error) throw error;
-  return (count ?? 0) > 0;
-}
-
-export async function getPoll(client: Client, pollSlug: string): Promise<PollData> {
-  // MDX에서는 읽기 쉬운 slug를 쓰고, FK 조회·등록에는 실제 DB ID를 사용합니다.
-  const pollResult = await client.from("polls").select("*").eq("slug", pollSlug).single();
-  if (pollResult.error) throw pollResult.error;
-  const pollId = pollResult.data.id;
-  const optionsResult = await client.from("poll_options").select("*")
-    .eq("poll_id", pollId).order("display_order");
-  if (optionsResult.error) throw optionsResult.error;
-  if (!optionsResult.data.length) throw new Error("POLL_OPTIONS_MISSING");
-  // 결과 조회에 실패해도 질문과 선택지는 표시합니다. 실패를 0표로 표현하지 않습니다.
-  const results = await getPollResults(client, pollId).catch((error) => {
-    reportPollLoadError(pollSlug, "results", error);
-    return null;
-  });
-  return { poll: pollResult.data, options: optionsResult.data, results };
+  return data.status;
 }
 
 export async function submitVote(client: Client, pollId: DatabaseId, optionId: DatabaseId, participantId: string) {

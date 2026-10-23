@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { getActiveParticipant, getParticipants } from "@/lib/site-api";
+import { getParticipants, selectParticipant as selectServerParticipant } from "@/lib/site-api";
 import type { Participant } from "@/lib/supabase/types";
 import { PARTICIPANT_STORAGE_KEY, readLegacyName, readSelection, saveSelection } from "@/lib/participant-storage";
 import { ParticipantDialog } from "./ParticipantDialog";
@@ -31,7 +31,8 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
   const [requested, setRequested] = useState(false);
   const [storageWarning, setStorageWarning] = useState(false);
   const requestId = useRef(0);
-  const mustChoose = pathname === "/" && participant === null;
+  const syncedParticipantId = useRef<string | null>(null);
+  const mustChoose = !pathname.startsWith("/admin") && participant === null;
   const dialogOpen = mustChoose || requested;
 
   const refresh = useCallback(async () => {
@@ -42,9 +43,14 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
       const stored = readSelection();
       const legacyName = stored ? null : readLegacyName();
       const selected = activeParticipants.find((item) => stored ? item.id === stored.id : item.display_name === legacyName) ?? null;
+      if (selected && syncedParticipantId.current !== selected.id) {
+        await selectServerParticipant(selected.id);
+        if (currentRequest !== requestId.current) return;
+        syncedParticipantId.current = selected.id;
+      }
+      if (currentRequest !== requestId.current) return;
       setParticipants(activeParticipants);
       setParticipant(selected);
-      if ((stored || legacyName) && !selected) setRequested(true);
       setStorageWarning(!saveSelection(selected));
       setError(activeParticipants.length ? "" : "선택할 이름이 아직 준비되지 않았습니다. 잠시 후 다시 확인해주세요.");
     } catch {
@@ -72,13 +78,16 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
   }, [refresh, cancelRefresh]);
 
   async function selectParticipant(id: string) {
-    const selected = await getActiveParticipant(id);
+    // An older name-list refresh must not replace this explicit selection.
+    requestId.current++;
+    const selected = await selectServerParticipant(id);
     if (!selected) {
       await refresh();
       throw new Error("현재 선택할 수 없는 이름입니다. 다른 이름을 선택해주세요.");
     }
     // 진행 중인 초기 조회가 방금 저장한 선택을 덮어쓰지 않도록 합니다.
     requestId.current++;
+    syncedParticipantId.current = selected.id;
     setParticipant(selected);
     setStorageWarning(!saveSelection(selected));
     setIsLoading(false);
@@ -91,6 +100,7 @@ export function ParticipantProvider({ children }: { children: ReactNode }) {
   }
 
   function invalidateParticipant() {
+    syncedParticipantId.current = null;
     setParticipant(null);
     saveSelection(null);
     setRequested(true);

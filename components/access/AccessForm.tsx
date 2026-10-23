@@ -2,7 +2,7 @@
 
 import { useId, useState, type FormEvent } from "react";
 
-export function AccessForm({ returnTo, configured }: { returnTo: string; configured: boolean }) {
+export function AccessForm({ returnTo, configured, endpoint = "/api/access", admin = false }: { returnTo: string; configured: boolean; endpoint?: string; admin?: boolean }) {
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -14,7 +14,7 @@ export function AccessForm({ returnTo, configured }: { returnTo: string; configu
     setPending(true);
     setError("");
     try {
-      const response = await fetch("/api/access", {
+      const response = await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password, next: returnTo }), credentials: "same-origin", cache: "no-store",
       });
@@ -29,7 +29,7 @@ export function AccessForm({ returnTo, configured }: { returnTo: string; configu
 
   return (
     <form onSubmit={submit} className="mt-10" aria-busy={pending}>
-      <label htmlFor={id} className="mb-3 block text-sm">공용 비밀번호</label>
+      <label htmlFor={id} className="mb-3 block text-sm">{admin ? "관리자 비밀번호" : "공용 비밀번호"}</label>
       <input id={id} type="password" name="password" value={password} required maxLength={1024}
         autoComplete="current-password" className="access-input" disabled={pending || !configured}
         aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}

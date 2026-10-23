@@ -31,9 +31,11 @@ npm run start
 | 경로 | 역할 |
 | --- | --- |
 | `app/layout.tsx` | 한국어 문서, 공통 메타데이터, 본문 건너뛰기 링크 |
-| `app/page.tsx` | 최신 분기 Current와 연도별 전체 Archive |
+| `app/page.tsx` | 최신 Presentation과 Active Polls 요약 |
 | `app/globals.css` | Tailwind 테마 토큰, 타이포그래피, 공통·반응형 스타일 |
-| `app/quarter/2026-q4/page.mdx` | 킥오프 자료 9개 섹션과 투표·댓글 섹션 |
+| `app/quarter/2026-q4/page.mdx` | 킥오프 자료 9개 섹션과 댓글 섹션 |
+| `components/interactive/TextBallot.tsx`, `TextResponses.tsx` | 주관식 내 응답 입력·수정과 공개된 전체 응답 |
+| `lib/auth/participant-session.ts` | 현재 선택한 이름을 사이트 세션에 연결하여 본인 응답 조회를 제한 |
 | `components/presentation/` | MDX용 기본 레이아웃과 MetricGrid, Timeline, Checklist |
 | `components/interactive/` | 이름 선택, 투표·결과, 댓글 입력·목록 UI |
 | `components/interactive/ParticipantProvider.tsx` | DB 참가자 목록, 선택 Context와 필수 모달 |
@@ -136,116 +138,132 @@ export const metadata = getQuarterMetadata(getQuarter("2027-q1"));
 
 JSX 블록과 Markdown 본문 사이에는 빈 줄을 넣습니다. 짧은 본문은 Markdown으로 작성하고, 레이아웃이 필요한 곳에만 컴포넌트를 사용합니다. 표지의 h1 아래에는 SectionTitle의 h2, 세부 항목의 h3를 사용합니다. 기본 폰트는 시스템 폰트이며, 빌드 중 외부 폰트 다운로드가 필요하지 않습니다.
 
-## 비공개 접근과 환경변수
+## 사이트 구조
 
-`/access`에서 공용 비밀번호를 서버로 제출합니다. `proxy.ts`가 일반 페이지와 이미지 접근을 검사하고, 홈·Presentation·모든 데이터 API는 서버에서 세션을 다시 확인합니다. 인증 전에는 참가자 Provider도 실행하지 않습니다.
+| 경로 | 역할 |
+| --- | --- |
+| `/` | 프로젝트 소개, 최신 Presentation, 진행 중인 Poll 요약 |
+| `/archive` | Git + MDX로 관리하는 분기 자료 목록 |
+| `/quarter/2026-q4` | 기존 Presentation URL과 댓글 유지 |
+| `/polls` | 현재 분기의 Poll 목록과 과거 분기 Poll Archive |
+| `/polls/2026-q4` | 해당 분기의 진행 중/예정 및 종료된 Poll 목록 |
+| `/polls/[slug]` | 기존 Poll 상세 URL: 투표·선택 변경·결과 |
+| `/admin` | 별도 비밀번호와 Poll dashboard |
+| `/admin/polls` | Poll 목록·종료·재개·숨김 |
+| `/admin/polls/new` | 새 Poll 생성 |
+| `/admin/polls/[slug]/edit` | 제목·설명·기간·변경 허용·숨김 수정 |
 
-프로젝트 루트에 `.env.local`을 만들고 다음 네 값을 설정합니다. 실제 값은 코드나 문서에 기록하지 않습니다.
+Presentation 안의 Poll은 제거하고 독립 페이지로 옮겼습니다. 투표 데이터는 그대로 유지합니다. 새 MDX에는 Poll을 직접 넣지 않습니다. 댓글은 기존 `<CommentSection quarter="2027-q1" />`를 계속 사용합니다. 분기를 추가하는 작업은 MDX·metadata·이미지 추가로 유지됩니다.
+
+## 분기별 Poll 관리
+
+분기의 단일 원본은 `data/quarters.ts`입니다. `getCurrentQuarter()`는 최신 `publishedAt` 항목을 반환하며 Home과 Polls, Admin 기본값이 함께 사용합니다. `getArchivedQuarters()`는 나머지 분기를 최신순으로 반환합니다. 오늘 날짜로 분기를 추측하지 않습니다.
+
+- `/polls`: Current Quarter의 진행 중/종료됨 탭, 아래에는 과거 분기별 Poll 수와 Active·Upcoming·Closed 수를 표시합니다. 숨긴 Poll은 일반 목록과 집계에서 제외합니다.
+- `/polls/<quarter>`: 해당 분기의 Poll만 표시합니다. 기존 `/polls/<poll-slug>` 상세 링크와 같은 동적 라우트에서 등록된 분기인지 구분하므로 기존 URL도 유지됩니다. 분기 형태의 slug는 Poll 식별자로 사용하지 않습니다.
+- Home: Current Quarter의 ACTIVE Poll을 최대 3개 표시하고, 다른 분기의 ACTIVE Poll이 있으면 Archive 링크를 표시합니다.
+- Admin: Quarter/Status 필터와 분기별 전체 수(숨김 포함)를 제공합니다. 생성 시 Current가 기본 선택되며 등록된 분기만 저장할 수 있습니다. 투표가 없는 Poll만 Edit에서 분기를 바꿀 수 있습니다. Next.js 검증과 DB transaction/trigger가 함께 검사합니다.
+
+**Quarter는 분류 기준입니다.** 과거 분기라도 `is_closed=false`, `is_hidden=false`이며 투표 기간 안이면 계속 참여할 수 있습니다. 시작·종료가 모두 null이면 상시 투표입니다. 분기가 바뀌어도 자동 종료하지 않습니다. 새 분기를 metadata에 등록하면 Poll이 없어도 빈 목록과 Admin 선택지에 자동 반영됩니다.
+
+## 환경변수와 세션
+
+로컬 `.env.local`과 Vercel에 다음 값을 설정합니다. 실제 값은 코드·문서·Git에 기록하지 않습니다.
 
 | 변수 | 구분 | 용도 |
 | --- | --- | --- |
-| `SITE_ACCESS_PASSWORD` | server secret | 공용 비밀번호 |
-| `SITE_SESSION_SECRET` | server secret | 세션 서명, 32바이트 이상 |
-| `SUPABASE_SECRET_KEY` | server secret | Supabase Dashboard의 API Keys → Secret key |
-| `NEXT_PUBLIC_SUPABASE_URL` | public config | Supabase Project URL |
+| `SITE_ACCESS_PASSWORD` | server secret | 기존 공용 비밀번호 |
+| `SITE_SESSION_SECRET` | server secret | 기존 30일 access session 서명 |
+| `ADMIN_PASSWORD` | server secret | 새 관리자 비밀번호 |
+| `SUPABASE_SECRET_KEY` | server secret | 기존 Supabase 서버 전용 키 |
+| `NEXT_PUBLIC_SUPABASE_URL` | public config | 기존 Project URL |
 
-`.env.example`에는 빈 항목만 있습니다. 기존 `NEXT_PUBLIC_SUPABASE_ANON_KEY`·Publishable Key는 사용하지 않으므로 로컬·Vercel 설정에서 제거할 수 있습니다. 환경변수가 없어도 빌드는 성공하지만 입장과 데이터 접근은 차단됩니다. `.env.local`은 Git에서 제외됩니다.
+분기별 Poll 개편에는 **새 환경변수가 없습니다**. 기존 다섯 값을 유지합니다. 관리자 키는 SITE_SESSION_SECRET에서 목적이 다른 HMAC 키로 파생하여 사이트 쿠키와 상호 사용할 수 없습니다. 별도 `project203_admin` 쿠키/서명 토큰은 8시간에 만료하고, 사이트의 `project203_access`는 기존처럼 30일입니다. 모두 HttpOnly·SameSite=Lax·Path=/·production Secure를 사용합니다.
 
-세션 서명값은 다음 명령을 **본인의 로컬 터미널에서** 생성하여 비밀 환경변수에 보관합니다.
+Admin은 사이트 인증과 관리자 인증을 모두 요구하지만 participant 선택과 무관합니다. 일반 페이지는 participant 선택 후 이용합니다. 사이트 잠그기는 두 쿠키를 지우며 participant localStorage는 보존합니다. 관리자 잠그기는 관리자 쿠키만 지웁니다. SITE_SESSION_SECRET 교체 후 재배포하면 두 종류의 기존 세션이 모두 무효화됩니다.
 
-```powershell
-node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
-```
+비밀 값은 NEXT_PUBLIC_로 만들지 않습니다. 브라우저는 내부 API만 호출하고, Admin API는 사이트·관리자 세션, Origin과 입력값을 모두 확인합니다. Supabase SDK와 Secret key는 server-only입니다.
 
-Node.js 표준 `crypto`의 HMAC-SHA256과 `timingSafeEqual`을 사용합니다. 토큰에는 authorized·issuedAt·expiresAt만 포함합니다. HttpOnly, SameSite=Lax, Path=/, production Secure 쿠키와 서명 토큰 모두 발급부터 정확히 30일에 만료하며 자동 연장하지 않습니다. 비밀번호는 쿠키·localStorage·URL에 저장하지 않습니다.
+## Supabase migration
 
-비밀번호만 변경하면 기존 세션은 유지됩니다. `SITE_SESSION_SECRET`을 변경하고 재배포하면 이전 키로 서명한 모든 세션이 무효화됩니다. Header의 **사이트 잠그기**는 현재 브라우저의 쿠키만 지우고 참가자 선택은 보존합니다.
+현재 운영 DB에 분기별 Poll migration까지 적용되어 있다면 다음 새 파일만 검토 후 Supabase SQL Editor에서 전체 실행하세요.
 
-## Supabase 설치와 권한 전환
+`supabase/migrations/20261023030000_poll_types_and_results.sql`
 
-기존 참가자·투표 방식 migration이 적용된 운영 DB는 **`supabase/migrations/20261023000000_private_site_access.sql`만 검토 후 SQL Editor에서 전체 실행**합니다. 자동 실행하지 않습니다. 기존 데이터·ID는 변경하지 않습니다. seed 재실행도 필요하지 않습니다.
+앱·스크립트는 migration을 자동 실행하지 않습니다. 기존 테이블, 숫자 ID, participant UUID, Poll·투표·댓글을 삭제하거나 초기화하지 않습니다. 기존 Poll은 `poll_type=choice`, `results_visibility=live`, `text_max_length=1000`으로 유지합니다. `votes.option_id`는 nullable이 되고 `text_response`, `updated_at`이 추가됩니다. 기존 선택지 ID와 객관식 표는 유지됩니다. 현재 분기·투표 기간·서버 전용 RLS 구조도 유지합니다.
 
-새 DB의 실행 순서:
+새 CHECK·trigger와 주관식 전용 `(poll_id, participant_id)` 부분 UNIQUE가 응답 형태·길이·중복을 검사합니다. 주관식 등록과 수정, Admin 설정 변경은 같은 Poll 행 잠금을 사용합니다. 응답이 없는 Poll의 선택지를 수정하거나 유형을 바꾸면 사용되지 않은 선택지만 transaction 안에서 교체할 수 있습니다. 표가 있는 Poll의 유형·투표 방식·선택지는 고정합니다. 기존 응답보다 짧은 최대 글자 수는 거부합니다. 운영 DB에서 seed 재실행은 필요 없습니다.
+
+새 DB 설치 순서:
 
 1. `supabase/schema.sql`
 2. `supabase/migrations/20261019_poll_slug.sql`
 3. `supabase/migrations/20261021_participants_and_vote_modes.sql`
 4. `supabase/seed_participants.sql`, `supabase/seed.sql`
-5. `supabase/migrations/20261023000000_private_site_access.sql` — 항상 마지막
+5. `supabase/migrations/20261023000000_private_site_access.sql`
+6. `supabase/migrations/20261023010000_poll_management.sql`
+7. `supabase/migrations/20261023020000_poll_quarters.sql`
+8. `supabase/migrations/20261023030000_poll_types_and_results.sql`
 
-private migration은 다섯 테이블의 anon/authenticated 테이블·열 권한, 연결 sequence 권한과 기존 RPC 공개 실행 권한을 회수합니다. RLS·기존 정책을 보존하면서 restrictive 차단 정책을 추가합니다. `submit_vote`는 기존 검증·잠금을 유지하고 SECURITY INVOKER로 변경하여 서버 역할에만 실행을 허용합니다.
+운영 DB에서 seed나 과거 schema·권한 migration을 반복 실행하지 마세요. 새 코드의 Poll 기능은 최신 migration이 필요하므로 배포와 함께 적용합니다. MDX와 참가자·댓글은 기존 구조를 유지합니다.
 
-Browser → 세션 검증 API → server-only Supabase client 순서입니다. `lib/site-api.ts`에는 내부 fetch만 있고 SDK·키가 없습니다. 모든 보호 API는 세션을 검사하고, 쓰기는 same-origin 및 입력값도 검사합니다. 서버 키는 RLS를 우회하므로 댓글의 활성 참가자는 서버가 명시적으로 확인합니다. 임의 SQL·테이블 조작 endpoint는 없습니다.
+## 일상적인 Poll 관리
 
-migration 전에는 기존 공개 키로 DB 직접 접근이 가능합니다. migration 후에는 구버전 앱의 직접 Supabase 요청이 거부됩니다. 환경변수·앱 배포·DB 권한 전환을 함께 준비하세요. 이전 Preview/Production 배포도 전환하거나 비활성화해야 합니다. 옛 schema·권한 migration을 이후에 재실행하지 마세요.
+1. 사이트 비밀번호로 입장한 뒤 **ADMIN**에서 ADMIN_PASSWORD를 입력합니다.
+2. **Create Poll**에서 필수 **Quarter**(기본 Current), 제목·설명, **객관식/주관식**을 선택합니다. 객관식은 선택지 2~20개(각 100자 이내)를 입력합니다.
+3. 객관식은 **1인 1표** 또는 **중복 투표 가능**을 선택하고, 1인 1표에서 **투표 변경 허용**을 설정합니다. 주관식은 **1인 1응답**으로 고정되며 **응답 수정 허용**, **최대 응답 글자 수**(기본 1000, 10~5000)를 설정합니다.
+4. **상시 투표**는 시작·종료가 null입니다. **기간 지정**은 한국 시간(Asia/Seoul)의 시작·종료를 입력합니다. 서버에서 UTC timestamptz로 변환하며 종료는 시작보다 늦어야 합니다.
+5. **투표 만들기**는 DB transaction에서 Poll과 선택지를 함께 생성합니다. SQL Editor는 일상 운영에 필요하지 않습니다.
+6. **Result Visibility**에서 **실시간 공개** 또는 **종료 후 공개**를 선택합니다. Edit에서도 바꿀 수 있습니다. **응답이 0개일 때만 Quarter·유형·투표 방식·선택지를 변경**할 수 있습니다. 제목·설명·기간·변경 허용·공개 정책·숨김은 계속 수정할 수 있습니다.
+7. **Close/Reopen**은 수동 종료를 켜고 끕니다. 이미 종료일이 지난 Poll은 Reopen만으로 진행 상태가 되지 않으며 종료일도 수정해야 합니다.
+8. **Hide/Unhide**는 일반 목록과 직접 참여 접근을 숨기거나 복원합니다. 데이터와 관리자 결과는 보존합니다. 삭제 UI/API는 없습니다.
 
-### 참가자 관리
+DB 시각 기준 상태는 HIDDEN → 수동/기간 CLOSED → UPCOMING → ACTIVE 순서로 판단합니다. 진행 중 탭에는 예정된 투표도 안내하며 Home은 ACTIVE만 요약합니다. 종료된 Poll은 결과만 보여줍니다. 기간 경계의 투표 허용 여부는 브라우저 시각과 관계없이 DB가 검사합니다.
 
-Supabase Table Editor의 `participants`에서 `display_name`, `display_order`, `is_active`를 관리합니다. 이름은 행을 삭제·재생성하지 말고 수정합니다. UUID가 유지되므로 이전 댓글에도 변경된 이름이 표시됩니다. 비활성 행은 선택 목록에서 제외하며 기존 작성자 표시는 유지됩니다.
+1인 1표는 선택된 participant_id 기준입니다. 변경 허용 시 같은 vote 행의 option_id를 바꾸며 표를 추가하지 않습니다. 중복 투표는 매번 별도 행을 추가하고 참여자 수와 총 표 수를 구분합니다. 과거 같은 사람의 중복 기록은 삭제하지 않으며, single Poll에 그런 기록이 있으면 선택 변경만 차단합니다.
 
-비밀번호 인증 후 홈페이지에 처음 들어가면 필수 이름 선택 모달이 표시됩니다. `project203_participant` localStorage에 `{ id, display_name }`을 저장하고 재방문 시 활성 목록과 대조합니다. Header의 **변경**으로 다시 선택합니다. 구버전 이름 저장 값도 활성 참가자와 일치하면 자동 이관합니다.
+## 결과 공개와 주관식 응답
 
-이름 선택은 본인 인증이 아닙니다. **1인 1표는 선택된 participant_id 기준**이며 다른 이름 선택을 방지하지 않습니다. 공용 비밀번호도 개인 신원을 검증하지 않습니다.
+- `live`: 진행 중에도 객관식 집계 또는 주관식 전체 응답을 공개합니다.
+- `after_close`: 실제 기간 만료 또는 수동 Close 전까지 일반 목록·상세·결과 API에서 집계와 전체 응답을 null로 반환합니다. 참여자 수·총 표 수도 전달하지 않습니다. 다시 ACTIVE로 Reopen하면 다시 숨깁니다. Home은 공개 정책과 관계없이 응답 수를 표시하지 않습니다.
+- DB의 `get_poll_detail`은 한 statement의 시각/스냅샷으로 공개 여부와 결과를 함께 계산합니다. Next.js 서버도 응답을 검사합니다. 일반 API에서 admin flag를 전달할 수 없습니다. Admin API는 별도 세션을 검사한 뒤 공개 정책과 관계없이 집계와 작성자·시각을 포함한 주관식 전체 응답을 반환합니다.
+- 주관식은 trim 후 1~설정된 최대 글자 수이며 Unicode 문자 단위로 셉니다. 기존 응답이 있으면 수정 허용 시 같은 행만 UPDATE하고, 허용하지 않으면 거부합니다. 선택지는 필요하지 않습니다.
+- 종료 전에도 내 응답은 별도 참여 조회로 볼 수 있습니다. 이름 선택을 현재 사이트 세션에 연결한 HttpOnly 서명 쿠키를 사용하므로 URL의 participant ID만 바꾼 조회는 거부합니다. localStorage의 기존 이름 저장은 유지합니다. 추가 환경변수나 개인별 로그인은 없습니다.
 
-### 투표 방식과 MDX
+**이름 선택은 본인 인증이 아닙니다.** 내 응답은 현재 선택된 participant 기준입니다. 사용자가 이름 선택 자체를 다른 사람으로 바꾸는 것은 허용하므로 사람 단위 비밀 응답을 보장하지 않습니다. 기존 Comments는 Presentation의 자유 의견으로 유지되며 주관식 Poll과 통합하지 않습니다.
 
-```sql
--- 1인 1표: 기본값. 첫 투표 이후 재투표·변경 불가
-update public.polls set allow_repeat_vote = false where slug = 'land-priority';
+## 참가자와 댓글
 
--- 중복 허용: 같은 참가자가 여러 번 참여
-update public.polls set allow_repeat_vote = true where slug = 'YOUR_POLL_SLUG';
-```
+Supabase Table Editor의 participants에서 display_name·display_order·is_active를 관리합니다. UUID를 보존한 채 이름을 바꾸면 기존 댓글에도 새 이름이 반영됩니다. 비활성 이름은 선택 목록에서 제외합니다. localStorage의 `project203_participant`와 이전 이름 값의 이관은 유지합니다.
 
-새 투표는 실제 생성된 ID로 선택지를 연결합니다.
-
-```sql
-with new_poll as (
-  insert into public.polls (slug, quarter, title, description, allow_repeat_vote)
-  values ('2027-q1-priority', '2027-q1', '다음 분기의 우선순위는?', '한 가지를 선택해주세요.', false)
-  returning id
-)
-insert into public.poll_options (poll_id, label, display_order)
-select new_poll.id, choice.label, choice.display_order
-from new_poll cross join (values ('접근성', 1), ('토지 조건', 2)) choice(label, display_order);
-```
-
-MDX에서는 slug를 전달하며 컴포넌트 코드는 수정하지 않습니다.
-
-```mdx
-<Poll pollId="2027-q1-priority" />
-<CommentSection quarter="2027-q1" />
-```
-
-표는 서버를 거쳐 `submit_vote` RPC로만 등록합니다. DB가 활성 참가자, Poll, 선택지 소속, 투표 방식을 검증하고 Poll 행 잠금으로 동시 첫 투표를 직렬화합니다. 결과는 참여자 수와 총 표 수를 구분합니다.
-
-댓글은 현재 참가자 UUID로 저장하고 이름을 join합니다. 앞뒤 공백 제거 후 1~1000자로 제한하며 최신순 20개씩 조회합니다. 수정·삭제·Realtime은 추가하지 않습니다.
+이름 선택은 본인 인증이 아닙니다. 다른 이름을 선택할 수 있으므로 개인 신원을 검증하는 투표 시스템은 아닙니다. 댓글은 분기 Presentation에 유지하고, 현재 참가자 UUID로 앞뒤 공백 제거 후 1~1000자만 등록합니다. 댓글 수정·삭제는 추가하지 않습니다.
 
 ## 검증
 
 ```powershell
-npm test
-npm run check:supabase
-npm run typecheck
-npm run lint
-npm run build
+npm.cmd test
+npm.cmd run check:supabase
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd run build
+npm.cmd run dev
 ```
 
-PowerShell에서 실행 정책에 걸리면 `npm.cmd`를 사용합니다. Node.js 기본 test runner는 30일 만료 경계·변조·키 교체·비밀번호 비교를 검사합니다. 진단 명령은 서버 키로 조회만 하며 키·본문을 출력하지 않습니다.
+Node 기본 test runner로 세션 경계·서명 변조·관리자/사이트 쿠키 분리·한국 시간 변환·필수 Quarter 입력·분기 정렬과 필터를 검사합니다. DB 진단은 서버 키로 조회만 하며 비밀 값과 데이터 본문을 출력하지 않습니다.
 
-- 인증 없는 홈·분기 접근은 `/access`, 보호 API 직접 호출은 401인지 확인합니다.
-- 틀린 비밀번호·올바른 비밀번호·원래 페이지 복귀·새로고침·재접속·잠그기를 확인합니다.
-- 이름 선택·변경·저장, 단일/중복 투표, 댓글 등록·목록과 입력 검증을 확인합니다.
-- Desktop/Tablet/Mobile에서 홈·Archive·MDX와 가로 넘침을 확인합니다.
-- private migration 적용 후 `supabase/tests/private_site_access.sql`로 공개 권한 회수를 검사합니다. 데이터 변경 없는 assertion입니다.
-- 이전 `participants_and_vote_modes.sql` 테스트는 공개 anon 구조 전용이므로 private migration 이후 운영 DB에서 실행하지 않습니다.
+- 비밀번호 → participant → Home/Archive/Presentation/Polls를 확인합니다.
+- 사이트 세션만으로 Admin API가 거부되고 별도 관리자 비밀번호로 관리 가능한지 확인합니다.
+- 상시·기간·예정·종료·숨김, single/multiple, 선택 변경, 생성·수정·Close/Reopen/Hide/Unhide를 확인합니다.
+- Current/과거 분기 목록 분리, 과거 분기 상시 투표, Quarter 필수/등록 검증, 투표 이후 분기 이동 차단을 확인합니다.
+- 모바일에서 이름 선택·각 페이지·투표·생성/수정 폼과 가로 넘침을 확인합니다.
+- DB 회귀 시험은 TEST DB에서 `supabase/tests/poll_management.sql`을 수동 실행합니다. fixture 행은 rollback됩니다. 자동 로컬 UI/API 시험의 모의 백엔드와 실제 PostgreSQL 검증을 구분합니다.
+- 유형·공개 정책·주관식 DB 회귀 시험은 TEST DB에서 `supabase/tests/poll_types_and_results.sql`을 실행합니다. 일반 결과 API의 직접 호출, Close/Reopen과 기간 만료 공개, 본인 응답 범위, 주관식 중복·길이·수정 제한도 확인합니다.
+- `supabase/tests/private_site_access.sql`은 공개 권한 회수 확인용입니다. 이전 anon 구조 전용 테스트는 private migration 이후 실행하지 않습니다.
 
 ## Vercel 배포
 
-1. Project Settings → Environment Variables에 위 네 값을 Production 및 필요한 Preview 범위에 등록합니다. 비밀 값 세 개는 Secret, URL은 Config로 관리합니다.
-2. migration을 검토하고 적용·배포 시간을 정합니다. DB 권한 전환 전까지 데이터는 완전히 비공개가 아닙니다.
-3. 변경을 배포 브랜치에 commit/push하여 기존 Git 연동으로 새 배포를 만듭니다. 환경변수만 변경한 경우에도 Redeploy합니다. Node.js 22 이상을 사용합니다.
-4. SQL Editor에서 private migration 전체를 실행하고 권한 assertion을 확인합니다.
-5. 배포 URL에서 비밀번호 → 이름 → 투표·댓글과 잠그기를 확인합니다. 이전 공개 배포도 전환합니다.
+기존 다섯 환경변수를 Production 및 필요한 Preview 범위에서 유지합니다. 분기 개편으로 추가할 값은 없습니다. 로컬도 같은 변수 이름을 사용합니다. 비밀번호 값은 환경별로 관리합니다.
 
-공식 참고: [Next.js Proxy](https://nextjs.org/docs/app/api-reference/file-conventions/proxy), [Authentication](https://nextjs.org/docs/app/guides/authentication), [Supabase API keys](https://supabase.com/docs/guides/api/api-keys), [Data API security](https://supabase.com/docs/guides/api/securing-your-api).
+최신 migration을 검토하고 SQL Editor에서 실행한 뒤 변경을 배포 브랜치에 commit/push합니다. 기존 Git 연동이 빌드·배포합니다. 환경변수만 변경해도 최신 Production Deployment에서 Redeploy가 필요합니다. 이전 공개 배포도 전환하거나 비활성화하세요. 사이트 접근부터 Admin 생성·투표·댓글까지 배포 URL에서 확인합니다.
+
+공식 참고: [Next.js authentication](https://nextjs.org/docs/app/guides/authentication), [Supabase functions](https://supabase.com/docs/guides/database/functions), [PostgreSQL locking](https://www.postgresql.org/docs/current/explicit-locking.html).

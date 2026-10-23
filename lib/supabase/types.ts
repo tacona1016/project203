@@ -16,6 +16,16 @@ export type PollRecord = {
   title: string;
   description: string;
   allow_repeat_vote: boolean;
+  poll_type: "choice" | "text";
+  results_visibility: "live" | "after_close";
+  text_max_length: number;
+  vote_mode: "single" | "multiple";
+  allow_vote_change: boolean;
+  voting_starts_at: string | null;
+  voting_ends_at: string | null;
+  is_closed: boolean;
+  is_hidden: boolean;
+  updated_at: string;
   created_at: string;
 };
 
@@ -29,9 +39,11 @@ export type PollOption = {
 export type Vote = {
   id: DatabaseId;
   poll_id: DatabaseId;
-  option_id: DatabaseId;
+  option_id: DatabaseId | null;
+  text_response: string | null;
   participant_id: string;
   created_at: string;
+  updated_at: string;
 };
 
 export type CommentRecord = {
@@ -50,7 +62,19 @@ export type PollResultsData = {
   participant_count: number;
 };
 
-export type VoteStatus = "success" | "already_voted" | "inactive_participant" | "poll_not_found" | "invalid_option";
+export type VoteStatus = "success" | "vote_changed" | "unchanged" | "already_voted" | "inactive_participant" | "poll_not_found" | "invalid_option" | "poll_upcoming" | "poll_closed" | "legacy_votes_conflict" | "invalid_poll_type" | "invalid_response" | "response_too_long";
+export type PollStatus = "UPCOMING" | "ACTIVE" | "CLOSED" | "HIDDEN";
+export type PollSummary = { poll: PollRecord; status: PollStatus; results: PollResultsData | null; server_time: string };
+export type PollParticipation = { option_id: DatabaseId | null; text_response: string | null; vote_count: number };
+export type TextResponse = Pick<Vote, "id" | "participant_id" | "text_response" | "created_at" | "updated_at"> & { participant_name: string };
+export type PollOutcome = { results: PollResultsData | null; responses: TextResponse[] | null };
+export type PollInput = {
+  quarter: string;
+  poll_type: "choice" | "text"; results_visibility: "live" | "after_close"; text_max_length: number;
+  title: string; description: string; vote_mode: "single" | "multiple";
+  allow_vote_change: boolean; voting_starts_at: string | null; voting_ends_at: string | null;
+  is_hidden: boolean; options: string[];
+};
 
 // migration과 함께 관리합니다. 표는 RPC로, 댓글은 participant_id로 등록합니다.
 type Relationship = {
@@ -90,6 +114,12 @@ export type Database = {
         Returns: { status: VoteStatus };
       };
       get_poll_results: { Args: { p_poll_id: DatabaseId }; Returns: PollResultsData };
+      get_poll_catalog: { Args: { p_slug?: string | null; p_include_hidden?: boolean }; Returns: PollSummary[] };
+      get_poll_detail: { Args: { p_slug: string; p_admin?: boolean }; Returns: PollData | null };
+      submit_text_response: { Args: { p_poll_id: DatabaseId; p_participant_id: string; p_text_response: string }; Returns: { status: VoteStatus } };
+      admin_create_poll: { Args: { p_data: PollInput }; Returns: { slug: string } };
+      admin_update_poll: { Args: { p_poll_id: DatabaseId; p_data: PollInput }; Returns: { slug: string } };
+      admin_set_poll_state: { Args: { p_poll_id: DatabaseId; p_action: string }; Returns: { slug: string } };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -100,4 +130,7 @@ export type PollData = {
   poll: PollRecord;
   options: PollOption[];
   results: PollResultsData | null;
+  responses: TextResponse[] | null;
+  status: PollStatus;
+  server_time: string;
 };

@@ -15,14 +15,14 @@ export const quarters: readonly Quarter[] = [
     slug: "2026-q4",
     year: 2026,
     quarter: 4,
-    title: "Project Kick-off",
-    description: "10명의 친구가 함께할 장기 프로젝트. 토지를 고르기 전에, 공동의 방향과 평가 기준부터 정합니다.",
+    title: "방향 전환과 토지 검토 기준",
+    description: "시골 아파트 전세에서 건축 가능한 토지로. 10명의 친구가 Phase 1의 범위를 좁히는 12장짜리 의사결정 프레임워크입니다.",
     publishedAt: "2026-10-19",
   },
 ];
 
-export function getSortedQuarters(): Quarter[] {
-  return [...quarters].sort(
+export function getSortedQuarters(entries: readonly Quarter[] = quarters): Quarter[] {
+  return [...entries].sort(
     (a, b) =>
       b.publishedAt.localeCompare(a.publishedAt) ||
       b.year - a.year ||
@@ -30,8 +30,30 @@ export function getSortedQuarters(): Quarter[] {
   );
 }
 
+export function getCurrentQuarter(entries: readonly Quarter[] = quarters): Quarter | undefined {
+  return getSortedQuarters(entries)[0];
+}
+
+export function getArchivedQuarters(entries: readonly Quarter[] = quarters): Quarter[] {
+  return getSortedQuarters(entries).slice(1);
+}
+
+export function findQuarter(slug: string): Quarter | undefined {
+  return quarters.find((entry) => entry.slug === slug);
+}
+
+export function getQuarterLabel(quarter: Pick<Quarter, "year" | "quarter">): string {
+  return `${quarter.year} Q${quarter.quarter}`;
+}
+
+// Pass only these fields to authenticated admin forms, not the presentation metadata.
+export function getQuarterChoices() {
+  const current = getCurrentQuarter();
+  return getSortedQuarters().map((quarter) => ({ slug: quarter.slug, label: getQuarterLabel(quarter), current: quarter.slug === current?.slug }));
+}
+
 export function getQuarter(slug: string): Quarter {
-  const quarter = quarters.find((entry) => entry.slug === slug);
+  const quarter = findQuarter(slug);
 
   if (!quarter) {
     throw new Error(`Add metadata for "${slug}" to data/quarters.ts.`);

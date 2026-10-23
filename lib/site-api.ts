@@ -1,6 +1,6 @@
 "use client";
 
-import type { Comment, Participant, PollData, PollResultsData, VoteStatus, DatabaseId } from "@/lib/supabase/types";
+import type { Comment, Participant, PollData, PollOutcome, VoteStatus, DatabaseId, PollParticipation } from "@/lib/supabase/types";
 
 export const COMMENTS_PAGE_SIZE = 20;
 
@@ -22,9 +22,11 @@ async function request<T>(url: string, body?: unknown): Promise<T> {
 const pollPath = (slug: string) => `/api/polls/${encodeURIComponent(slug)}`;
 export const getParticipants = () => request<Participant[]>("/api/participants");
 export const getActiveParticipant = (id: string) => request<Participant | null>(`/api/participants?id=${encodeURIComponent(id)}`);
+export const selectParticipant = (participantId: string) => request<Participant>("/api/participants/selection", { participantId });
 export const getPoll = (slug: string) => request<PollData>(pollPath(slug));
-export const getPollResults = (slug: string) => request<PollResultsData>(`${pollPath(slug)}/results`);
-export const hasVoted = (slug: string, participantId: string) => request<boolean>(`${pollPath(slug)}/participation?participantId=${encodeURIComponent(participantId)}`);
+export const getPollResults = (slug: string) => request<PollOutcome>(`${pollPath(slug)}/results`);
+export const getParticipation = (slug: string, participantId: string) => request<PollParticipation>(`${pollPath(slug)}/participation?participantId=${encodeURIComponent(participantId)}`);
 export const submitVote = (slug: string, optionId: DatabaseId, participantId: string) => request<VoteStatus>(`${pollPath(slug)}/votes`, { optionId, participantId });
+export const submitTextResponse = (slug: string, participantId: string, textResponse: string) => request<VoteStatus>(`${pollPath(slug)}/votes`, { participantId, textResponse });
 export const getComments = (quarter: string, offset = 0) => request<Comment[]>(`/api/comments?quarter=${encodeURIComponent(quarter)}&offset=${offset}`);
 export const insertComment = (quarter: string, participantId: string, content: string) => request<Comment>("/api/comments", { quarter, participantId, content });

@@ -3,330 +3,321 @@ import { getQuarter, getQuarterMetadata } from "@/data/quarters";
 export const metadata = getQuarterMetadata(getQuarter("2026-q4"));
 
 <Presentation quarter={getQuarter("2026-q4")}>
+<div className="quarter-deck">
 
-<Hero
-  quarter={getQuarter("2026-q4")}
-  title="203 PROJECT"
-  description="10명의 친구, 하나의 장기 프로젝트."
-/>
+<Slide id="cover" number="01" label="방향 전환">
 
-<Slide id="summary" number="01" label="Why this project?" tone="soft">
-
-<SectionTitle
-  title="함께 보유하고, 오래 사용할 공간."
-  description="약 10명의 오랜 친구가 공동 자산을 만들어가는 장기 프로젝트입니다. 한 번의 여행이나 단기 임대를 넘어, 시간이 지나도 함께 찾을 수 있는 장소를 준비합니다."
-/>
+<p className="deck-edition">203 PROJECT · 2026 Q4</p>
+<SectionTitle as="h1" title="머무를 집에서, 함께 만들어갈 땅으로." description="시골 아파트 전세에서, 별장 건축이 가능한 토지 구매로 방향을 검토합니다." />
 
 <TwoColumn>
-<div>
+<article className="deck-comparison">
+<span className="item-index">기존 검토안</span>
+<ImageBlock src="/images/2026-q4/apartment.svg" alt="바로 이용할 수 있는 아파트 건물의 정면도" width={640} height={280} loading="eager" />
 
-### 먼저, 좋은 토지를 확보합니다.
+### 시골 아파트 전세
 
-- 공동자금을 모으고 후보지역을 충분히 조사합니다.
-- 지금 당장 집을 짓기보다 장기 보유할 토지를 찾습니다.
-- 향후 실제 별장을 지을 수 있는 조건을 먼저 확인합니다.
+- 비교적 빠르게 공간을 마련할 수 있습니다.
+- 시간이 지나며 이용 빈도가 낮아질 수 있습니다.
+- 함께 만들어가는 프로젝트의 상징성은 제한적입니다.
 
-</div>
-<div>
+</article>
+<article className="deck-comparison is-proposed">
+<span className="item-index">변경 검토안</span>
+<ImageBlock src="/images/2026-q4/land.svg" alt="아직 건물이 없는 토지와 앞으로 확장할 수 있는 경계" width={640} height={280} loading="eager" />
 
-### 이후, 우리의 공간을 만듭니다.
+### 건축 가능한 토지 구매
 
-- 서울·수도권에서 꾸준히 오갈 수 있는 곳을 지향합니다.
-- 여건이 갖춰지는 시점에 공동 별장 또는 휴가주택을 짓습니다.
-- 40~50대 이후에도 지속적으로 활용할 공간을 생각합니다.
+- 공동 별장이라는 초기 목적에 더 가깝습니다.
+- 함께 만들 공간과 장기적인 비전이 남습니다.
+- 대신 더 긴 시간과 더 많은 비용이 필요합니다.
 
-</div>
+</article>
 </TwoColumn>
 
-<blockquote className="key-message">이번 Q4의 목표는 특정 토지 선정이 아니라, 함께 사용할 평가 기준과 방향을 공유하는 것입니다.</blockquote>
+<blockquote className="key-message">단기 편의성보다, 장기 프로젝트의 정체성에 맞는 방향으로.</blockquote>
 
 </Slide>
 
-<Slide id="roadmap" number="02" label="Project roadmap">
+<Slide id="roadmap" number="02" label="3단계 추진 로드맵" tone="soft">
 
-<SectionTitle
-  title="토지를 먼저, 건축은 적절한 시점에."
-  description="현재 위치는 Phase 01–02입니다. 공동자금 형성과 후보지역 조사를 시작으로, 단계별 확인을 거쳐 다음으로 넘어갑니다."
-/>
+<SectionTitle title="한 번에 짓지 않고, 단계적으로 완성합니다." description="일정은 목표 시점입니다. 자금과 토지 조건이 준비되면 다음 단계로 넘어갑니다." />
 
-<Timeline steps={[
-  { title: "공동자금 형성", description: "참여 의사와 자금 형성 방향을 맞춥니다.", current: true },
-  { title: "후보지역 조사", description: "생활권 접근성과 지역별 특성을 살펴봅니다.", current: true },
-  { title: "토지 Screening", description: "공통 기준으로 매물을 검토하고 후보를 좁힙니다." },
-  { title: "현장 답사 / Due Diligence", description: "서류·현장·공식 확인을 통해 조건과 권리관계를 점검합니다." },
-  { title: "토지 매입", description: "공동소유·운영규칙 합의와 필지 검토를 마친 뒤 계약합니다." },
-  { title: "장기 보유", description: "유지관리하며 이용 여건과 건축 시점을 검토합니다." },
-  { title: "별장 설계 및 건축", description: "자금과 여건이 갖춰지면 인허가 조건을 다시 확인하고 추진합니다." },
+<PhaseRoadmap phases={[
+  { title: "건축 가능한 토지 구매", period: "2027–2028", budget: "토지대금 3억 원 이하", scope: "약 200평 검토 · 취득 관련 비용 별도", usage: "모임·텃밭 등 가벼운 이용부터 검토", image: "/images/2026-q4/land.svg", alt: "건물을 짓기 전 토지를 확보하는 첫 단계" },
+  { title: "대지 조성·인프라 연결", period: "~2030", budget: "약 0.3–1억 원+", scope: "필지 미정 단계의 예비 예산 · 큰 편차", usage: "전기·물·오수·도로의 이용 여건 마련", image: "/images/2026-q4/services.svg", alt: "외부 전기와 물, 도로를 필지까지 연결하는 두 번째 단계" },
+  { title: "별장 설계·건축", period: "~2035", budget: "본체공사 약 2.5–4.5억 원+", scope: "연면적 30–40평 · 일반 사양 가정", usage: "친구들과 함께 머무는 공동 별장", image: "/images/2026-q4/house.svg", alt: "기반이 마련된 토지에 별장을 짓는 마지막 단계" },
 ]} />
 
+<p className="presentation-note">금액은 2026년 현재 가격 수준의 계획용 가정이며 미래 견적이 아닙니다. Phase 2는 외부 토목·인입, Phase 3 본체공사는 건물 기초·구조·내부 설비를 뜻합니다. 설계·인허가·감리·조경·가구·세금 등은 별도 검토합니다.</p>
+<p className="source-note">토목은 경사·옹벽·인입거리에 따라 1억 원을 넘을 수 있습니다. 캠프파이어·경작·체류도 토지 이용 규정과 소방·환경 조건을 확인한 뒤 판단합니다. <a href="#total-cost">비용 범위와 확인 자료 →</a></p>
+
 </Slide>
 
-<Slide id="target" number="03" label="What are we looking for?" tone="soft">
+<Slide id="scope" number="03" label="이번 분기의 논의 범위">
 
-<SectionTitle title="우리가 찾는 토지의 기본 조건." description="현재의 검토 범위입니다. 확정된 매입 조건이나 전체 사업 예산을 뜻하지 않습니다." />
+<SectionTitle title="이번 Q4의 목표는, 찾을 땅의 범위를 좁히는 것." description="특정 매물을 고르기 전에 ‘어떤 조건을 우선할지’부터 맞춥니다." />
 
+<TwoColumn>
+<div className="deck-focus">
+<span className="item-index">PHASE 1 · 검토 기준 합의</span>
+
+### 모두가 수용할 수 있는 출발점
+
+- 꼭 지켜야 할 조건과 타협 가능한 조건을 나눕니다.
+- 사람마다 다른 거리·크기·환경의 우선순위를 드러냅니다.
+- 매물 비교에 사용할 공통 질문을 정합니다.
+
+<ImageBlock src="/images/2026-q4/scope.svg" alt="10개의 점이 하나의 토지 경계를 둘러싼 공동 검토 범위 개념도" width={720} height={440} caption="특정 후보지가 아닌 공동 검토 범위의 개념도" />
+</div>
+<div className="deck-assumptions">
 <MetricGrid metrics={[
-  { value: "10", label: "Friends", description: "약 10명의 오랜 친구" },
-  { value: "300–500평", label: "Target Land Size", description: "검토할 토지 규모" },
-  { value: "≤ 3억원", label: "Target Land Budget", description: "토지 매입 예산의 우선 검토 기준" },
-  { value: "수도권", label: "Accessibility", description: "Capital Region · 지속적으로 오갈 수 있는 접근성" },
+  { value: "약 10명", label: "참여 인원", description: "장기간 함께 보유하고 이용" },
+  { value: "약 200평", label: "토지 규모", description: "약 661㎡ · 우선 검토 가정" },
+  { value: "3억 원 이하", label: "토지대금", description: "총사업비가 아닌 매입 예산 상한" },
+  { value: "수도권 인접", label: "희망 생활권", description: "가능한 가까운 곳부터 조사" },
+]} />
+</div>
+</TwoColumn>
+
+<blockquote className="key-message">지금 필요한 것은 최종 결론보다, 함께 쓸 수 있는 기준입니다.</blockquote>
+
+</Slide>
+
+<Slide id="framework" number="04" label="토지 구매 결정요소" tone="soft">
+
+<SectionTitle title="여섯 가지 기준으로, 같은 땅을 봅니다." description="가격 하나로 판단하지 않습니다. 확인되지 않은 조건은 장점이 아니라 확인할 과제로 남깁니다." />
+
+<FactorGrid factors={[
+  { title: "접근성", description: "자주 갈 수 있어야 의미가 있습니다.", image: "/images/2026-q4/accessibility.svg", href: "#accessibility" },
+  { title: "건축 가능성", description: "짓고 싶은 집을 지을 수 있어야 합니다.", image: "/images/2026-q4/buildability.svg", href: "#buildability" },
+  { title: "인프라", description: "전기·물·오수·도로가 실제 비용을 만듭니다.", image: "/images/2026-q4/infrastructure.svg", href: "#infrastructure" },
+  { title: "토지 상태", description: "면적보다 실제 쓸 수 있는 공간을 봅니다.", image: "/images/2026-q4/terrain.svg", href: "#land-quality" },
+  { title: "주변 환경", description: "경관·소음·냄새는 현장에서 확인합니다.", image: "/images/2026-q4/surroundings.svg", href: "#surroundings" },
+  { title: "전체 비용", description: "토지대금 이후의 비용까지 비교합니다.", image: "/images/2026-q4/cost-layers.svg", href: "#total-cost" },
 ]} />
 
-<p className="presentation-note">건축비와 토목·기반시설 비용은 토지가격과 별도로 검토합니다.</p>
-
-<blockquote className="key-message">가격이 싼 땅이 아니라,<br />장기간 실제로 사용할 수 있는 땅을 찾는다.</blockquote>
+<blockquote className="key-message">좋은 땅은 ‘싸 보이는 땅’보다, 여러 조건의 균형이 맞는 땅입니다.</blockquote>
 
 </Slide>
 
-<Slide id="framework" number="04" label="Decision framework">
+<Slide id="accessibility" number="05" label="접근성">
 
-<SectionTitle
-  title="모든 후보를, 같은 여섯 가지 기준으로."
-  description="가격뿐 아니라 접근성, 건축 가능성, 기반시설, 땅의 상태와 주변 환경을 함께 봅니다. 확인되지 않은 조건은 확인이 필요한 항목으로 남깁니다."
-/>
-
-<div className="decision-framework">
-<TwoColumn>
-<article>
-<span className="item-index">01 / 접근성</span>
-
-### Accessibility
-
-- 서울·수도권 주요 생활권에서의 실제 차량 이동시간
-- 고속도로·IC 접근성과 마지막 진입도로 상태
-- 계절에 관계없이 차량 접근이 가능한지
-- 친구들이 정기적으로 방문하기 현실적인 위치인지
-
-<p className="framework-question">좋아 보여도 자주 갈 수 없는 위치라면 의미가 있는가?</p>
-
-</article>
-<article>
-<span className="item-index">02 / 건축 가능성</span>
-
-### Buildability
-
-- 지목·용도지역·건폐율·용적률
-- 단독주택 건축 가능 여부
-- 법정도로 접도 여부
-- 농지전용·산지전용 필요 여부
-
-<p className="framework-question">지목이 대지라고 해서 무조건 집을 지을 수 있는 것은 아니다.</p>
-
-<p className="presentation-note">계약 전에 반드시 실제 지번 기준으로 관할 지자체의 건축·허가 담당 부서에 건축 가능 여부를 확인합니다.</p>
-
-<p className="source-note">확인 자료: <a href="https://www.eum.go.kr/web/am/amMain.jsp">토지이음</a> · <a href="https://easylaw.go.kr/CSP/CnpClsMain.laf?ccfNo=2&amp;cciNo=1&amp;cnpClsNo=3&amp;csmSeq=2602&amp;popMenu=ov">생활법령 — 접도·건축선 기준</a></p>
-
-</article>
-<article>
-<span className="item-index">03 / 기반시설</span>
-
-### Infrastructure
-
-- 전기 공급과 실제 인입 가능성
-- 상수도 연결 또는 관정 가능 여부
-- 오수처리 방식과 시설 상태
-- 도로·인터넷·통신 연결 여건
-- 기반시설 인입거리와 추가 비용
-
-<p className="framework-question">시설의 존재보다, 실제 연결 가능성과 비용을 확인한다.</p>
-
-</article>
-<article>
-<span className="item-index">04 / 토지의 상태</span>
-
-### Land Quality
-
-- 토지 형상·경사도·평탄화 필요성
-- 방향과 일조 조건
-- 배수 상태와 침수 가능성
-- 옹벽 또는 대규모 토목공사 필요 여부
-
-<p className="framework-question">같은 400평이라도 실제 사용할 수 있는 면적은 크게 다를 수 있다.</p>
-
-</article>
-<article>
-<span className="item-index">05 / 주변 환경</span>
-
-### Surroundings
-
-- 축사·공장·고압선 등 주변 시설
-- 도로 소음과 냄새
-- 현장에서 느끼는 경관
-- 주변 개발계획과 향후 환경 변화 가능성
-
-<p className="framework-question">지도에서 좋아 보이는 것과 현장에서 느끼는 환경은 다를 수 있다.</p>
-
-</article>
-<article>
-<span className="item-index">06 / 전체 비용</span>
-
-### Economics
-
-- 토지가격·취득 관련 비용
-- 토목공사·기반시설 인입·철거비
-- 설계비·건축비·조경
-- 장기 보유에 필요한 유지관리비
-
-<p className="framework-question">토지 매입부터 건축과 유지관리까지, 전체 비용을 본다.</p>
-
-</article>
-</TwoColumn>
-</div>
-
-<div className="cost-callout">
-<p className="eyebrow">TOTAL PROJECT COST</p>
-<p className="cost-equation"><span>Land Price</span><span>≠</span><span>Project Cost</span></p>
-<p>토지가격이 낮아도, 토목·기반시설·건축비까지 더하면 전체 비용은 달라집니다.</p>
-</div>
-
-</Slide>
-
-<Slide id="existing-house" number="05" label="Special case — Existing house" tone="soft">
-
-<SectionTitle
-  title="기존 주택이 있는 토지라면."
-  description="오래된 농가주택을 임시 활용하거나 철거 후 새로 짓는 안도 검토할 수 있습니다. 기존 시설의 장점과 철거·재건축 조건을 따로 확인합니다."
-/>
+<SectionTitle title="좋아 보여도, 자주 갈 수 없다면?" description="지도상의 거리보다 각자의 생활권에서 실제로 걸리는 시간이 중요합니다." />
 
 <TwoColumn>
-<div>
-<span className="item-index">POTENTIAL ADVANTAGE</span>
-
-### 활용 가능한 기반
-
-- 이미 대지로 사용 중일 가능성
-- 전기·수도 등 기반시설 존재 가능
-- 진입도로가 확보되어 있을 가능성
-- 기존 주택을 임시 활용할 가능성
-
+<div className="deck-visual">
+<ImageBlock src="/images/2026-q4/accessibility.svg" alt="01 출발지, 02 고속도로와 IC, 03 마지막 진입도로로 이어지는 이동 경로 개념도" width={720} height={440} caption="01 생활권 → 02 고속도로·IC → 03 실제 필지" />
+<div className="travel-bands"><span>1시간대</span><span>2시간대</span><span>3시간대</span></div>
+<p className="source-note">시간대는 토론용 구분입니다. 실제 등시간 지도나 후보지의 소요시간을 뜻하지 않습니다.</p>
 </div>
-<div>
-<span className="item-index">POTENTIAL RISK</span>
+<div className="deck-copy">
 
-### 별도로 확인할 조건
+### 마지막 몇 km까지 확인
 
-- 건축물대장과 실제 건물의 불일치
-- 불법 증축 여부
-- 철거 비용과 슬레이트·석면 처리
-- 철거 후 동일 규모 재건축이 불가능할 가능성
-- 오래된 정화조·기반시설의 교체 필요성
+- 서울·수도권 주요 거점에서의 실제 차량 이동시간
+- 주말 정체를 포함한 고속도로·IC 접근성
+- 마지막 진입도로의 폭·포장·교행 여건
+- 비·눈·겨울철에도 접근 가능한지
+- 정기적으로 오가고 관리할 수 있는 거리인지
+
+<p className="deck-takeaway">출발지가 다른 10명에게, 감당 가능한 거리가 어디까지인지 먼저 묻습니다.</p>
 
 </div>
 </TwoColumn>
 
-<blockquote className="key-message">“집이 있는 땅”이 반드시<br />“새 집을 지을 수 있는 땅”은 아니다.</blockquote>
-
-<p className="presentation-note">현재 건물의 적법성, 임시 사용 가능 여부와 철거 후 건축 조건을 각각 확인합니다. 서류와 현장을 대조한 뒤 관할 지자체에 문의합니다.</p>
-<p className="source-note">참고: <a href="https://m.easylaw.go.kr/MOB/CsmInfoRetrieve.laf?ccfNo=3&amp;cciNo=1&amp;cnpClsNo=4&amp;csmSeq=649">생활법령 — 토지이용계획과 현장 확인</a></p>
-
 </Slide>
 
-<Slide id="ownership" number="06" label="The biggest risk — 10 owners">
+<Slide id="buildability" number="06" label="건축 가능성" tone="soft">
 
-<SectionTitle
-  title="10명의 공동 프로젝트에서 가장 어려운 것은 토지가 아니라 의사결정일 수 있다."
-  description="장기간 함께 보유하려면, 상황이 바뀌어도 적용할 수 있는 약속이 필요합니다. 이번 Q4에서는 해결책을 확정하지 않고 논의할 문제부터 정의합니다."
-/>
+<SectionTitle title="대지처럼 보여도, 바로 집을 지을 수는 없습니다." description="지목 하나가 아니라 용도·접도·규제·인허가 조건을 함께 확인합니다." />
 
-<div className="ownership-grid">
-<article>
-
-### 지분과 자금
-
-- 지분 구조
-- 초기 출자금
-- 추가 출자 발생 시 처리
-
-</article>
-<article>
-
-### 이용과 관리
-
-- 유지관리비 분담
-- 이용 일정과 사용 규칙
-- 장기간 참여하지 않는 사람 처리
-
-</article>
-<article>
-
-### 참여와 승계
-
-- 한 명이 나가고 싶을 때
-- 지분 양도
-- 상속 발생 시 처리
-
-</article>
-<article>
-
-### 결정과 분쟁
-
-- 중요한 의사결정 방식
-- 매각 결정
-- 분쟁 발생 시 해결 방식
-
-</article>
+<TwoColumn>
+<div className="deck-copy">
+<dl className="deck-checks">
+<div><dt>토지의 기본 정보</dt><dd>지목 · 용도지역 · 토지이용계획</dd></div>
+<div><dt>건축의 규모와 용도</dt><dd>건폐율 · 용적률 · 단독주택 건축 가능 여부</dd></div>
+<div><dt>진입과 접도</dt><dd>건축법상 도로와 접도 요건 · 통행 권리</dd></div>
+<div><dt>전용·추가 인허가</dt><dd>농지전용 · 산지전용 필요 여부와 비용</dd></div>
+</dl>
+<p className="deck-takeaway">계약 전, 실제 지번과 계획한 주택을 기준으로 관할 지자체에 확인합니다.</p>
 </div>
-
-<blockquote className="key-message">향후 토지 계약 전에,<br />공동소유 및 운영규칙을 별도로 합의해야 합니다.</blockquote>
-
-</Slide>
-
-<Slide id="checklist" number="07" label="Land screening checklist" tone="soft">
-
-<SectionTitle
-  title="다음 매물도, 같은 목록으로."
-  description="후보 토지마다 아래 항목을 확인합니다. 각 항목의 확인 근거·확인일·추가 비용을 함께 정리하고, 미확인 사항은 별도로 남깁니다."
-/>
-
-<Checklist groups={[
-  { title: "Accessibility", items: ["수도권 접근시간", "IC 접근성", "진입도로"] },
-  { title: "Legal", items: ["지목", "용도지역", "건폐율 / 용적률", "건축 가능 여부", "법정도로"] },
-  { title: "Infrastructure", items: ["전기", "수도 / 관정", "오수", "인터넷"] },
-  { title: "Land", items: ["면적", "형상", "경사", "방향", "일조", "배수 / 침수"] },
-  { title: "Environment", items: ["축사", "공장", "고압선", "소음", "냄새", "경관"] },
-  { title: "Cost", items: ["토지가격", "토목비", "기반시설비", "철거비", "예상 건축비"] },
-  { title: "Rights", items: ["소유권", "근저당", "지상권", "통행권", "기타 권리관계"] },
-]} />
-
-<p className="presentation-note">위 목록은 1차 검토 기준입니다. 통과한 후보도 현장 답사와 지자체·관련 기관의 공식 확인을 거쳐 판단합니다.</p>
+<div className="deck-visual">
+<ImageBlock src="/images/2026-q4/buildability.svg" alt="도로에 접한 필지의 배치도와 건축 조건 확인 서류를 대조하는 그림" width={720} height={440} caption="지도·서류·현장·관할 부서의 답변을 함께 대조" />
+<p className="source-note">출발 자료: <a href="https://www.eum.go.kr/web/am/amMain.jsp">토지이음</a> · <a href="https://easylaw.go.kr/CSP/CnpClsMain.laf?ccfNo=2&amp;cciNo=1&amp;cnpClsNo=3&amp;csmSeq=2602&amp;popMenu=ov">생활법령: 접도·건축선</a>. 온라인 조회만으로 건축 가능성을 확정하지 않습니다.</p>
+</div>
+</TwoColumn>
 
 </Slide>
 
-<Slide id="next-step" number="08" label="Next step" tone="accent">
+<Slide id="infrastructure" number="07" label="인프라">
 
-<SectionTitle title="2026 Q4 이후, 다음으로 할 일." description="합의한 기준을 실제 조사와 검토로 이어갑니다." />
+<SectionTitle title="시설이 ‘있다’보다, 우리 땅에 연결할 수 있는가." description="공급 지점에서 필지까지의 거리와 공사 조건이 추가 비용을 만듭니다." />
 
-<ol className="action-list">
-<li>평가 기준 합의</li>
-<li>후보지역 범위 설정</li>
-<li>후보지역별 가격 수준 조사</li>
-<li>실제 매물 Screening</li>
-<li>상위 후보 현장 답사</li>
-<li>지자체 / 관련 기관 공식 확인</li>
-<li>공동소유 구조 및 운영규칙 논의</li>
+<TwoColumn>
+<div className="deck-visual">
+<ImageBlock src="/images/2026-q4/infrastructure.svg" alt="외부 공급망에서 필지로 전기, 물, 오수, 통신이 연결되고 도로로 접근하는 개념도" width={720} height={440} caption="공급망 → 인입 경로·권리 → 실제 연결 → 공사비" />
+<div className="deck-distance"><span>가까운 공급 지점</span><span aria-hidden="true">→</span><span>긴 인입·추가 공사</span></div>
+</div>
+<div className="deck-copy">
+
+### 연결 가능성 + 거리 + 비용
+
+- 전기: 공급 여력·인입 위치·시설부담금과 구내 공사
+- 물: 상수도 연결 또는 관정의 허가·수량·수질
+- 오수: 공공하수도 연결 또는 적법한 개인하수처리
+- 도로: 포장·배수·공사 차량 진입과 통행 권리
+- 통신: 인터넷 설치 가능 여부와 실제 품질
+
+<p className="deck-takeaway">전기·수도·오수가 멀면, 저렴한 땅의 장점이 사라질 수 있습니다.</p>
+<p className="presentation-note">공급기관과 현장 업체에 같은 필지·같은 이용 규모로 연결 조건과 견적을 요청합니다.</p>
+
+</div>
+</TwoColumn>
+
+</Slide>
+
+<Slide id="land-quality" number="08" label="토지 상태" tone="soft">
+
+<SectionTitle title="같은 200평, 전혀 다른 사용 면적." description="경계 안의 숫자보다 건물·모임·주차·진입에 쓸 수 있는 공간을 봅니다." />
+
+<TwoColumn>
+<div className="deck-copy">
+<dl className="deck-checks">
+<div><dt>형상과 경사</dt><dd>배치가 가능한가 · 평탄화·옹벽이 필요한가</dd></div>
+<div><dt>방향과 일조</dt><dd>계절별 햇빛 · 주변 산과 건물의 그늘</dd></div>
+<div><dt>배수와 침수</dt><dd>빗물의 흐름 · 물이 고인 흔적 · 재해 이력</dd></div>
+<div><dt>실제 활용 면적</dt><dd>진입로·경사면·설비 공간을 뺀 사용 가능한 면적</dd></div>
+</dl>
+<p className="deck-takeaway">면적을 넓히기 위한 토목이, 오히려 전체 비용을 키울 수 있습니다.</p>
+</div>
+<div className="deck-visual">
+<ImageBlock src="/images/2026-q4/terrain.svg" alt="평탄한 땅은 넓은 활용 구간이 있고 경사진 땅은 작은 평탄 구간과 추가 정비가 필요한 비교 단면도" width={720} height={440} caption="좌: 비교적 평탄한 땅 / 우: 경사·정비가 필요한 땅. 면적·경사 수치는 실제 측량값이 아닙니다." />
+<p className="presentation-note">맑은 날의 경관뿐 아니라 비 온 뒤의 배수, 겨울철 일조도 확인합니다.</p>
+</div>
+</TwoColumn>
+
+</Slide>
+
+<Slide id="surroundings" number="09" label="주변 환경">
+
+<SectionTitle title="지도 밖의 조건이, 머무는 경험을 바꿉니다." description="현장에서 느끼는 소음·냄새·경관은 지도만으로 알기 어렵습니다." />
+
+<TwoColumn>
+<div className="deck-visual">
+<ImageBlock src="/images/2026-q4/surroundings.svg" alt="필지 주변의 산과 경관, 공장, 도로 소음과 송전시설을 함께 표시한 환경 개념도" width={720} height={440} caption="필지 안의 풍경과 필지 밖의 영향을 함께 확인" />
+</div>
+<div className="deck-copy">
+<dl className="deck-checks">
+<div><dt>인접 시설</dt><dd>축사 · 공장 · 고압선 · 주요 도로</dd></div>
+<div><dt>체감 환경</dt><dd>바람에 따른 냄새 · 시간대별 소음 · 경관</dd></div>
+<div><dt>앞으로의 변화</dt><dd>주변 개발계획 · 인근 공사 · 조망 변화 가능성</dd></div>
+</dl>
+<p className="deck-takeaway">좋아 보이는 지도 한 장보다, 조건을 달리한 현장 방문이 필요합니다.</p>
+<p className="presentation-note">평일·주말, 낮·저녁을 나눠 보고 인근 주민의 설명과 공개된 계획을 대조합니다.</p>
+</div>
+</TwoColumn>
+
+</Slide>
+
+<Slide id="total-cost" number="10" label="전체 비용" tone="soft">
+
+<SectionTitle title="3억짜리 땅이, 3억짜리 프로젝트는 아닙니다." />
+<p className="deck-equation">Land Price <span>≠</span> Project Cost</p>
+
+<TwoColumn>
+<div className="deck-visual">
+<ImageBlock src="/images/2026-q4/cost-layers.svg" alt="토지대금, 취득과 조성, 설계와 건축, 장기 운영의 네 층으로 이어지는 비용 구조" width={720} height={440} caption="비용 항목의 구조도입니다. 도형의 크기는 금액·비중을 나타내지 않습니다." />
+</div>
+<div className="deck-copy">
+<ol className="cost-stages">
+<li><span>01</span><div><h3>토지대금</h3><p>매매가격 · 현재 검토 상한 3억 원</p></div></li>
+<li><span>02</span><div><h3>취득과 대지 조성</h3><p>취득 관련 비용 · 토목 · 인프라 인입 · 철거(필요 시)</p></div></li>
+<li><span>03</span><div><h3>설계와 건축</h3><p>설계 · 인허가 · 감리 · 건물 본체 · 조경 · 집기</p></div></li>
+<li><span>04</span><div><h3>장기 보유와 운영</h3><p>세금 · 정기 점검 · 수선 · 관리비 · 예비비</p></div></li>
 </ol>
+</div>
+</TwoColumn>
 
-<blockquote className="closing-message">좋은 땅을 찾기 전에,<br />좋은 기준부터 만든다.</blockquote>
+<p className="deck-takeaway">단계적으로 추진하되, 다음 단계에 필요한 비용까지 보고 토지를 고릅니다.</p>
 
-<a href="#cover" className="text-link">처음으로 돌아가기 <span aria-hidden="true">↑</span></a>
+<details className="deck-sources">
+<summary>계획용 비용 범위와 확인 자료</summary>
+<div>
+<p><strong>토지:</strong> 200평·3억 원은 조사 조건입니다. 수도권 인접 지역에서 이 조건을 만족하는 건축 가능 토지가 있다는 보장이 아닙니다. 후보 지역의 <a href="https://rt.molit.go.kr/">국토교통부 실거래가</a>와 실제 매물을 대조합니다.</p>
+<p><strong>토목·인프라:</strong> 약 0.3–1억 원+는 필지 미정 단계의 예비 가정입니다. 완만한 토지·가까운 공급망과 대규모 옹벽·장거리 인입은 같은 범위로 견적 낼 수 없습니다. 전국 평균이나 상한으로 사용하지 않습니다.</p>
+<p><strong>본체공사:</strong> 연면적 30–40평·일반 사양에 약 2.5–4.5억 원+를 계획 여유로 둡니다. 건축사 사무소의 <a href="https://chiho.co.kr/blogroom/no-title-7a637e">공사비와 총사업비 구분 자료</a>를 참고해 잡은 기획 범위이며 개별 공사의 견적은 아닙니다.</p>
+<p>상하수도·정화조 등 별도 비용의 편차는 <a href="https://isanggroup.com/ko/country-homes">지역 주택사업자의 항목별 안내</a>도 참고했습니다. 설계·인허가·감리·조경·가구·세금은 본체공사 범위와 별도로 확인하고, 부가세와 외부 공사의 포함 여부를 견적서에 명시합니다.</p>
+<p>확인 기준: 2026.10.23. 2030·2035년 비용을 보장하지 않습니다. 토지 계약 전·설계 전·착공 전에 각각 다시 견적을 받습니다.</p>
+</div>
+</details>
 
 </Slide>
 
-<Slide id="poll" number="09" label="Your priority">
+<Slide id="existing-house" number="11" label="특수 사례 · 기존 건축물이 있는 토지">
 
-<Poll pollId="land-priority" />
+<SectionTitle title="집이 있는 땅, 새 집을 짓기 쉬운 땅일까요?" description="기존 시설을 활용할 기회와 철거·신축의 조건을 분리해서 봅니다." />
+
+<div className="deck-house-visual">
+<ImageBlock src="/images/2026-q4/existing-house.svg" alt="낡은 시골주택의 실제 상태와 건축물대장 기록을 대조하는 그림" width={640} height={280} />
+</div>
+<TwoColumn>
+<div className="deck-case">
+<span className="item-index">기대할 수 있는 이점</span>
+
+### 이미 갖춰진 기반
+
+- 대지로 사용 중일 가능성
+- 전기·수도 등 기존 인프라
+- 확보된 진입도로의 활용 가능성
+- 적법하고 안전하다면 기존 건물의 임시 이용
+
+</div>
+<div className="deck-case">
+<span className="item-index">별도로 확인할 위험</span>
+
+### 기존 상태와 새로운 허가
+
+- 건축물대장 불일치 · 불법 증축
+- 철거비 · 슬레이트·석면 조사와 처리
+- 철거 후 같은 규모·배치로 신축하지 못할 가능성
+- 노후 정화조·배관·전기 교체
+
+</div>
+</TwoColumn>
+
+<blockquote className="key-message">기존 집의 존재가, 새 집의 건축 가능성을 보장하지는 않습니다.</blockquote>
+<p className="source-note">합법성·안전성·도로 권리·철거 후 신축 조건을 각각 확인합니다. <a href="https://law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&amp;lsJoLnkSeq=1000716203">건축법 시행령의 신축·개축 등 정의</a>와 관할 지자체의 실제 적용 조건을 함께 확인합니다.</p>
 
 </Slide>
 
-<Slide id="comments" number="10" label="Discussion" tone="soft">
+<Slide id="preferences" number="12" label="성향 파악 · 10점 배분" tone="soft">
 
-<SectionTitle
-  title="의견 남기기"
-  description="후보 지역, 예산, 토지 조건 등 프로젝트에 대한 의견을 자유롭게 남겨주세요."
-/>
+<SectionTitle title="좋은 땅의 정의, 먼저 서로에게 묻습니다." description="네 가지 항목에 총 10점. 더 중요하게 생각하는 조건에 더 많은 점수를 둡니다." />
 
+<div className="score-rule"><strong>총 10점</strong><span>항목별 최소 1점 · 최대 4점</span><span>네 항목의 합 = 10</span></div>
+
+<ScoreGuide factors={[
+  { title: "접근성", image: "/images/2026-q4/accessibility.svg", alt: "출발지에서 필지로 연결되는 도로와 거리", levels: ["2시간 이상도 괜찮음", "1시간 30분–2시간 허용", "1시간대 선호", "1시간 내외를 강하게 선호"] },
+  { title: "토지 면적", image: "/images/2026-q4/land-area.svg", alt: "작은 필지와 여유 있는 넓은 필지의 비교", levels: ["작은 땅도 괜찮음", "150평 내외도 허용", "200평 이상 선호", "여유 있는 넓은 땅을 강하게 선호"] },
+  { title: "토지 상태", image: "/images/2026-q4/terrain.svg", alt: "평탄한 땅과 정비가 필요한 경사지의 비교", levels: ["정비가 다소 필요해도 괜찮음", "약간의 경사·정비는 허용", "비교적 평탄한 땅 선호", "바로 쓰기 좋은 상태를 강하게 선호"] },
+  { title: "주변 환경", image: "/images/2026-q4/surroundings.svg", alt: "주변 경관과 인접 시설, 소음의 영향", levels: ["주변의 일부 아쉬움은 감수", "기본적인 조용함이면 충분", "경관과 쾌적함이 중요", "조용함과 좋은 뷰를 강하게 선호"] },
+]} />
+
+<div className="score-example"><span className="item-index">배분 예시</span><p><strong>4</strong> 접근성 <span>+</span> <strong>2</strong> 면적 <span>+</span> <strong>2</strong> 상태 <span>+</span> <strong>2</strong> 환경 <span>=</span> <strong>10점</strong></p></div>
+<p className="presentation-note">이동시간은 공통 출발지·교통 조건을 정해 비교합니다. 점수는 선호를 드러내는 도구이며 법적 건축 요건·안전 기준을 낮추는 점수가 아닙니다. 이 장에서는 입력하거나 저장하지 않습니다.</p>
+<blockquote className="key-message">좋은 땅을 찾기 전에, 서로의 우선순위부터 이해합니다.</blockquote>
+
+</Slide>
+
+</div>
+
+<section id="comments" className="deck-comments" aria-labelledby="comments-heading">
+<div className="site-container">
+<h2 id="comments-heading" className="section-title">의견 남기기</h2>
+<p className="section-description">후보 지역, 예산, 토지 조건 등 프로젝트에 대한 의견을 자유롭게 남겨주세요.</p>
 <CommentSection quarter="2026-q4" />
-
-</Slide>
+</div>
+</section>
 
 </Presentation>

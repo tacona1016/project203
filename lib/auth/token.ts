@@ -6,15 +6,15 @@ const TOKEN_VERSION = "v1";
 type SessionPayload = { authorized: true; issuedAt: number; expiresAt: number };
 
 // Node's standard HMAC-SHA256 authenticates the payload; no password is stored in it.
-export function signSession(secret: string, now = Math.floor(Date.now() / 1000)) {
+export function signSession(secret: string, now = Math.floor(Date.now() / 1000), duration = SESSION_DURATION) {
   if (Buffer.byteLength(secret) < 32) throw new Error("Session configuration unavailable.");
-  const payload: SessionPayload = { authorized: true, issuedAt: now, expiresAt: now + SESSION_DURATION };
+  const payload: SessionPayload = { authorized: true, issuedAt: now, expiresAt: now + duration };
   const body = `${TOKEN_VERSION}.${Buffer.from(JSON.stringify(payload)).toString("base64url")}`;
   const signature = createHmac("sha256", secret).update(body).digest("base64url");
   return { token: `${body}.${signature}`, expiresAt: payload.expiresAt };
 }
 
-export function verifySession(token: string | undefined, secret: string, now = Math.floor(Date.now() / 1000)): SessionPayload | null {
+export function verifySession(token: string | undefined, secret: string, now = Math.floor(Date.now() / 1000), duration = SESSION_DURATION): SessionPayload | null {
   if (!token || token.length > 1024 || Buffer.byteLength(secret) < 32) return null;
   const parts = token.split(".");
   if (parts.length !== 3 || parts[0] !== TOKEN_VERSION || !/^[A-Za-z0-9_-]+$/.test(parts[1]) || !/^[A-Za-z0-9_-]{43}$/.test(parts[2])) return null;
@@ -24,7 +24,7 @@ export function verifySession(token: string | undefined, secret: string, now = M
   try {
     const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
     if (payload?.authorized !== true || !Number.isSafeInteger(payload.issuedAt) || !Number.isSafeInteger(payload.expiresAt)
-      || payload.issuedAt > now || payload.expiresAt <= now || payload.expiresAt - payload.issuedAt !== SESSION_DURATION) return null;
+      || payload.issuedAt > now || payload.expiresAt <= now || payload.expiresAt - payload.issuedAt !== duration) return null;
     return { authorized: true, issuedAt: payload.issuedAt, expiresAt: payload.expiresAt };
   } catch {
     return null;

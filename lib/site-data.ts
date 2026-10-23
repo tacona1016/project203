@@ -1,7 +1,7 @@
 import "server-only";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { HttpError, requireApiSession } from "@/lib/auth/http";
-import { quarters } from "@/data/quarters";
+import { findQuarter } from "@/data/quarters";
 
 export async function protectedClient() {
   await requireApiSession();
@@ -16,6 +16,6 @@ export function pollSlug(value: unknown): string {
 }
 
 export function quarterSlug(value: unknown): string {
-  if (typeof value !== "string" || !quarters.some((quarter) => quarter.slug === value)) throw new HttpError(400, "분기 정보를 확인해주세요.");
+  if (typeof value !== "string" || !findQuarter(value)) throw new HttpError(400, "분기 정보를 확인해주세요.");
   return value;
 }

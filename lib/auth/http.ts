@@ -23,7 +23,7 @@ export function requireSameOrigin(request: Request) {
   }
 }
 
-export async function readJson(request: Request) {
+export async function readJson(request: Request, maximumBytes = 16_384) {
   if (!request.headers.get("content-type")?.startsWith("application/json")) throw new HttpError(400, "입력 내용을 확인해주세요.");
   // Bound the body while reading, including requests without Content-Length.
   const reader = request.body?.getReader();
@@ -35,7 +35,7 @@ export async function readJson(request: Request) {
       const { done, value } = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > 16_384) { await reader.cancel(); throw new HttpError(413, "입력 내용이 너무 깁니다."); }
+      if (length > maximumBytes) { await reader.cancel(); throw new HttpError(413, "입력 내용이 너무 깁니다."); }
       chunks.push(value);
     }
     const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));

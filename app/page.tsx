@@ -1,16 +1,16 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { ActivePollSummary } from "@/components/polls/PollCatalog";
 import { Arrow } from "@/components/Arrow";
 import { QuarterCover } from "@/components/QuarterCover";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getSortedQuarters } from "@/data/quarters";
+import { getCurrentQuarter } from "@/data/quarters";
 import { requireAccessSession } from "@/lib/auth/session";
 
 export default async function HomePage() {
   await requireAccessSession("/");
-  const quarters = getSortedQuarters();
-  const current = quarters[0];
-  const years = [...new Set(quarters.map((quarter) => quarter.year))].sort((a, b) => b - a);
+  const current = getCurrentQuarter();
 
   return (
     <>
@@ -23,7 +23,7 @@ export default async function HomePage() {
           </div>
           <h1 id="site-title" className="home-title">203 PROJECT<span className="text-accent">.</span></h1>
           <div className="mt-6 flex flex-wrap items-start justify-between gap-5">
-            <p className="max-w-md text-base leading-8 text-muted sm:text-lg">지나온 과정을 기록하고, 앞으로의 방향을 그립니다.</p>
+            <p className="max-w-md text-base leading-8 text-muted sm:text-lg">친구들이 함께 자금을 모으고, 토지와 공간을 준비하는 장기 공동 프로젝트.</p>
             <span className="eyebrow mt-1 text-muted">RECORD. REFLECT. MOVE FORWARD.</span>
           </div>
         </section>
@@ -31,7 +31,7 @@ export default async function HomePage() {
         <section aria-labelledby="current-title" className="pb-20 sm:pb-28">
           <div className="mb-7 flex items-center gap-3">
             <span className="h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
-            <h2 id="current-title" className="eyebrow">Current</h2>
+            <h2 id="current-title" className="eyebrow">Latest Presentation</h2>
             <span className="text-xs text-muted">가장 최근의 이야기</span>
           </div>
           {current ? (
@@ -53,34 +53,10 @@ export default async function HomePage() {
           )}
         </section>
 
-        <section id="archive" aria-labelledby="archive-title" className="archive-section">
-          <div className="mb-10 flex flex-wrap items-end justify-between gap-4 sm:mb-12">
-            <div>
-              <p className="eyebrow mb-3 text-muted">THE COLLECTION</p>
-              <h2 id="archive-title" className="text-4xl font-medium tracking-[-0.04em] sm:text-5xl">Archive<span className="ml-3 align-top text-sm tracking-normal text-muted">{String(quarters.length).padStart(2, "0")}</span></h2>
-            </div>
-            <p className="text-sm text-muted">분기마다 쌓이는 우리의 기록.</p>
-          </div>
-          {years.map((year) => (
-            <div key={year} className="archive-year">
-              <h3 className="text-2xl font-medium tracking-tight">{year}</h3>
-              <ul className="min-w-0">
-                {quarters.filter((quarter) => quarter.year === year).map((quarter) => (
-                  <li key={quarter.slug}>
-                    <Link href={`/quarter/${quarter.slug}`} className="archive-link group" aria-label={`${quarter.year} Q${quarter.quarter} ${quarter.title}`}>
-                      <span className="text-xl font-medium">Q{quarter.quarter}</span>
-                      <span className="archive-description">
-                        <span className="block text-sm font-medium sm:text-base">{quarter.title}</span>
-                        <time dateTime={quarter.publishedAt} className="mt-1 block text-xs text-muted sm:hidden">{quarter.publishedAt.replaceAll("-", ".")}</time>
-                      </span>
-                      <time dateTime={quarter.publishedAt} className="hidden text-xs text-muted sm:block">{quarter.publishedAt.replaceAll("-", ".")}</time>
-                      <Arrow direction="up-right" className="text-muted group-hover:text-accent" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <section aria-labelledby="active-polls-title" className="pb-24">
+          <p className="eyebrow mb-4 text-accent">ACTIVE POLLS</p>
+          <h2 id="active-polls-title" className="mb-8 text-3xl font-medium tracking-tight sm:text-4xl">지금 함께 정할 것들.</h2>
+          <Suspense fallback={<p className="interaction-notice" role="status">투표를 불러오는 중...</p>}><ActivePollSummary /></Suspense>
         </section>
       </main>
       <SiteFooter />
