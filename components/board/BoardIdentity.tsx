@@ -24,8 +24,11 @@ export function BoardIdentity() {
   const id = useId(), router = useRouter();
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (pending) return;
+    // Read the actual input, including autofill that did not fire onChange.
+    const submittedPassword = new FormData(event.currentTarget).get("password");
+    if (typeof submittedPassword !== "string" || !submittedPassword) return;
     setPending(true); setFailure("");
-    try { await boardRequest("/api/board/session", "POST", { password }); setPassword(""); await refresh(); router.refresh(); }
+    try { await boardRequest("/api/board/session", "POST", { password: submittedPassword }); setPassword(""); await refresh(); router.refresh(); }
     catch (error) { setFailure((error as Error).message); }
     finally { setPending(false); }
   }
@@ -37,9 +40,9 @@ export function BoardIdentity() {
             : <><p><strong>{participant.display_name}</strong> 이름으로 글을 쓰려면 게시판 개인 비밀번호를 확인해주세요.</p>
               <form onSubmit={submit} method="post" className="board-identity-form" aria-busy={pending}>
                 <label htmlFor={id}>게시판 개인 비밀번호</label>
-                <input id={id} type="password" autoComplete="current-password" value={password} onChange={(event) => { setPassword(event.target.value); setFailure(""); }} required maxLength={1024} placeholder="개인 비밀번호" disabled={pending}
+                <input id={id} name="password" type="password" autoComplete="section-board current-password" value={password} onChange={(event) => { setPassword(event.target.value); setFailure(""); }} required maxLength={1024} placeholder="개인 비밀번호" disabled={pending}
                   aria-describedby={!viewer.configured ? `${id}-configuration` : undefined} />
-                <button type="submit" className="interaction-button" disabled={pending || !password}>{pending ? "확인 중..." : "본인 확인"}</button>
+                <button type="submit" className="interaction-button" disabled={pending}>{pending ? "확인 중..." : "본인 확인"}</button>
               </form>
               {!viewer.configured && <p id={`${id}-configuration`} className="form-note mt-3" role="status">{configurationMessages[viewer.configurationIssue ?? "not_configured"]} 게시글과 댓글은 그대로 읽을 수 있습니다.</p>}
             </>}

@@ -11,12 +11,15 @@ export function AccessForm({ returnTo, configured, endpoint = "/api/access", adm
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
+    // Autofill/password managers can update the DOM without updating React state.
+    const submittedPassword = new FormData(event.currentTarget).get("password");
+    if (typeof submittedPassword !== "string" || !submittedPassword) return;
     setPending(true);
     setError("");
     try {
       const response = await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, next: returnTo }), credentials: "same-origin", cache: "no-store",
+        body: JSON.stringify({ password: submittedPassword, next: returnTo }), credentials: "same-origin", cache: "no-store",
       });
       const result = await response.json();
       setPassword("");
@@ -28,13 +31,13 @@ export function AccessForm({ returnTo, configured, endpoint = "/api/access", adm
   }
 
   return (
-    <form onSubmit={submit} className="mt-10" aria-busy={pending}>
+    <form onSubmit={submit} method="post" className="mt-10" aria-busy={pending}>
       <label htmlFor={id} className="mb-3 block text-sm">{admin ? "관리자 비밀번호" : "공용 비밀번호"}</label>
       <input id={id} type="password" name="password" value={password} required maxLength={1024}
-        autoComplete="current-password" className="access-input" disabled={pending || !configured}
+        autoComplete={`${admin ? "section-admin" : "section-site"} current-password`} className="access-input" disabled={pending || !configured}
         aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}
         onChange={(event) => setPassword(event.target.value)} />
-      <button type="submit" className="interaction-button mt-5 w-full" disabled={pending || !configured || !password}>
+      <button type="submit" className="interaction-button mt-5 w-full" disabled={pending || !configured}>
         {pending ? "확인 중..." : "입장하기"}
       </button>
       {!configured && <p className="form-note mt-5" role="status">접근 설정을 준비하고 있습니다. 잠시 후 다시 방문해주세요.</p>}
