@@ -1,4 +1,4 @@
-export type CredentialIssue = "not_configured" | "invalid_json" | "missing_participant" | "invalid_length";
+export type CredentialIssue = "not_configured" | "invalid_json" | "missing_participant" | "empty_password";
 
 // Server callers must never serialize the mapping or a configured password.
 export function credentialIssue(raw: string | undefined, participantId: string): CredentialIssue | null {
@@ -8,7 +8,7 @@ export function credentialIssue(raw: string | undefined, participantId: string):
     if (!entries || typeof entries !== "object" || Array.isArray(entries)) return "invalid_json";
     const value = Object.hasOwn(entries, participantId) ? (entries as Record<string, unknown>)[participantId] : undefined;
     if (typeof value !== "string") return "missing_participant";
-    if (value.length < 10 || value.length > 1024 || !value.trim()) return "invalid_length";
+    if (value.length === 0) return "empty_password";
     return null;
   } catch { return "invalid_json"; }
 }

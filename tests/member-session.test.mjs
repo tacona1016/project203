@@ -39,7 +39,7 @@ test("shared passwords are accepted but sessions remain bound to the authenticat
 
 test("password rotation/removal and malformed settings revoke existing member sessions", () => {
   const token = createMemberToken(secret, a, password, now).token;
-  for (const raw of [undefined, "invalid-json", "[]", "null", "{}", JSON.stringify({ [a]: "short" }), JSON.stringify({ [a]: password + "changed" })]) {
+  for (const raw of [undefined, "invalid-json", "[]", "null", "{}", JSON.stringify({ [a]: "" }), JSON.stringify({ [a]: password + "changed" })]) {
     assert.equal(verifyMemberToken(token, secret, raw, now), null);
   }
   assert(verifyMemberToken(token, secret, JSON.stringify({ [a]: password, [b]: password + "changed" }), now));
@@ -53,7 +53,19 @@ test("credentials are exact strings including Unicode, quotes, special character
   assert.equal(passwordsMatch(exact.trim(), configuredMemberPassword(raw, a)), false);
   const token = createMemberToken(secret, a, exact, now).token;
   assert(verifyMemberToken(token, secret, raw, now));
-  for (const [value, issue] of [[undefined, "not_configured"], ["[]", "invalid_json"], ["{}", "missing_participant"], [JSON.stringify({ [a]: "short" }), "invalid_length"]]) assert.equal(credentialIssue(value, a), issue);
+  for (const [value, issue] of [[undefined, "not_configured"], ["[]", "invalid_json"], ["{}", "missing_participant"], [JSON.stringify({ [a]: "" }), "empty_password"]]) assert.equal(credentialIssue(value, a), issue);
+});
+
+test("any nonempty password works without minimum, maximum or character composition rules", () => {
+  for (const value of ["1", "1234", "a", "한", "!", " ", "  spaced  ", "x".repeat(2048)]) {
+    const raw = JSON.stringify({ [a]: value });
+    assert.equal(credentialIssue(raw, a), null);
+    assert.equal(passwordsMatch(value, configuredMemberPassword(raw, a)), true);
+    const token = createMemberToken(secret, a, value, now).token;
+    assert.equal(verifyMemberToken(token, secret, raw, now)?.participantId, a);
+    assert.equal(passwordsMatch(value + "wrong", value), false);
+  }
+  assert.equal(configuredMemberPassword(JSON.stringify({ [a]: "" }), a), null);
 });
 
 test("8-hour admin proof is bound to a specific member login, including re-login of the same member", () => {

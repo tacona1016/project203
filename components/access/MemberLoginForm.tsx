@@ -32,7 +32,7 @@ export function MemberLoginForm({ returnTo, members }: { returnTo: string; membe
     </select>
     <label htmlFor={`${id}-password`} className="mb-3 mt-6 block text-sm">개인 비밀번호</label>
     <input id={`${id}-password`} name="password" type="password" autoComplete="section-member current-password" className="access-input"
-      required maxLength={1024} disabled={!ready || pending || !members?.length} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />
+      required disabled={!ready || pending || !members?.length} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />
     <button type="submit" className="interaction-button mt-5 w-full" disabled={!ready || pending || !members?.length}>{pending ? "확인 중..." : "로그인"}</button>
     {!members?.length && <p role="status" className="form-note mt-5">이름 목록을 불러오지 못했습니다. 잠시 후 새로고침해주세요.</p>}
     {error && <p id={`${id}-error`} className="form-error mt-5" role="alert">{error}</p>}

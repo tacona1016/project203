@@ -14,7 +14,7 @@ async function adminSigningKey() {
 }
 const options = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };
 
-export function isAdminConfigured() { return !!process.env.ADMIN_PASSWORD?.trim() && Buffer.byteLength(process.env.SITE_SESSION_SECRET ?? "") >= 32; }
+export function isAdminConfigured() { return !!process.env.ADMIN_PASSWORD && Buffer.byteLength(process.env.SITE_SESSION_SECRET ?? "") >= 32; }
 export async function getAdminSession() {
   if (!isAdminConfigured() || !await getAccessSession()) return null;
   return verifySession((await cookies()).get(ADMIN_COOKIE)?.value, await adminSigningKey(), undefined, ADMIN_DURATION);

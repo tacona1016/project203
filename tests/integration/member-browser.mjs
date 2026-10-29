@@ -26,6 +26,7 @@ export async function runBrowser({ base, id, aPassword, bPassword }) {
   }
   async function login(page, person, password) {
     await page.wait("!!document.querySelector('select[name=participantId]')&&!document.querySelector('select[name=participantId]').disabled&&!document.querySelector('input[name=password]').disabled");
+    assert.equal(await page.evaluate("['minlength','maxlength','pattern'].some(name=>document.querySelector('input[name=password]').hasAttribute(name))"), false);
     // Password-manager-style DOM updates, deliberately without input events.
     await page.evaluate(`(()=>{document.querySelector('select[name=participantId]').value=${JSON.stringify(id(person))};const el=document.querySelector('input[name=password]');el.focus();el.value=${JSON.stringify(password)};})()`);
     await page.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, text: "\r" });

@@ -22,7 +22,7 @@ export async function authenticateMember(id: unknown, input: unknown) {
   try { member = (await getLoginMembers()).find((item) => item.id === id); }
   catch { console.warn("[member-auth] directory_unavailable"); return null; }
   const secretValid = Buffer.byteLength(process.env.SITE_SESSION_SECRET ?? "") >= 32;
-  if (!expected || !matches || !member || typeof input !== "string" || input.length > 1024 || !secretValid) {
+  if (!expected || !matches || !member || typeof input !== "string" || !secretValid) {
     // Never log submitted IDs, credentials, tokens or upstream errors.
     console.warn(`[member-auth] ${!secretValid ? "session_configuration" : issue ?? (!member ? "inactive_or_unknown_member" : "invalid_credentials")}`);
     return null;

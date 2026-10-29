@@ -33,7 +33,7 @@ export function AccessForm({ returnTo, configured, endpoint = "/api/admin/access
   return (
     <form onSubmit={submit} method="post" className="mt-10" aria-busy={pending}>
       <label htmlFor={id} className="mb-3 block text-sm">관리자 비밀번호</label>
-      <input id={id} type="password" name="password" value={password} required maxLength={1024}
+      <input id={id} type="password" name="password" value={password} required
         autoComplete={`${admin ? "section-admin" : "section-site"} current-password`} className="access-input" disabled={pending || !configured}
         aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}
         onChange={(event) => setPassword(event.target.value)} />

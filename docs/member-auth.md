@@ -6,7 +6,7 @@
 
 변경: `/access`에서 활성 회원 이름과 기존 개인 비밀번호 확인 → 사이트 전체 이용. 관리자 기능에는 ADMIN_PASSWORD 추가 확인이 필요합니다. 로그인 이름은 변경할 수 없으며 회원을 바꾸려면 로그아웃 후 해당 비밀번호로 로그인합니다.
 
-`BOARD_PARTICIPANT_PASSWORDS` 환경변수 이름과 UUID 매핑을 그대로 사용합니다. 서버는 비밀번호를 변형 없이 비교합니다. 회원 쿠키 `project203_member`는 UUID·고유 로그인 nonce·발급/만료 시각에 서명하며 30일 유지합니다. 서명 키는 기존 HMAC-SHA256에서 새로운 회원 인증 목적/버전과 해당 회원 비밀번호로 파생합니다. 비밀번호는 쿠키에 들어가지 않습니다.
+`BOARD_PARTICIPANT_PASSWORDS` 환경변수 이름과 UUID 매핑을 그대로 사용합니다. 서버는 비밀번호를 변형 없이 비교합니다. 빈 문자열만 거부하며 길이·문자 종류·조합 제한은 없습니다. 숫자만 있는 `1234`나 한 글자 비밀번호도 사용할 수 있습니다. 회원 쿠키 `project203_member`는 UUID·고유 로그인 nonce·발급/만료 시각에 서명하며 30일 유지합니다. 서명 키는 기존 HMAC-SHA256에서 새로운 회원 인증 목적/버전과 해당 회원 비밀번호로 파생합니다. 비밀번호는 쿠키에 들어가지 않습니다.
 
 예전 project203_access/project203_board/project203_participant_selection 쿠키와 localStorage는 새 로그인 증명이 아닙니다. 첫 개인 로그인은 반드시 다시 해야 합니다. 로그인·로그아웃 때 이전 쿠키도 만료합니다.
 
@@ -22,7 +22,7 @@
 
 투표·내 참여 조회·발표 댓글·게시판 작성자는 서버 세션에서 결정합니다. 예전 body/query의 participantId·authorId는 다른 회원 작업을 허용하지 않으며 작성 API는 허용 필드만 받습니다. 예전 이름 선택 POST 및 게시판 추가 인증 POST는 회원 로그인 후에도 410입니다.
 
-사용자 로그인 실패 문구는 동일합니다. 서버에는 `[member-auth] invalid_credentials`, `invalid_json`, `missing_participant`, `invalid_length`, `inactive_or_unknown_member`, `directory_unavailable`, `session_configuration` 등 원인 코드만 남깁니다. ID·비밀번호·토큰·환경변수 원문·DB 오류 원문을 로그에 넣지 않습니다.
+사용자 로그인 실패 문구는 동일합니다. 서버에는 `[member-auth] invalid_credentials`, `invalid_json`, `missing_participant`, `empty_password`, `inactive_or_unknown_member`, `directory_unavailable`, `session_configuration` 등 원인 코드만 남깁니다. ID·비밀번호·토큰·환경변수 원문·DB 오류 원문을 로그에 넣지 않습니다.
 
 ## 환경변수
 

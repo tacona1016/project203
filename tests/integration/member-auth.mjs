@@ -12,7 +12,7 @@ const production = process.argv.includes("--production");
 const id = n => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const secret = "fixture-only-member-signing-key-with-at-least-32-bytes";
 const aPassword = '  fixture-A-$!#"\\-password  ', bPassword = "fixture-B-distinct-password", shared = "fixture-shared-password";
-const mapping = { [id(1)]: aPassword, [id(2)]: bPassword, [id(3)]: shared, [id(4)]: shared, [id(5)]: "short" };
+const mapping = { [id(1)]: aPassword, [id(2)]: bPassword, [id(3)]: shared, [id(4)]: shared, [id(5)]: "1", [id(6)]: "", [id(8)]: "x".repeat(2048) };
 const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:3103", SUPABASE_SECRET_KEY: "fixture-only-backend-key",
   SITE_SESSION_SECRET: secret, BOARD_PARTICIPANT_PASSWORDS: JSON.stringify(mapping), ADMIN_PASSWORD: "fixture-only-admin-password" };
 delete env.SITE_ACCESS_PASSWORD;
@@ -68,7 +68,10 @@ try {
   const names = await (await anonymous.call("/api/access/participants")).json();
   assert(names.length > 0 && names.every(p => Object.keys(p).sort().join(",") === "display_name,id"));
   const failure = "이름과 비밀번호를 확인해주세요.";
-  for (const [person, password] of [[1, "incorrect"], [5, "short"], [6, shared]]) { const r = await anonymous.login(person, password); assert.equal(r.status, 401); assert.equal((await r.json()).error, failure); }
+  for (const [person, password] of [[1, "incorrect"], [6, ""], [7, shared]]) { const r = await anonymous.login(person, password); assert.equal(r.status, 401); assert.equal((await r.json()).error, failure); }
+  const unrestricted = new Browser();
+  await expectStatus(unrestricted.login(5, "1"), 200);
+  await expectStatus(unrestricted.login(8, "x".repeat(2048)), 200);
   await expectStatus(anonymous.login(1, aPassword.trim()), 401);
   await expectStatus(anonymous.call("/api/access", "POST", { participantId: id(1), password: aPassword }, "https://cross-site.invalid"), 403);
   const legacy = new Browser(); legacy.cookies.set("project203_access", signSession(secret).token); legacy.cookies.set("project203_participant_selection", id(1)); legacy.cookies.set("project203_board", signSession(secret).token);
