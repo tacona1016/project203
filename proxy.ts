@@ -4,13 +4,13 @@ import { ACCESS_COOKIE, verifyAccessSession } from "@/lib/auth/session";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (pathname.startsWith("/_next/static/") || pathname === "/_next/webpack-hmr" || ["/favicon.ico", "/icon.svg"].includes(pathname)) return NextResponse.next();
-  const publicRoute = pathname === "/access" || pathname === "/api/access";
-  const session = verifyAccessSession(request.cookies.get(ACCESS_COOKIE)?.value);
+  const publicRoute = ["/access", "/api/access", "/api/access/participants"].includes(pathname);
+  const session = publicRoute ? null : await verifyAccessSession(request.cookies.get(ACCESS_COOKIE)?.value);
   let response: NextResponse;
   if (publicRoute || session) {
     response = NextResponse.next();
   } else if (pathname.startsWith("/api/")) {
-    response = NextResponse.json({ error: "사이트 비밀번호 인증이 필요합니다." }, { status: 401 });
+    response = NextResponse.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
   } else {
     const url = new URL("/access", request.url);
     url.searchParams.set("next", pathname + request.nextUrl.search);

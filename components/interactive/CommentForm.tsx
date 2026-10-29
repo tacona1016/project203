@@ -6,7 +6,7 @@ import { NameSelector } from "./NameSelector";
 
 type CommentFormProps = {
   pending: boolean;
-  onSubmit: (participantId: string, content: string) => Promise<boolean>;
+  onSubmit: (content: string) => Promise<boolean>;
 };
 
 export function CommentForm({ pending, onSubmit }: CommentFormProps) {
@@ -20,16 +20,16 @@ export function CommentForm({ pending, onSubmit }: CommentFormProps) {
     event.preventDefault();
     if (pending) return;
     const trimmed = content.trim();
-    if (!participant) { setError("먼저 이름을 선택해주세요."); return; }
+    if (!participant) { setError("회원 로그인이 필요합니다."); return; }
     if (!trimmed) { setError("의견을 입력해주세요."); return; }
     if (Array.from(trimmed).length > 1000) { setError("댓글은 1000자 이내로 작성해주세요."); return; }
     setError("");
-    if (await onSubmit(participant.id, trimmed)) setContent("");
+    if (await onSubmit(trimmed)) setContent("");
   }
 
   return (
     <form onSubmit={submit} aria-busy={pending} className="comment-form">
-      {!participant && <div className="identity-prompt"><p>댓글에 표시할 이름을 선택해주세요.</p><NameSelector /></div>}
+      {!participant && <div className="identity-prompt"><p>회원 로그인이 필요합니다.</p><NameSelector /></div>}
       {participant && <p className="form-note mb-4">{participant.display_name} 이름으로 남깁니다.</p>}
       <label htmlFor={id} className="sr-only">프로젝트에 대한 의견</label>
       <textarea id={id} rows={5} value={content} disabled={pending} required

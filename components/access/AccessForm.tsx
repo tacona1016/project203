@@ -2,7 +2,7 @@
 
 import { useId, useState, type FormEvent } from "react";
 
-export function AccessForm({ returnTo, configured, endpoint = "/api/access", admin = false }: { returnTo: string; configured: boolean; endpoint?: string; admin?: boolean }) {
+export function AccessForm({ returnTo, configured, endpoint = "/api/admin/access", admin = true }: { returnTo: string; configured: boolean; endpoint?: string; admin?: boolean }) {
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -32,7 +32,7 @@ export function AccessForm({ returnTo, configured, endpoint = "/api/access", adm
 
   return (
     <form onSubmit={submit} method="post" className="mt-10" aria-busy={pending}>
-      <label htmlFor={id} className="mb-3 block text-sm">{admin ? "관리자 비밀번호" : "공용 비밀번호"}</label>
+      <label htmlFor={id} className="mb-3 block text-sm">관리자 비밀번호</label>
       <input id={id} type="password" name="password" value={password} required maxLength={1024}
         autoComplete={`${admin ? "section-admin" : "section-site"} current-password`} className="access-input" disabled={pending || !configured}
         aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}

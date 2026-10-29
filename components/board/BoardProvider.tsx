@@ -5,7 +5,7 @@ import { useParticipant } from "@/components/interactive/ParticipantProvider";
 import { boardRequest } from "@/lib/board/client";
 import type { BoardViewer } from "@/lib/board/types";
 
-const empty: BoardViewer = { participantId: null, isAdmin: false, verified: false, configured: false };
+const empty: BoardViewer = { participantId: null, isAdmin: false, verified: false };
 const Context = createContext<{ viewer: BoardViewer; loading: boolean; error: string; refresh: () => Promise<void> } | null>(null);
 export function useBoard() { const value = useContext(Context); if (!value) throw new Error("BoardProvider required"); return value; }
 export function BoardProvider({ children }: { children: ReactNode }) {

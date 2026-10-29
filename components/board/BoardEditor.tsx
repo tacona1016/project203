@@ -39,7 +39,7 @@ export function BoardEditor({ initial, notice = false }: { initial?: BoardPost; 
       <p id="board-content-count" className="form-note mt-3">{Array.from(content).length} / 10000자</p>
       <div className="mt-8 flex flex-wrap gap-6 items-center"><button type="submit" className="interaction-button">{pending ? "저장 중..." : initial ? "수정 저장" : "게시글 등록"}</button><Link className="text-link" href={initial ? `/board/${initial.id}` : "/board"}>취소</Link></div>
     </fieldset>
-    {!loading && !allowed && <p className="form-note mt-5">게시판 본인 확인 후 작성할 수 있습니다.</p>}
+    {!loading && !allowed && <p className="form-note mt-5">이 게시글을 작성하거나 수정할 권한이 없습니다.</p>}
     {error && <p className="form-error mt-5" role="alert">{error}</p>}
   </form>;
 }

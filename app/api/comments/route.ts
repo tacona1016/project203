@@ -1,4 +1,4 @@
-import { handleApi, HttpError, readJson, requireSameOrigin, uuid } from "@/lib/auth/http";
+import { handleApi, HttpError, readJson, requireSameOrigin, requireApiSession } from "@/lib/auth/http";
 import { protectedClient, quarterSlug } from "@/lib/site-data";
 import { getComments, insertComment } from "@/lib/supabase/queries";
 
@@ -18,7 +18,8 @@ export async function POST(request: Request) {
     const client = await protectedClient();
     requireSameOrigin(request);
     const body = await readJson(request);
+    if (Object.keys(body).some((key) => !["quarter", "content"].includes(key))) throw new HttpError(400, "허용되지 않은 입력입니다.");
     if (typeof body.content !== "string") throw new HttpError(400, "의견을 입력해주세요.");
-    return insertComment(client, quarterSlug(body.quarter), uuid(body.participantId), body.content);
+    return insertComment(client, quarterSlug(body.quarter), (await requireApiSession()).participantId, body.content);
   });
 }

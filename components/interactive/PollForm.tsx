@@ -75,7 +75,7 @@ function Ballot({ data, onRefresh, onFeedback }: { data: PollData; onRefresh: ()
   useEffect(() => {
     if (!single || !participant) return;
     let current = true;
-    getParticipation(data.poll.slug, participant.id).then((value) => { if (current) setParticipation(value); })
+    getParticipation(data.poll.slug).then((value) => { if (current) setParticipation(value); })
       .catch(() => { if (current) setError("참여 여부를 확인하지 못했습니다. 다시 시도해주세요."); });
     return () => { current = false; };
   }, [single, participant, data.poll.slug, data.server_time, retry]);
@@ -88,8 +88,8 @@ function Ballot({ data, onRefresh, onFeedback }: { data: PollData; onRefresh: ()
     if (pending || !participant || !optionId || !participation) return;
     setPending(true); setError(""); onFeedback("");
     try {
-      const status = await submitVote(data.poll.slug, optionId, participant.id);
-      if (status === "inactive_participant") { invalidateParticipant(); setError("이름을 다시 선택해주세요."); return; }
+      const status = await submitVote(data.poll.slug, optionId);
+      if (status === "inactive_participant") { invalidateParticipant(); setError("다시 로그인해주세요."); return; }
       const messages = { success: "투표가 등록되었습니다.", vote_changed: "선택이 변경되었습니다.", unchanged: "현재 선택을 유지했습니다.", already_voted: "이미 참여한 투표입니다." };
       if (status in messages) {
         if (single && status !== "already_voted") { setParticipation({ option_id: optionId, text_response: null, vote_count: 1 }); setEditing(false); }
@@ -101,7 +101,7 @@ function Ballot({ data, onRefresh, onFeedback }: { data: PollData; onRefresh: ()
     finally { setPending(false); }
   }
   return <div>
-    {!participant && <div className="identity-prompt"><p>투표에 표시할 이름을 선택해주세요.</p><NameSelector /></div>}
+    {!participant && <div className="identity-prompt"><p>회원 로그인이 필요합니다.</p><NameSelector /></div>}
     {participant && <p className="form-note mb-5">{participant.display_name} 이름으로 참여합니다.</p>}
     {single && participant && !participation && !error && <p role="status" className="form-note">참여 여부 확인 중...</p>}
     {voted && (!editing || !changeAllowed) ? <div className="py-4" role="status">

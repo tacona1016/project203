@@ -30,14 +30,14 @@ export function Comments({ quarter, initialComments }: { quarter: string; initia
     }
   }
 
-  async function submit(participantId: string, content: string) {
+  async function submit(content: string) {
     if (pending) return false;
     setPending(true);
     setError("");
     setMessage("");
     let saved: Comment;
     try {
-      saved = await insertComment(quarter, participantId, content);
+      saved = await insertComment(quarter, content);
     } catch {
       setError("등록에 실패했습니다. 다시 시도해주세요.");
       setPending(false);
