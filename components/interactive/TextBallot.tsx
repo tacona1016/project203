@@ -24,7 +24,7 @@ export function TextBallot({ data, onRefresh, onFeedback }: { data: PollData; on
   useEffect(() => {
     if (!participant) return;
     let current = true;
-    getParticipation(data.poll.slug, participant.id)
+    getParticipation(data.poll.slug)
       .then((value) => { if (current) { setParticipation(value); setError(""); } })
       .catch(() => { if (current) setError("내 응답을 확인하지 못했습니다. 다시 시도해주세요."); });
     return () => { current = false; };
@@ -38,8 +38,8 @@ export function TextBallot({ data, onRefresh, onFeedback }: { data: PollData; on
     catch (error) { setError((error as Error).message); return; }
     setPending(true); setError(""); onFeedback("");
     try {
-      const status = await submitTextResponse(data.poll.slug, participant.id, response);
-      if (status === "inactive_participant") { invalidateParticipant(); setError("이름을 다시 선택해주세요."); return; }
+      const status = await submitTextResponse(data.poll.slug, response);
+      if (status === "inactive_participant") { invalidateParticipant(); setError("다시 로그인해주세요."); return; }
       if (status === "success" || status === "vote_changed" || status === "unchanged") {
         setParticipation({ option_id: null, text_response: response, vote_count: 1 }); setEditing(false);
         onFeedback(status === "success" ? "응답이 제출되었습니다." : status === "vote_changed" ? "응답이 수정되었습니다." : "기존 응답을 유지했습니다.");
@@ -53,7 +53,7 @@ export function TextBallot({ data, onRefresh, onFeedback }: { data: PollData; on
   }
 
   return <div className="min-w-0">
-    {!participant && <div className="identity-prompt"><p>응답에 표시할 이름을 선택해주세요.</p><NameSelector /></div>}
+    {!participant && <div className="identity-prompt"><p>회원 로그인이 필요합니다.</p><NameSelector /></div>}
     {participant && <p className="form-note mb-5">{participant.display_name} 이름으로 응답합니다.</p>}
     {participant && !participation && !error && <p className="form-note" role="status">내 응답 확인 중...</p>}
     {responded && (!editing || !active || !data.poll.allow_vote_change) ? <section aria-label="내 응답">

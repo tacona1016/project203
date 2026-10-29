@@ -36,6 +36,6 @@ Server Component 안에서 사용합니다. 새로운 키를 등록하면 Route 
 <PrivateSiteImage image="sharedLandscape" alt="사진의 구체적인 설명" />
 ```
 
-직접 지정할 때는 `next/image`의 `unoptimized`를 사용해 `/api/site-images/<key>`를 호출합니다. 보호된 사진을 정적 import하거나 공개 이미지 최적화 경로에 전달하지 않습니다. 서버는 사이트 세션, 허용 키, 실제 경로 경계, 확장자와 파일 시그니처를 검사합니다. 응답은 `private, no-store`이며 CDN 캐시도 끕니다. `next.config.mjs`는 이미지 Route Handler와 Home/Board의 서버 추적에 이 폴더를 포함합니다.
+직접 지정할 때는 `next/image`의 `unoptimized`를 사용해 `/api/site-images/<key>`를 호출합니다. 보호된 사진을 정적 import하거나 공개 이미지 최적화 경로에 전달하지 않습니다. 서버는 회원 세션, 허용 키, 실제 경로 경계, 확장자와 파일 시그니처를 검사합니다. 응답은 `private, no-store`이며 CDN 캐시도 끕니다. `next.config.mjs`는 이미지 Route Handler와 Home/Board의 서버 추적에 이 폴더를 포함합니다.
 
-사이트 비밀번호를 아는 사람과 저장소·Vercel에 접근 가능한 개발자는 사진을 볼 수 있습니다. 인증 후 다운로드한 사진의 재배포를 기술적으로 막는 기능은 아닙니다.
+개인 회원 로그인으로 인증된 사람과 저장소·Vercel에 접근 가능한 개발자는 사진을 볼 수 있습니다. 인증 후 다운로드한 사진의 재배포를 기술적으로 막는 기능은 아닙니다.

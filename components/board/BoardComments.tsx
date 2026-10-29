@@ -45,7 +45,7 @@ export function BoardComments({ postId, initial, count }: { postId: DatabaseId; 
     {!comments.length && <p className="form-note py-6">첫 번째 이야기를 남겨주세요.</p>}
     {hasMore && <button type="button" className="text-link my-6" disabled={pending} onClick={more}>{pending ? "불러오는 중..." : "댓글 더 보기"}</button>}
     <form onSubmit={submit} aria-busy={pending} className="mt-10"><label htmlFor="board-comment">댓글 남기기</label>
-      <textarea id="board-comment" rows={4} required value={content} maxLength={4000} disabled={pending || !allowed} onChange={(event) => setContent(event.target.value)} placeholder={allowed ? "함께 나누고 싶은 의견을 적어주세요." : "게시판 본인 확인 후 댓글을 남길 수 있습니다."} />
+      <textarea id="board-comment" rows={4} required value={content} maxLength={4000} disabled={pending || !allowed} onChange={(event) => setContent(event.target.value)} placeholder={allowed ? "함께 나누고 싶은 의견을 적어주세요." : "로그인한 회원만 댓글을 남길 수 있습니다."} />
       <div className="mt-4 flex flex-wrap justify-between items-center gap-4"><span className="form-note">{Array.from(content).length} / 2000자</span><button type="submit" className="interaction-button" disabled={pending || !allowed || !content.trim()}>{pending ? "처리 중..." : "댓글 등록"}</button></div>
     </form>{error && <p className="form-error mt-5" role="alert">{error}</p>}
   </section>;
