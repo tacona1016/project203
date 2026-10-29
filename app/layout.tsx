@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="ko">
       <body>
         <a href="#main-content" className="skip-link">본문으로 건너뛰기</a>
-        {session ? <ParticipantProvider>{children}</ParticipantProvider> : children}
+        {session ? <ParticipantProvider participant={session.participant}>{children}</ParticipantProvider> : children}
       </body>
     </html>
   );

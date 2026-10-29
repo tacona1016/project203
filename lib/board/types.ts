@@ -13,5 +13,4 @@ export type BoardComment = {
   content: string; created_at: string; updated_at: string; deleted_at: string | null;
 };
 export type BoardInput = { title: string; content: string; post_type: BoardPostType; is_pinned: boolean };
-export type BoardPasswordIssue = "not_configured" | "invalid_json" | "missing_participant" | "invalid_length" | "whitespace";
-export type BoardViewer = { participantId: string | null; isAdmin: boolean; verified: boolean; configured: boolean; configurationIssue?: BoardPasswordIssue | null };
+export type BoardViewer = { participantId: string | null; isAdmin: boolean; verified: boolean };

@@ -11,7 +11,9 @@ export function privateJson(data: unknown, status = 200) {
 }
 
 export async function requireApiSession() {
-  if (!await getAccessSession()) throw new HttpError(401, "사이트 비밀번호 인증이 필요합니다.");
+  const session = await getAccessSession();
+  if (!session) throw new HttpError(401, "회원 로그인이 필요합니다.");
+  return session;
 }
 
 export function requireSameOrigin(request: Request) {
