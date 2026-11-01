@@ -1,6 +1,8 @@
 # 객관식 복수선택과 저장 확인
 
-2026-11-01. 로컬 코드와 SQL 검증 후 사용자가 운영 반영을 승인했다. 현재 migration·GitHub·Vercel 반영을 진행하며 결과는 [세션 인계](SESSION_HANDOFF.md)에 기록한다. 환경변수와 회원 UUID, 비밀번호는 바꾸지 않는다.
+2026-11-01. 로컬 코드와 SQL 검증 후 사용자 승인으로 운영 반영을 완료했다. 기능 commit `8ab27043`과 Vercel Production READY를 확인했다. 환경변수와 회원 UUID, 비밀번호는 바꾸지 않았다. 상세 기록은 [세션 인계](SESSION_HANDOFF.md)에 있다.
+
+운영 migration 기록은 `20261101071652 / choice_ballots`이며 저장소 원본 파일은 `20261101000000_choice_ballots.sql`이다. 실행 시에만 승인 설정과 원본 보존·읽기 권한 검사를 추가했다. 원본 votes 45행/hash는 불변이고 객관식 원본 40표 → 현재 고유 선택 37개, canonical 중복 0이다. 과거 migration/seed나 CLI db push를 운영에 일괄 재실행하지 않는다. 실제 운영 쓰기·사용자 로그인 E2E·두 연결 동시성은 미검증이며 운영에는 가짜 투표를 추가하지 않았다.
 
 ## 투표 규칙
 
