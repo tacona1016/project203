@@ -1,5 +1,6 @@
 "use client";
 import { useId, useState, useSyncExternalStore, type FormEvent } from "react";
+import { AUTH_SERVICE_MESSAGE } from "@/lib/auth/service-error";
 
 type Member = { id: string; display_name: string };
 const subscribe = () => () => {};
@@ -18,7 +19,7 @@ export function MemberLoginForm({ returnTo, members }: { returnTo: string; membe
       const response = await fetch("/api/access", { method: "POST", credentials: "same-origin", cache: "no-store",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ participantId, password, next: returnTo }) });
       const result = await response.json();
-      if (!response.ok) { setError(response.status === 401 ? "이름과 비밀번호를 확인해주세요." : "로그인하지 못했습니다. 잠시 후 다시 시도해주세요."); return; }
+      if (!response.ok) { setError(response.status === 401 ? "이름과 비밀번호를 확인해주세요." : response.status === 503 ? AUTH_SERVICE_MESSAGE : "로그인하지 못했습니다. 잠시 후 다시 시도해주세요."); return; }
       if (typeof BroadcastChannel !== "undefined") { const channel = new BroadcastChannel("project203_auth"); channel.postMessage("changed"); channel.close(); }
       window.location.replace(result.redirectTo);
     } catch { setError("로그인하지 못했습니다. 잠시 후 다시 시도해주세요."); }

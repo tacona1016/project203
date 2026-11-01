@@ -22,7 +22,9 @@
 
 투표·내 참여 조회·발표 댓글·게시판 작성자는 서버 세션에서 결정합니다. 예전 body/query의 participantId·authorId는 다른 회원 작업을 허용하지 않으며 작성 API는 허용 필드만 받습니다. 예전 이름 선택 POST 및 게시판 추가 인증 POST는 회원 로그인 후에도 410입니다.
 
-사용자 로그인 실패 문구는 동일합니다. 서버에는 `[member-auth] invalid_credentials`, `invalid_json`, `missing_participant`, `empty_password`, `inactive_or_unknown_member`, `directory_unavailable`, `session_configuration` 등 원인 코드만 남깁니다. ID·비밀번호·토큰·환경변수 원문·DB 오류 원문을 로그에 넣지 않습니다.
+잘못된 로그인 정보는 동일한 문구와 401로 응답합니다. 서버에는 `[member-auth] invalid_credentials`, `invalid_json`, `missing_participant`, `empty_password`, `inactive_or_unknown_member`, `session_configuration` 등 원인 코드만 남깁니다. ID·비밀번호·토큰·환경변수 원문·DB 오류 원문을 로그에 넣지 않습니다.
+
+회원 조회 장애는 인증 실패와 구분합니다. 연결·timeout·DB·내부·서버 설정 오류는 각각 `service_connection`, `service_timeout`, `service_database`, `service_internal`, `service_configuration`으로만 진단하고, 외부에는 공통 503과 `Retry-After: 30`을 반환합니다. 기존 회원 쿠키를 삭제하지 않으며 보호 콘텐츠 없이 같은 URL에서 재시도할 수 있습니다. 인증 조회는 기존 10초 fetch timeout을 유지하고 SDK 자동 재시도는 끕니다. 정상적으로 조회했으나 회원이 없거나 비활성인 경우는 기존처럼 인증을 거부합니다.
 
 ## 환경변수
 
@@ -59,3 +61,5 @@ DB 변경/seed 실행은 없습니다. 이전 배포로 롤백하려면 SITE_ACC
 통합 검사는 `.verification/member-auth-app`에 소스를 복사하고 가짜 계정과 이미지·DB 프로토콜만 사용합니다. 원본 `.env.local`, 실제 회원 비밀번호, 운영 DB를 읽거나 수정하지 않습니다. 테스트 포트는 3100/3102/3103이고 Chrome은 9230입니다. 실제 PostgreSQL 트랜잭션/RLS·Vercel Production cookie/CDN은 이 검사만으로 검증되지 않습니다. 운영 반영 후 별도 확인이 필요합니다.
 
 Windows 격리 Chrome은 암호화 쿠키 저장소를 재실행 후 복원하지 못했습니다. 테스트는 30일 영구 쿠키 속성을 확인하고, 브라우저 재시작 후 가짜 쿠키를 메모리에서 재주입하여 서버 수용 여부를 검사했습니다. 실제 사용자 브라우저의 디스크 저장/재실행 유지 여부는 수동 확인이 필요합니다.
+
+Proxy에서 확인한 장애는 페이지/API 모두 503입니다. Proxy 통과 후 서버 렌더링 중 장애가 발생하면 보호 본문 대신 재시도 화면을 표시합니다. 이 늦은 렌더링 실패는 이미 시작된 응답 때문에 HTTP 200일 수 있으므로 HTTP 상태만으로 장애를 집계하지 않습니다. 상세 운영 범위와 한계는 [운영 개선 기록](OPERATIONS_IMPROVEMENTS.md)을 참고하세요.

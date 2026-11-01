@@ -5,13 +5,14 @@ import { Arrow } from "@/components/Arrow";
 import { QuarterCover } from "@/components/QuarterCover";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getCurrentQuarter } from "@/data/quarters";
+import { getLatestPresentation } from "@/data/quarters";
+import { projectStatus } from "@/data/project-status";
 import { requireAccessSession } from "@/lib/auth/session";
 import { PrivateSiteImage } from "@/components/PrivateSiteImage";
 
 export default async function HomePage() {
   await requireAccessSession("/");
-  const current = getCurrentQuarter();
+  const current = getLatestPresentation();
 
   return (
     <>
@@ -28,6 +29,15 @@ export default async function HomePage() {
             <p className="max-w-md text-base leading-8 text-muted sm:text-lg">친구들이 함께 자금을 모으고, 토지와 공간을 준비하는 장기 공동 프로젝트.</p>
             <span className="eyebrow mt-1 text-muted">RECORD. REFLECT. MOVE FORWARD.</span>
           </div>
+        </section>
+
+        <section aria-labelledby="project-status-title" className="mb-16 bg-surface px-6 py-7 sm:px-8">
+          <h2 id="project-status-title" className="eyebrow text-accent">프로젝트 현황</h2>
+          {projectStatus ? <dl className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="min-w-0"><dt className="text-xs text-muted">현재 단계</dt><dd className="mt-2 wrap-anywhere">{projectStatus.phase}</dd></div>
+            <div className="min-w-0"><dt className="text-xs text-muted">다음 행동</dt><dd className="mt-2 wrap-anywhere">{projectStatus.nextAction}</dd></div>
+            <div className="min-w-0"><dt className="text-xs text-muted">기준일</dt><dd className="mt-2"><time dateTime={projectStatus.updatedAt}>{projectStatus.updatedAt.replaceAll("-", ".")}</time></dd></div>
+          </dl> : <p className="mt-4 text-sm leading-7 text-muted">현재 단계와 다음 행동은 논의 후 업데이트합니다.</p>}
         </section>
 
         <section aria-labelledby="current-title" className="pb-20 sm:pb-28">

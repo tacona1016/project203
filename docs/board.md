@@ -16,6 +16,12 @@
 - 삭제는 deleted_at만 기록하는 soft delete
 - 파일 첨부·웹 사진 업로드·댓글 수정은 지원하지 않음
 
+## 최종 의사결정 기록
+
+투표 결과와 최종 합의는 구분한다. 관리자는 기존 공지 작성 화면에서 [결정 기록 템플릿](DECISION_RECORD_TEMPLATE.md)을 복사해 결정일·내용·관련 투표·근거·담당자·다음 행동·일정을 기록할 수 있다. 새 테이블이나 메뉴는 필요 없다. 실제 합의 전에는 확정된 결정처럼 등록하지 않는다.
+
+중요한 현재 결정만 고정하고, 내용이 실질적으로 바뀌면 새 공지를 작성하여 이전 기록과 서로 연결한다. 기존 공지는 수정·soft delete가 가능하므로 변경 불가능한 감사 장부는 아니다. 분기 MDX 정리와 [DB 백업·복구](BACKUP_RESTORE.md)를 함께 운영한다.
+
 작성자·공지 권한은 API와 기존 DB RPC에서 검사합니다. Supabase Secret Key는 서버 전용이며 브라우저 직접 접근 권한과 RLS를 완화하지 않습니다. 기존 participants, polls, votes, comments, board_posts, board_post_comments를 그대로 유지합니다.
 
 ## 관련 파일

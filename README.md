@@ -31,6 +31,8 @@ http://localhost:3000 에서 이름과 개인 비밀번호로 로그인합니다
 
 같은 비밀번호도 허용하지만, 그 비밀번호를 아는 사람이 해당 이름들로 로그인할 수 있습니다. 실제 운영에서는 회원마다 서로 다른 비밀번호를 사용해야 합니다. 회원가입이나 Supabase Auth는 추가하지 않습니다.
 
+잘못된 로그인 정보는 401로 안내합니다. 회원 DB 연결·timeout·서버 장애는 503과 재시도 안내로 구분하며 기존 쿠키를 삭제하거나 로그인 화면으로 돌려보내지 않습니다. 인증을 확인할 수 없는 동안 보호 콘텐츠는 제공하지 않고, 복구 후 같은 세션으로 다시 시도할 수 있습니다.
+
 자세한 설계·테스트·운영 전환·롤백: [docs/member-auth.md](docs/member-auth.md).
 
 ## 주요 구조
@@ -52,9 +54,12 @@ http://localhost:3000 에서 이름과 개인 비밀번호로 로그인합니다
 1. `app/quarter/2027-q1/page.mdx`를 추가합니다. 기존 Q4 파일과 Presentation 컴포넌트를 참고합니다.
 2. `data/quarters.ts`에 slug, year, quarter, title, description, publishedAt 메타데이터를 등록합니다.
 3. 공개 발표 이미지가 있으면 `public/images/2027-q1/`에 넣습니다.
-4. build 후 Home의 최신 자료, Archive 링크와 모바일을 확인합니다.
+4. 준비 중인 분기는 `presentationPublished: false`로 등록합니다. Polls/Admin에서는 사용할 수 있지만 발표자료 링크와 직접 접근은 열리지 않습니다.
+5. MDX가 준비되면 `presentationPublished: true`로 바꿉니다. `npm.cmd run check:presentations`와 build로 실제 파일을 확인한 뒤 Home·Archive·모바일을 확인합니다.
 
-Presentation 내용은 Git + MDX로 관리하며 DB에 넣지 않습니다. 최신 등록 분기를 Current로 사용합니다. 현재 Q4는 12장과 하단 발표 댓글로 구성됩니다.
+Presentation 내용은 Git + MDX로 관리하며 DB에 넣지 않습니다. Polls의 Current는 최신 등록 분기, Home의 Latest Presentation은 공개된 발표자료 중 최신 분기입니다. 현재 Q4는 공개 상태이며 12장과 하단 발표 댓글을 유지합니다.
+
+HOME의 간단한 현황은 `data/project-status.ts`에서 관리합니다. 현재는 실제 진행 상황이 미정이므로 `null`로 두고 미정 안내만 표시합니다. 단계·다음 행동·기준일이 합의된 뒤 값을 입력합니다.
 
 ## Polls와 Admin
 
@@ -71,6 +76,10 @@ Poll은 분기별로 분류하고 `/polls`에서 Current, `/polls/<quarter>`에�
 
 BOARD 일반 글은 작성자와 관리자만 관리하며 공지·고정·전환은 관리자만 가능합니다. 별도 게시판 비밀번호 입력은 없습니다. [게시판 운영 문서](docs/board.md)를 참고하세요.
 
+투표 결과와 최종 합의는 구분합니다. 확정된 내용만 기존 관리자 공지에 [의사결정 기록 템플릿](docs/DECISION_RECORD_TEMPLATE.md)으로 남깁니다. 장기 기록의 수동 백업·TEST 복구·운영 확인 범위는 [백업과 복구](docs/BACKUP_RESTORE.md)를 따릅니다.
+
+이번 안정성 개선의 범위·검증과 운영 확인 사항은 [운영 개선 기록](docs/OPERATIONS_IMPROVEMENTS.md)을 참고하세요.
+
 ## DB와 이미지
 
 이번 회원 인증 통합에는 **DB migration이나 seed 재실행이 필요 없습니다.** 기존 participant UUID, 투표, 댓글, 게시글, RLS와 서버 전용 RPC를 유지합니다. 운영 DB에서 schema/seed/과거 migration을 반복 실행하지 마세요. 기존 설치 SQL과 TEST DB 회귀 SQL은 `supabase/`에 보관합니다.
@@ -81,6 +90,7 @@ BOARD 일반 글은 작성자와 관리자만 관리하며 공지·고정·전�
 
 ```powershell
 npm.cmd test
+npm.cmd run check:presentations
 npm.cmd run lint
 npm.cmd run typecheck
 npm.cmd run build

@@ -1,6 +1,9 @@
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 let people, polls, options, votes, comments, sequence;
+let participantFailure = null;
+let participantFailureAfter = 0;
+let participantRequestCount = 0;
 const now = () => new Date().toISOString();
 function reset() {
   people = Array.from({ length: 10 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`, display_name: `친구${i + 1}`, is_active: true, display_order: i + 1, created_at: now() }));
@@ -25,13 +28,25 @@ http.createServer(async (req, res) => {
   const fail = code => json({ code, message: "fixture validation rejected" }, 400);
   const url = new URL(req.url, "http://127.0.0.1:3102"); let body = {};
   if (req.method === "POST") { const chunks = []; for await (const chunk of req) chunks.push(chunk); body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); }
-  if (url.pathname === "/_test") { if (body.reset) reset(); if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, comments }); }
+  if (url.pathname === "/_test") { if (body.reset) { reset(); participantFailure = null; participantFailureAfter = 0; } if (Object.hasOwn(body, "participantFailure")) { participantFailure = body.participantFailure; participantFailureAfter = body.participantFailureAfter ?? 0; participantRequestCount = 0; } if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, comments, participantRequestCount }); }
   if (req.headers.apikey !== "fixture-only-backend-key") return json({ message: "server only" }, 403);
   const table = url.pathname.replace("/rest/v1/", "");
   const match = row => [...url.searchParams].every(([key, value]) => !value.startsWith("eq.") || String(row[key]) === value.slice(3));
   const single = rows => req.headers.accept?.includes("vnd.pgrst.object") ? rows[0] : rows;
   const joined = c => ({ ...c, participant: { id: c.participant_id, display_name: people.find(p => p.id === c.participant_id)?.display_name } });
   if (req.method === "GET") {
+    if (table === "participants") participantRequestCount++;
+    if (table === "participants" && participantFailure && participantFailureAfter-- <= 0) {
+      if (participantFailure === "connection") { req.socket.destroy(); return; }
+      if (participantFailure === "delayed") {
+        // Eventually succeed: only the app's 10s deadline should turn this into 503.
+        const rows = people.filter(match).map(({ id, display_name }) => ({ id, display_name }));
+        setTimeout(() => { if (!res.destroyed) json(single(rows)); }, 15000);
+        return;
+      }
+      if (participantFailure === "internal") return res.writeHead(200).end("invalid-json-fixture-upstream-detail");
+      return json({ code: participantFailure === "timeout" ? "57014" : "XX000", message: "fixture-upstream-sensitive-detail-must-not-be-returned" }, 503);
+    }
     if (table === "participants") { const fields=url.searchParams.get("select"); const rows=people.filter(match).map(p=>fields&&fields!=="*"?Object.fromEntries(fields.split(",").map(k=>[k,p[k]])):p); return json(single(rows)); }
     if (table === "polls") return json(single(polls.filter(match)));
     if (table === "poll_options") return json(options.filter(match));

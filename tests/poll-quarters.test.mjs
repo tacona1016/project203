@@ -4,9 +4,9 @@ import { getArchivedQuarters, getCurrentQuarter, getQuarterLabel, getSortedQuart
 import { getQuarterPolls, getPollCounts } from "../lib/polls.ts";
 
 const entries = [
-  { slug: "2026-q4", year: 2026, quarter: 4, publishedAt: "2026-10-19" },
-  { slug: "2027-q2", year: 2027, quarter: 2, publishedAt: "2027-04-01" },
-  { slug: "2027-q1", year: 2027, quarter: 1, publishedAt: "2027-01-01" },
+  { slug: "2026-q4", year: 2026, quarter: 4, publishedAt: "2026-10-19", presentationPublished: true },
+  { slug: "2027-q2", year: 2027, quarter: 2, publishedAt: "2027-04-01", presentationPublished: true },
+  { slug: "2027-q1", year: 2027, quarter: 1, publishedAt: "2027-01-01", presentationPublished: true },
 ];
 
 test("current and archived quarters share metadata ordering, independent of today's month", () => {

@@ -6,6 +6,14 @@ next-env.d.ts
 !.env.example
 *.tsbuildinfo
 
+# Database backups may contain member content and grants; never commit them.
+/backups/
+*.dump
+*.backup
+*.sql.gz
+*.dump.enc
+*.sql.enc
+
 # Personal photos stay local until repository privacy has been independently verified.
 private-assets/site/**/*
 !private-assets/site/**/

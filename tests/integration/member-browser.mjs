@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export async function runBrowser({ base, id, aPassword, bPassword }) {
+export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure }) {
   const output = path.resolve(".verification/member-browser"); await mkdir(output, { recursive: true });
   const pause = ms => new Promise(r => setTimeout(r, ms));
   let browser, sockets = [];
@@ -47,6 +47,34 @@ export async function runBrowser({ base, id, aPassword, bPassword }) {
     assert.equal(await page.evaluate("!!document.querySelector('dialog')"), false);
     assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
     assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"));
+    if (setDbFailure) {
+      await setDbFailure("timeout");
+      try {
+        await page.evaluate("window.dispatchEvent(new Event('focus'))"); await pause(250);
+        assert.equal(await page.evaluate("location.pathname"), "/quarter/2026-q4");
+        assert.equal(await page.evaluate("fetch('/api/access/session').then(r=>r.status)"), 503);
+        await page.send("Page.reload");
+        await page.wait("document.readyState==='complete'&&document.body.textContent.includes('잠시 연결을 기다리고 있습니다.')");
+        assert.equal(await page.evaluate("location.pathname"), "/quarter/2026-q4");
+        assert.equal(await page.evaluate("!!document.querySelector('.quarter-deck')"), false);
+      } finally { await setDbFailure(null); }
+      await page.go("/quarter/2026-q4");
+      await page.wait("document.querySelector('header .name-current')?.textContent==='친구1'");
+    }
+    for (const route of ["/", "/archive", "/polls"]) {
+      await page.go(route);
+      await page.wait(`location.pathname===${JSON.stringify(route)}&&document.querySelector('header .name-current')?.textContent==='친구1'`);
+      assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"), `Mobile overflow: ${route}`);
+      if (route === "/") assert(await page.evaluate("document.body.textContent.includes('현재 단계와 다음 행동은 논의 후 업데이트합니다.')"));
+    }
+    await page.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 960, deviceScaleFactor: 1, mobile: false });
+    for (const route of ["/", "/archive", "/quarter/2026-q4"]) {
+      await page.go(route);
+      await page.wait(`location.pathname===${JSON.stringify(route)}&&document.querySelector('header .name-current')?.textContent==='친구1'`);
+      assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"), `Desktop overflow: ${route}`);
+    }
+    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
+    await page.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
     await page.go("/board/new"); await page.wait("!!document.querySelector('.board-editor fieldset')&&!document.querySelector('.board-editor fieldset').disabled");
     assert.equal(await page.evaluate("!!document.querySelector('.board-identity input[type=password]')"), false);
     await page.evaluate("(()=>{for(const [selector,value] of [['#board-title','Browser fixture story'],['#board-content','Browser fixture content']]){const el=document.querySelector(selector);Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}})()");
@@ -72,6 +100,6 @@ export async function runBrowser({ base, id, aPassword, bPassword }) {
     // Restore only the synthetic cookie in memory to separately verify restart validity.
     if (!persistedFromDisk) await page.send("Network.setCookies", { cookies: [{ name: member.name, value: member.value, domain: member.domain, path: member.path, expires: member.expires, httpOnly: member.httpOnly, secure: member.secure, sameSite: member.sameSite }] });
     await page.go("/board"); await page.wait("document.querySelector('header .name-current')?.textContent==='친구2'");
-    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Old localStorage ignored", "Original presentation return path and 12 slides", "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
+    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
   } finally { await close(); }
 }

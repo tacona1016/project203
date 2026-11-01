@@ -6,6 +6,7 @@ import { SESSION_DURATION } from "./token";
 import { createMemberToken, verifyMemberToken } from "./member-token";
 import { configuredMemberPassword } from "./credentials";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { AuthServiceError, runAuthLookup, toAuthServiceError } from "./service-error";
 
 export const ACCESS_COOKIE = "project203_member";
 const legacyCookies = ["project203_access", "project203_board", "project203_participant_selection", "project203_admin"];
@@ -14,14 +15,14 @@ const cookieOptions = { httpOnly: true, sameSite: "lax" as const, secure: proces
 export async function verifyAccessSession(token: string | undefined) {
   const claims = verifyMemberToken(token, process.env.SITE_SESSION_SECRET ?? "", process.env.BOARD_PARTICIPANT_PASSWORDS);
   if (!claims) return null;
-  const client = getSupabaseAdminClient();
-  if (!client) return null;
-  try {
-    const { data, error } = await client.from("participants").select("id,display_name")
-      .eq("id", claims.participantId).eq("is_active", true).maybeSingle();
-    if (error) { console.warn("[member-auth] participant_lookup_failed"); return null; }
+  return runAuthLookup(async () => {
+    const client = getSupabaseAdminClient();
+    if (!client) throw new AuthServiceError("configuration");
+    const { data, error, status } = await client.from("participants").select("id,display_name")
+      .eq("id", claims.participantId).eq("is_active", true).maybeSingle().retry(false);
+    if (error) throw toAuthServiceError(error, status);
     return data ? { ...claims, participant: data } : null;
-  } catch { console.warn("[member-auth] participant_lookup_failed"); return null; }
+  });
 }
 
 // Only deduplicate within one server render/request; never cache member validity globally.

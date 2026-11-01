@@ -1,6 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { getAccessSession } from "./session";
+import { AUTH_SERVICE_MESSAGE, AuthServiceError, authServiceHeaders } from "./service-error";
 
 export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -53,6 +54,7 @@ export async function handleApi(operation: () => Promise<unknown>) {
   try { return privateJson(await operation()); }
   catch (error) {
     // Do not serialize upstream errors: they may contain configuration or query details.
+    if (error instanceof AuthServiceError) return NextResponse.json({ error: AUTH_SERVICE_MESSAGE, code: "service_unavailable" }, { status: 503, headers: authServiceHeaders });
     return error instanceof HttpError ? privateJson({ error: error.message }, error.status)
       : privateJson({ error: "요청에 실패했습니다. 잠시 후 다시 시도해주세요." }, 503);
   }

@@ -1,4 +1,5 @@
 import { requireApiSession, HttpError } from "@/lib/auth/http";
+import { AuthServiceError, authServiceHeaders } from "@/lib/auth/service-error";
 import { readSiteImage } from "@/lib/private-assets";
 
 export const runtime = "nodejs";
@@ -9,7 +10,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ key
     const image = await readSiteImage((await params).key);
     if (!image) return new Response(null, { status: 404, headers });
     return new Response(new Uint8Array(image.bytes), { headers: { ...headers, "Content-Type": image.type, "Content-Length": String(image.bytes.length) } });
-  } catch (error) { return new Response(null, { status: error instanceof HttpError ? error.status : 503, headers }); }
+  } catch (error) {
+    return new Response(null, {
+      status: error instanceof HttpError ? error.status : 503,
+      headers: error instanceof AuthServiceError ? { ...headers, ...authServiceHeaders } : headers,
+    });
+  }
 }
 export async function HEAD(request: Request, context: { params: Promise<{ key: string }> }) {
   const response = await GET(request, context);

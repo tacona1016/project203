@@ -14,8 +14,11 @@ http.createServer(async (req,res)=>{
  if(url.pathname==="/_test"){if(body.reset)reset();return json({posts,comments});}
  if(!url.pathname.startsWith("/rest/v1/rpc/")||!/(board_|_board_)/.test(url.pathname)){
   const headers=Object.fromEntries(Object.entries(req.headers).filter(([k])=>!['host','connection','content-length'].includes(k)));
-  const upstream=await fetch("http://127.0.0.1:3102"+req.url,{method:req.method,headers,...(raw.length?{body:raw}:{} )});
-  res.writeHead(upstream.status,Object.fromEntries(upstream.headers));return res.end(Buffer.from(await upstream.arrayBuffer()));
+  try {
+   const upstream=await fetch("http://127.0.0.1:3102"+req.url,{method:req.method,headers,...(raw.length?{body:raw}:{} )});
+   if (res.destroyed) return;
+   res.writeHead(upstream.status,Object.fromEntries(upstream.headers));return res.end(Buffer.from(await upstream.arrayBuffer()));
+  } catch { res.destroy(); return; }
  }
  if(req.headers.apikey!=="fixture-only-backend-key")return fail("42501",403);
  const action=url.pathname.split('/').at(-1),id=Number(body.p_id),postId=Number(body.p_post_id), actor=body.p_actor_id, admin=body.p_is_admin;

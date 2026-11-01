@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { ParticipantProvider } from "@/components/interactive/ParticipantProvider";
 import { getAccessSession } from "@/lib/auth/session";
+import { ServiceUnavailable } from "@/components/access/ServiceUnavailable";
+import { AuthServiceError } from "@/lib/auth/service-error";
 
 export const metadata: Metadata = {
   title: { default: "203 PROJECT", template: "%s | 203 PROJECT" },
@@ -10,12 +12,17 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const session = await getAccessSession();
+  const result = await getAccessSession().then(session => ({ session, unavailable: false })).catch(error => {
+    // Next.js uses exceptions to opt request-bound renders out of prerendering.
+    // Only handle our classified service failures here; preserve framework control flow.
+    if (!(error instanceof AuthServiceError)) throw error;
+    return { session: null, unavailable: true };
+  });
   return (
     <html lang="ko">
       <body>
         <a href="#main-content" className="skip-link">본문으로 건너뛰기</a>
-        {session ? <ParticipantProvider participant={session.participant}>{children}</ParticipantProvider> : children}
+        {result.unavailable ? <ServiceUnavailable /> : result.session ? <ParticipantProvider participant={result.session.participant}>{children}</ParticipantProvider> : children}
       </body>
     </html>
   );

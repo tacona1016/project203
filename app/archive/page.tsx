@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { SitePage } from "@/components/SitePage";
 import { Arrow } from "@/components/Arrow";
-import { getSortedQuarters } from "@/data/quarters";
+import { getPublishedQuarters } from "@/data/quarters";
 
 export const metadata = { title: "Archive" };
 export default function ArchivePage() {
-  const quarters = getSortedQuarters();
+  const quarters = getPublishedQuarters();
   const years = [...new Set(quarters.map((item) => item.year))];
   return <SitePage label="THE COLLECTION" title="Archive" description="분기마다 기록하는 프로젝트의 방향과 진행사항.">
     <section aria-label="분기별 프레젠테이션" className="archive-section">
+      {!quarters.length && <p className="interaction-notice">아직 공개된 프레젠테이션이 없습니다.</p>}
       {years.map((year) => <div key={year} className="archive-year">
         <h2 className="text-2xl font-medium">{year}</h2>
         <ul className="min-w-0">{quarters.filter((item) => item.year === year).map((item) => <li key={item.slug}>

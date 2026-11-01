@@ -3,13 +3,20 @@ import { redirect } from "next/navigation";
 import { getAccessSession, safeReturnTo } from "@/lib/auth/session";
 import { getLoginMembers } from "@/lib/auth/members";
 import { MemberLoginForm } from "@/components/access/MemberLoginForm";
+import { ServiceUnavailable } from "@/components/access/ServiceUnavailable";
+import { AuthServiceError } from "@/lib/auth/service-error";
 
 export const metadata: Metadata = { title: "Private Access", robots: { index: false, follow: false } };
 
 export default async function AccessPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const returnTo = safeReturnTo((await searchParams).next);
-  if (await getAccessSession()) redirect(returnTo);
-  const members = await getLoginMembers().catch(() => null);
+  let session;
+  try { session = await getAccessSession(); }
+  catch (error) { if (error instanceof AuthServiceError) return <ServiceUnavailable />; throw error; }
+  if (session) redirect(returnTo);
+  let members;
+  try { members = await getLoginMembers(); }
+  catch (error) { if (error instanceof AuthServiceError) return <ServiceUnavailable />; throw error; }
   return (
     <main id="main-content" className="access-page">
       <div className="access-content">

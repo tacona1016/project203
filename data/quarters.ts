@@ -6,8 +6,10 @@ export type Quarter = {
   quarter: 1 | 2 | 3 | 4;
   title: string;
   description: string;
-  /** ISO date (YYYY-MM-DD). The most recently published entry is Current. */
+  /** ISO date (YYYY-MM-DD), used for registry ordering independently of publication. */
   publishedAt: string;
+  /** Only published presentations appear in Home/Archive or allow direct access. */
+  presentationPublished: boolean;
 };
 
 export const quarters: readonly Quarter[] = [
@@ -18,6 +20,7 @@ export const quarters: readonly Quarter[] = [
     title: "방향 전환과 토지 검토 기준",
     description: "시골 아파트 전세에서 건축 가능한 토지로. 10명의 친구가 Phase 1의 범위를 좁히는 12장짜리 의사결정 프레임워크입니다.",
     publishedAt: "2026-10-19",
+    presentationPublished: true,
   },
 ];
 
@@ -38,6 +41,18 @@ export function getArchivedQuarters(entries: readonly Quarter[] = quarters): Qua
   return getSortedQuarters(entries).slice(1);
 }
 
+export function getPublishedQuarters(entries: readonly Quarter[] = quarters): Quarter[] {
+  return getSortedQuarters(entries).filter((quarter) => quarter.presentationPublished === true);
+}
+
+export function getLatestPresentation(entries: readonly Quarter[] = quarters): Quarter | undefined {
+  return getPublishedQuarters(entries)[0];
+}
+
+export function isPresentationPublished(slug: string, entries: readonly Quarter[] = quarters): boolean {
+  return entries.some((quarter) => quarter.slug === slug && quarter.presentationPublished === true);
+}
+
 export function findQuarter(slug: string): Quarter | undefined {
   return quarters.find((entry) => entry.slug === slug);
 }
@@ -47,9 +62,9 @@ export function getQuarterLabel(quarter: Pick<Quarter, "year" | "quarter">): str
 }
 
 // Pass only these fields to authenticated admin forms, not the presentation metadata.
-export function getQuarterChoices() {
-  const current = getCurrentQuarter();
-  return getSortedQuarters().map((quarter) => ({ slug: quarter.slug, label: getQuarterLabel(quarter), current: quarter.slug === current?.slug }));
+export function getQuarterChoices(entries: readonly Quarter[] = quarters) {
+  const current = getCurrentQuarter(entries);
+  return getSortedQuarters(entries).map((quarter) => ({ slug: quarter.slug, label: getQuarterLabel(quarter), current: quarter.slug === current?.slug }));
 }
 
 export function getQuarter(slug: string): Quarter {
