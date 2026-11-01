@@ -19,6 +19,7 @@
 | --- | --- |
 | `participants` | UUID, 이름, 활성 상태와 표시 순서. 기존 UUID를 유지한다. |
 | `polls`, `poll_options`, `votes` | 질문·유형·분기·상태·공개 정책·선택지·객관식 표·주관식 응답과 시각. |
+| `poll_choice_selections` (복수선택 migration 적용 후) | 객관식의 현재 선택·취소 상태와 시각. 원본 votes만으로 신규 응답을 복원할 수 없으므로 반드시 함께 백업한다. |
 | `comments` | 분기 발표 댓글과 작성자 관계. |
 | `board_posts`, `board_post_comments` | 일반 글·공지·고정·본문·작성자·시각 및 soft delete된 기록도 포함. |
 | DB 정의 | 스키마, FK/CHECK/인덱스, 함수/RPC, 트리거, RLS 정책, 테이블·컬럼·시퀀스·함수 grants, identity/sequence 상태. |
@@ -111,7 +112,7 @@ if ($LASTEXITCODE -ne 0) { throw "TEST 복원 실패: 운영으로 전환하지 
 
 ### 복구 확인표
 
-- 7개 테이블, FK/CHECK/인덱스, 모든 RPC·트리거, RLS 정책과 grants가 존재하는지 확인한다.
+- 확인 당시 7개 앱 테이블과 FK/CHECK/인덱스, 모든 RPC·트리거, RLS 정책과 grants가 존재하는지 확인한다. 복수선택 migration 이후에는 `poll_choice_selections`까지 총 8개이며, 새 제출/참여 RPC와 UNIQUE·복합 FK도 포함한다.
 - 각 테이블 행 개수, participant UUID 관계, 선택지/투표 관계, soft delete 기록, identity/sequence의 다음 값이 복구됐는지 확인한다. 실제 개인정보를 보고서에 출력하지 않는다.
 - anon/authenticated의 테이블 **및 컬럼**, 시퀀스, 함수 직접 접근이 원본처럼 차단되는지 확인한다. RLS 활성 여부만 확인하고 끝내지 않는다.
 - TEST 전용 환경변수로 앱을 연결하고 로그인·관리자·비공개 결과·투표/주관식·발표 댓글·게시판·공지·사진 접근을 검사한다. 새 키나 서명 키를 쓰면 재로그인이 필요하다.

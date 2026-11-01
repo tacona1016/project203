@@ -22,11 +22,10 @@ export async function getActiveParticipant(client: Client, id: string) {
 }
 
 export async function getParticipation(client: Client, pollId: DatabaseId, participantId: string) {
-  if (!await getActiveParticipant(client, participantId)) throw new HttpError(400, "현재 선택할 수 없는 이름입니다.");
-  const { data, count, error } = await client.from("votes").select("option_id,text_response", { count: "exact" })
-    .eq("poll_id", pollId).eq("participant_id", participantId).order("id").limit(1);
+  const { data, error } = await client.rpc("get_poll_participation", { p_poll_id: pollId, p_participant_id: participantId });
   if (error) throw error;
-  return { option_id: data[0]?.option_id ?? null, text_response: data[0]?.text_response ?? null, vote_count: count ?? 0 };
+  if (!data) throw new HttpError(404, "참여 기록을 찾지 못했습니다.");
+  return data;
 }
 
 export async function getPollCatalog(client: Client, includeHidden = false) {
@@ -46,15 +45,16 @@ export async function getPoll(client: Client, slug: string, includeHidden = fals
 }
 
 export async function submitTextResponse(client: Client, pollId: DatabaseId, participantId: string, text: string) {
-  const { data, error } = await client.rpc("submit_text_response", { p_poll_id: pollId, p_participant_id: participantId, p_text_response: text });
+  const { data, error } = await client.rpc("submit_text_response", { p_poll_id: pollId, p_participant_id: participantId, p_text_response: text }).retry(false);
   if (error) throw error;
   return data.status;
 }
 
-export async function submitVote(client: Client, pollId: DatabaseId, optionId: DatabaseId, participantId: string) {
-  const { data, error } = await client.rpc("submit_vote", {
-    p_poll_id: pollId, p_option_id: optionId, p_participant_id: participantId,
-  });
+export async function submitVote(client: Client, pollId: DatabaseId, optionIds: DatabaseId[], participantId: string) {
+  // Do not replay a mutation automatically after a transient upstream response.
+  const { data, error } = await client.rpc("submit_choice_ballot", {
+    p_poll_id: pollId, p_option_ids: optionIds, p_participant_id: participantId,
+  }).retry(false);
   if (error) throw error;
   return data.status;
 }

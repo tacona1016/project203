@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { PollData } from "@/lib/supabase/types";
 import { parsePollInput, toSeoulInput } from "@/lib/polls";
 
+const subscribe = () => () => {};
+
 export function PollEditor({ initial, quarterChoices }: { initial?: PollData; quarterChoices: readonly { slug: string; label: string; current: boolean }[] }) {
   const router = useRouter();
+  // Do not allow the prerendered form to perform a native submission before hydration.
+  const ready = useSyncExternalStore(subscribe, () => true, () => false);
   const poll = initial?.poll;
   const [quarter, setQuarter] = useState(poll?.quarter ?? quarterChoices.find((item) => item.current)?.slug ?? "");
   const quarterLocked = (initial?.results?.total_votes ?? 0) > 0;
@@ -27,7 +31,7 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (pending) return;
+    if (!ready || pending) return;
     const body = { quarter, title, description, options: quarterLocked ? [] : options,
       poll_type: pollType, results_visibility: visibility, text_max_length: textMaxLength,
       vote_mode: pollType === "text" ? "single" : mode, allow_vote_change: allowChange, scheduled, start, end, is_hidden: hidden };
@@ -45,8 +49,8 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
     } catch (error) { setError(error instanceof Error ? error.message : "저장하지 못했습니다."); setPending(false); }
   }
 
-  return <form onSubmit={submit} className="admin-form" aria-busy={pending}>
-    <fieldset disabled={pending}>
+  return <form onSubmit={submit} method="post" className="admin-form" aria-busy={!ready || pending}>
+    <fieldset disabled={!ready || pending}>
       <legend className="sr-only">투표 설정</legend>
       <section><h2>Basic</h2>
         <label htmlFor="poll-quarter">분기 *</label>
@@ -76,9 +80,10 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
       {pollType === "choice" ? <section><h2>Vote Settings</h2>
         <fieldset className="form-choices" disabled={quarterLocked}><legend className="sr-only">투표 방식</legend>
           <label><input type="radio" name="vote-mode" checked={mode === "single"} onChange={() => setMode("single")} />1인 1표</label>
-          <label><input type="radio" name="vote-mode" checked={mode === "multiple"} onChange={() => setMode("multiple")} />중복 투표 가능</label>
+          <label><input type="radio" name="vote-mode" checked={mode === "multiple"} onChange={() => setMode("multiple")} />복수선택 허용</label>
         </fieldset>
-        {mode === "single" && <label className="check-label"><input type="checkbox" checked={allowChange} onChange={(event) => setAllowChange(event.target.checked)} />투표 변경 허용</label>}
+        <label className="check-label"><input type="checkbox" checked={allowChange} onChange={(event) => setAllowChange(event.target.checked)} />선택 변경 허용</label>
+        {mode === "multiple" && <p className="form-note mt-3">여러 선택지를 한 번에 제출합니다. 변경을 허용하면 기존 선택 전체를 새 선택으로 바꿀 수 있습니다.</p>}
       </section> : <section><h2>Response Policy</h2><p className="mb-4">1인 1응답</p>
         <label className="check-label"><input type="checkbox" checked={allowChange} onChange={(event) => setAllowChange(event.target.checked)} />응답 수정 허용</label>
         <label htmlFor="text-max-length">최대 응답 글자 수</label><input id="text-max-length" type="number" min={10} max={5000} step={1} required value={textMaxLength} onChange={(event) => setTextMaxLength(Number(event.target.value))} />

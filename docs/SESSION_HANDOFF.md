@@ -1,81 +1,70 @@
 # 세션 인계
 
-최근 갱신: 2026-11-01. 장시간 작업에서 큰 작업 단위가 끝날 때마다 이 파일을 갱신한다. 사용량 제한이나 중단 후 재개할 때 **이 파일부터 읽고 현재 Git 변경사항과 대조**한다. 비밀번호·키·쿠키·개인정보는 기록하지 않는다.
+최근 갱신: 2026-11-01. 큰 작업 단위 완료 때 갱신한다. 재개 시 이 파일과 실제 Git diff를 먼저 확인한다. 비밀번호·키·쿠키·개인정보는 기록하지 않는다.
 
 ## 현재 개발 목표
 
-203 프로젝트의 안정성·운영 개선과 세션 인계 문서를 GitHub에 반영하고 기존 Vercel 프로젝트에 운영 배포한다. 사용자 승인에 따라 기능 코드의 GitHub 반영과 운영 배포를 완료했다. 운영 DB와 환경변수는 변경하지 않았다. 이 문서의 후속 commit은 배포 결과 기록만 갱신하며 기능 코드는 동일하다.
+POLLS의 multiple을 반복 누적에서 복수선택으로 변경한다. 회원별 선택지당 최대 1표, 배열로 동시 제출, allow_vote_change에 따라 최종 선택 집합을 수정한다. 저장 성공·실패·불확실 응답 피드백과 회귀 검증을 개선한다.
+
+**로컬 구현과 실행 가능한 검증은 완료했다. 현재는 운영 반영 중이다.**
+
+2026-11-01 사용자가 “너가 운영에 직접 반영해줘”라고 승인했다. 앞서 보고한 중복 2그룹·추가 3표의 canonical 정규화, 신규 migration, GitHub 반영과 Vercel 배포를 진행한다. 원본 votes와 기존 회원·댓글·게시글은 보존한다. 환경변수와 비밀번호는 변경하지 않는다.
+
+## 운영 반영 진행 상황
+
+- 시작 기준: remote main e2ff267579089bade5a5246cb073d3b1240fdf34, Vercel production READY. 로컬 .git은 이전 기준으로 유지되므로 remote tree 위에 이번 30개 변경만 반영한다.
+- 최신 읽기 전용 확인: votes 45행, Poll 4개, 중복 2그룹·추가 3행, single 충돌 0. 새 canonical 테이블은 아직 없다.
+- 기존 함수 정의를 Git 제외 `.verification/poll-release-before-functions.sql`에 보관했다. 이는 전체 DB 백업이 아니다. 운영 백업 설정은 직접 확인하지 못했다.
+- 별도 PostgreSQL/개발 branch가 없어 실제 DB 쓰기·두 세션 검증은 아직 미수행이다. 운영에서는 합성 회원·투표를 만들지 않는다. 적용 transaction 안에서 원본 보존·새 집계·권한과 읽기 RPC를 검증한다.
+- 다음 순서: 후보 commit/Preview 빌드 → 승인된 migration과 보존 검사 → main fast-forward/Production READY 확인 → 최종 기록 갱신. 운영 적용 결과는 완료 후 아래에 추가한다.
 
 ## 완료한 작업
 
-- DB 장애를 잘못된 로그인 정보와 구분하고, 보호 콘텐츠 없이 503·재시도 안내를 제공한다. 장애만으로 쿠키를 삭제하지 않으며 복구 후 기존 세션을 재사용한다.
-- 인증 조회의 SDK 자동 재시도를 끄고 기존 10초 timeout을 유지했다.
-- 분기 등록과 발표 공개를 `presentationPublished`로 분리했다. 미공개 발표는 링크와 직접 URL을 차단하지만 해당 분기 Poll은 운영할 수 있다.
-- build 전에 공개 설정과 실제 MDX 파일을 검증한다. 기존 Q4 발표는 공개 상태로 유지했다.
-- HOME 현황 영역을 추가했다. 사용자가 실제 상태는 미정이라고 답했으므로 `data/project-status.ts`는 `null`이다.
-- 기존 관리자 공지를 활용한 결정 기록 템플릿, 백업·복구 절차, 운영 개선 기록 및 AGENTS.md를 정리했다.
-- 개발 단계에서 단위·통합·브라우저·production fixture 검증을 완료했다. 이후 별도 사용자 승인에 따라 아래 GitHub·Vercel 반영을 수행했다. 운영 DB는 변경하지 않았다.
-- 장시간 작업 기록·재개 절차를 AGENTS.md에 추가했다.
-- 배포 사전 확인: GitHub `tacona1016/project203`의 `main`과 로컬 기준 commit `ddd552e05b7df813a4d6e6935f6498bd09181306`이 동일하다. 기존 Vercel `project203`의 운영 배포도 같은 commit을 사용한다. 운영 도메인은 `project203.vercel.app`이다.
-- GitHub: 검증된 코드·문서 33개를 기능 commit `cd505c49e88a29dd56320fc24983d66fc7f6f504`으로 `main`에 반영했다. 기준 commit 일치와 변경 파일 목록을 검사했으며 강제 push는 하지 않았다. 환경 파일·개인 사진·백업·로컬 QA 결과는 포함하지 않았다.
-- Vercel: Git 연동 운영 배포 `dpl_5u5A5cSTyxmorxM8esBqxZNjFjEF`가 READY이며 `project203.vercel.app`에 연결됐다. 원격 build에서 발표 파일 검증·컴파일·정적 페이지 생성·Build Completed를 확인했다. URL: https://project203.vercel.app
+- 직전 작업은 GitHub main e2ff267579089bade5a5246cb073d3b1240fdf34에 반영·운영 READY였다. 로컬 .git은 이전 기준이라 기존 완료 파일 33개가 변경으로 남아 있다. 초기화하지 않는다.
+- 실제 코드와 운영 DB schema/권한을 읽기 전용 확인했다. multiple의 반복 INSERT, radio UI, 첫 옵션 조회, 변경 허용 강제 false가 원인이다.
+- 운영 집계: votes 44행/Poll 4개/multiple 1개, 동일 회원·선택지 중복 2그룹/추가 3행/영향 Poll 1개. single 충돌 0. 개인/선택지 식별자는 보고하지 않았다.
+- 별도 익명 Poll 설정은 코드·DB에 없다. choice 일반 결과는 집계만, 본인 선택은 서버 세션으로 제한한다. SQL anon 역할은 익명투표와 다르다.
+- 계약: choice {optionIds:[]}, single만 구형 optionId 호환, text는 기존 textResponse. 참여 응답은 option_ids/has_participated/selection_count와 기존 필드를 제공한다.
+- 원본 votes 보존을 위해 새 poll_choice_selections에 객관식 현재 선택을 저장한다. 복합 PK/부모 잠금/원자적 교체를 사용한다. 기존 중복 백필은 명시적 승인 설정 전 migration 전체 rollback으로 차단한다.
+- DB/API와 checkbox/radio·선택 변경·성공/불확실 피드백 UI 초안을 통합했다. Agents는 사용량 제한으로 종료됐으며 현재 Main이 남은 파일 검토를 담당한다.
+- 원격 실제 schema에 없는 복합 FK용 poll_options UNIQUE 인덱스를 SQL에 보완했다. 운영에 적용하지 않았다.
+- 합성 API 통합 테스트와 production build가 통과했다. 신규 client 단위 tests 포함 총 38개, typecheck 통과, lint 오류 0/기존 경고 1이다.
+- Chrome 복수선택·선택 변경·연속 submit·저장 실패/응답 손실·주관식·관리자 GUI 검증이 통과했다. production fixture도 build/start·Secure 쿠키·브라우저 secret canary·API 회귀를 통과했다.
+- 관리자 폼의 hydration 전 기본 제출을 막고, 투표 직후 Close되어도 확인된 완료 피드백과 내 선택을 유지한다. 마지막 Chrome/품질 검사까지 통과했다. 390px/1440px 화면도 확인했다.
+- 적용 정책·중복 정규화 승인·익명성 범위·새 테이블 백업 필요성을 docs/POLL_CHOICE_BALLOTS.md와 백업 문서에 정리했다. 실제 배포/DB 쓰기는 없다.
 
 ## 수정한 파일
 
-이번 인계 규칙 요청:
-
-- `AGENTS.md`: 장시간 작업 기록과 재개 규칙 추가.
-- `docs/SESSION_HANDOFF.md`: 이 인계 문서 신규 생성.
-
-직전 개발의 주요 변경:
-
-- 인증: `lib/auth/{session,members,http,service-error}.ts`, `proxy.ts`, `app/layout.tsx`, `app/access/page.tsx`, 접근 화면 컴포넌트 및 `app/api/site-images/[key]/route.ts`.
-- 발표·HOME: `data/quarters.ts`, `data/project-status.ts`, `app/page.tsx`, `app/archive/page.tsx`, `components/presentation/Presentation.tsx`, `scripts/check-presentations.mjs`.
-- 회귀 검증: `tests/auth-reliability.test.mjs`, `tests/presentation-publication.test.mjs`, 기존 분기 테스트·HTTP fixture·통합·브라우저 검사.
-- 운영 문서·설정: `.gitignore`, `package.json`, `AGENTS.md`, `README.md`, `docs/board.md`, `docs/member-auth.md`, 백업·결정·운영 개선 문서.
-
-직전 개발 32개 파일의 전체 목록과 역할은 [운영 개선 기록](OPERATIONS_IMPROVEMENTS.md)의 변경 파일 표를 참고한다. 기존 작업 트리의 변경사항을 초기화하거나 덮어쓰지 않는다.
+- DB: supabase/migrations/20261101000000_choice_ballots.sql, supabase/inspect_choice_ballots.sql, supabase/tests/choice_ballots.sql 신규.
+- 서버/client: lib/polls.ts, lib/site-api.ts, lib/supabase/{types,queries,poll-errors}.ts 및 투표/참여 API.
+- 회원/Admin UI, CSS, fixtures/단위·API·브라우저 tests, README·백업·인계 문서까지 총 30개 파일. [전체 목록과 역할](POLL_CHOICE_BALLOTS.md)의 변경 파일 표를 참고한다.
+- 이전 코드 hash: Git 제외 .verification/poll-choice-baseline.json. 이전 인계 문서: .verification/session-handoff-before-choice.md. 기존 완료 변경을 덮어쓰지 않는다.
 
 ## 미완료 작업
 
-- 현재 요청 범위의 로컬 구현·검증은 완료했다.
-- 배포 후 실제 로그인·보호된 API/이미지의 HTTP 응답 검사는 실행 환경의 네트워크 제한 때문에 미확인이다. 배포 READY/도메인 연결 확인과 실제 사이트 동작 검증을 구분한다.
-- 실제 Supabase 플랜·백업 보유·PITR 설정 확인과 별도 TEST 환경 복구 연습은 미실행이다. 문서 작성이 실제 백업 성공을 뜻하지 않는다.
-- 실제 PostgreSQL의 실행 회귀와 Vercel Preview/Production 확인은 수행하지 않았다.
-- 운영 배포·DB 복원·자동 백업 연결은 승인 없이 진행하지 않는다. 이번 개선에는 새 환경변수나 DB migration이 필요 없다.
+- 요청 범위의 로컬 코드·자동 검증은 완료했고 남은 필수 로컬 수정은 없다.
+- 실제 PostgreSQL transaction·두 연결 동시성·RLS 실행은 도구/네트워크 제약으로 미검증이다. TEST-only SQL과 수동 두 세션 절차를 준비했으며 운영 DB에서 대신 테스트하지 않는다.
+- 운영 중복 3표가 canonical 집계에서 제외되는 효과는 사용자 검토·승인 후에만 적용한다. 운영 SQL은 실행하지 않는다.
 
 ## 발생한 오류
 
-- 해결: DB 조회 오류가 인증 실패로 처리되던 문제, 분기 등록만으로 발표 링크가 생성되던 문제.
-- 해결: Next.js의 정상적인 prerender 제어 예외를 서비스 장애 로그로 오인하던 처리.
-- 남은 기존 경고: `postcss.config.mjs`의 `import/no-anonymous-default-export` 1건, Node의 모듈 형식 감지 경고. 테스트·빌드는 통과했다.
-- 검증 한계: Windows 격리 Chrome의 디스크 쿠키 복원은 확인하지 못했다. 합성 쿠키를 메모리에 복원한 재시작 검사와 구분한다.
-- 동작 한계: Proxy 통과 후 늦은 SSR 장애는 보호 본문 대신 재시도 UI를 보여주지만, 이미 시작된 응답은 HTTP 200일 수 있다.
-- 배포 도구 제약: 로컬 GitHub CLI 인증은 유효하지 않고 셸의 GitHub 네트워크 연결도 제한되어 있다. 연결된 GitHub/Vercel 앱을 사용한다. 로컬 `.git`은 읽기 전용이므로 원격 commit 반영 후 로컬 Git 메타데이터 동기화는 별도로 남을 수 있다.
-- 운영 URL 확인 제약: 셸 요청은 EACCES로 차단되고 일반 웹 검사 도구도 접근하지 못했다. Vercel URL 검사 도구는 기존 운영 도메인과 새 배포 URL 모두 INVALID_ARGUMENT/접근 불가로 응답했다. 배포 실패로 단정하거나 보호 설정을 완화하지 않았다.
+- psql/PostgreSQL/Docker/Supabase CLI/PGlite가 로컬에 없다. npm registry 조회도 EACCES로 차단돼 실제 PostgreSQL 테스트 실행이 현재 불가하다. TEST SQL과 합성 HTTP를 실제 PG 검증으로 보고하지 않는다.
+- 기존 postcss.config.mjs lint 경고 1건과 Node 모듈 형식 경고가 있었다.
+- 1차 Chrome 검사에서 저장 완료 메시지가 결과 refresh보다 먼저 나타나 결과를 너무 일찍 단정하는 테스트 실패가 있었다. 결과 UI 갱신 대기를 추가했다. 저장 ACK와 결과 새로고침은 의도적으로 분리된 동작이다.
+- 추가 Chrome 검사에서 Admin 폼이 hydration 전에 기본 GET으로 제출되는 문제를 실제 요청 로그로 확인했다. 초기 연결 완료 guard/POST method를 추가했고 SSR·브라우저 검사까지 통과했다.
+- 직전 운영 HTTP 검증도 네트워크 제한으로 미확인이다. 이번에 실제 비밀번호나 운영 테스트 데이터를 사용하지 않는다.
 
 ## 다음 실행할 작업
 
-1. 재개 시 이 문서 → `AGENTS.md` → `git status --short`와 관련 diff 순서로 확인한다.
-2. 배포 작업을 재개하는 경우 최신 문서 commit의 Git 연동 배포 상태부터 대조한다. READY이면 이미 반영된 기능 코드의 재구현이나 중복 배포를 시작하지 않는다. 새 개발 요청이 있으면 해당 요청으로 목표와 미완료 항목을 갱신한다.
-3. 사용 가능한 일반 브라우저에서 운영 로그인·보호된 페이지/API/사진 접근과 기존 기능을 확인한다. 로컬 Git 기준은 이전 commit이므로 후속 개발 전 원격 main과 대조하여 기존 로컬 변경사항을 안전하게 보존하고 동기화한다. 운영 DB 쓰기·복원이나 환경변수 변경은 별도 요청 없이 하지 않는다.
-4. 실제 프로젝트 단계·다음 행동·기준일이 확정되면 그때 `data/project-status.ts`를 갱신한다. 임의로 추정하지 않는다.
-5. 다음 큰 작업 단위가 완료되면 이 문서의 목표·완료·파일·미완료·오류·다음 작업·테스트 결과를 갱신한다.
+1. 현재 실행 중인 작업이나 Agent는 없다. 이미 완료한 구현/검증을 다시 만들지 말고 다음 사용자 요청에 맞춰 진행한다.
+2. DB 적용 요청을 받으면 docs/POLL_CHOICE_BALLOTS.md와 읽기 전용 진단 SQL을 먼저 검토한다. 중복 3표 정규화 효과를 승인받기 전 승인 설정을 켜거나 운영 migration을 실행하지 않는다.
+3. 별도 TEST PostgreSQL에서 새 migration·TEST SQL·동시 세션을 검증한 뒤 승인 범위에서 SQL → 새 앱 순서로 운영 반영한다. 원본 votes나 canonical 상태를 삭제하지 않는다.
+4. 실제 PG 실행 불가·정규화 승인 필요·익명 설정 부재를 보고하고 운영 DB 쓰기·push·배포를 하지 않는다.
+5. 큰 단위 완료 때 이 문서의 진행·오류·파일·테스트를 갱신한다.
 
 ## 테스트 결과
 
-직전 개발에서 2026-11-01에 실행한 결과다. 이번 인계 문서 추가로 앱 테스트를 다시 실행한 것으로 간주하지 않는다.
-
-| 명령 | 결과 |
-| --- | --- |
-| `npm.cmd test` | 31개 통과, 실패 0 |
-| `npm.cmd run lint` | 오류 0, 기존 경고 1건 |
-| `npm.cmd run typecheck` | 통과 |
-| `npm.cmd run build` | 발표 검증·MDX·TypeScript·production build 통과 |
-| `npm.cmd run test:integration` | 합성 DB의 장애·실제 timeout·복구·기존 API 회귀 통과 |
-| `npm.cmd run test:browser` | Chrome 모바일/데스크톱·자동완성·발표·게시판·여러 탭 로그아웃·장애 복구 통과 |
-| `npm.cmd run test:production` | 합성 환경 build/start·Secure 쿠키·브라우저 번들 secret canary 검사 통과 |
-
-실제 DB 데이터나 비밀번호를 사용한 테스트가 아니다. 상세 범위와 한계는 [운영 개선 기록](OPERATIONS_IMPROVEMENTS.md)에 있다. 이번 문서 변경은 `git diff --check`와 필수 항목·참조 파일 존재 여부를 확인한다.
-
-운영 배포 검증: 기능 commit의 Vercel production READY, 운영 도메인 alias, 원격 build 로그 성공을 확인했다. 실제 운영 HTTP/로그인 검사는 위 제약으로 미확인이다. 운영 데이터에 테스트 행을 넣거나 실제 회원 비밀번호를 사용하지 않았다.
+- 이번 변경: 단위 38개·typecheck·build·test:integration·test:browser·test:production 통과, lint 오류 0/기존 경고 1. 브라우저는 모바일/데스크톱·checkbox/radio·변경·연속 submit·응답 손실·실패·Close/Reopen·주관식·Admin GUI를 확인했다. 중간에 발견된 브라우저 실패는 수정 후 해당 검증을 통과했다.
+- 실제 PostgreSQL/RLS 실행 검증은 아니며 운영 DB 쓰기·push·배포는 하지 않았다. 상세 결과는 [복수선택 검증 기록](POLL_CHOICE_BALLOTS.md)에 있다.
+- 직전 배포 기준: 단위 31개, lint 오류 0/기존 경고 1, typecheck/build/통합/브라우저/production fixture 통과. 이번 변경 결과가 아니다.
+- 이번 운영 확인은 schema/권한·중복 집계 SELECT만 수행했다. 데이터 변경은 없다.

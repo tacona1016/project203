@@ -9,7 +9,7 @@ export function getPollLoadErrorMessage(error: unknown) {
   if (error instanceof Error && error.message === "POLL_OPTIONS_MISSING") {
     return "투표 선택지가 아직 준비되지 않았습니다. 운영자에게 확인해주세요.";
   }
-  if (["PGRST205", "42P01", "42703", "PGRST204"].includes(code)) {
+  if (["PGRST202", "PGRST205", "42P01", "42883", "42703", "PGRST204"].includes(code)) {
     return "투표 데이터가 아직 준비되지 않았습니다. 운영자에게 확인해주세요.";
   }
   if (["42501", "PGRST301", "PGRST302", "PGRST303"].includes(code)) {

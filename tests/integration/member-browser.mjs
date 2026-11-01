@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure }) {
+export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure, adminPassword }) {
   const output = path.resolve(".verification/member-browser"); await mkdir(output, { recursive: true });
   const pause = ms => new Promise(r => setTimeout(r, ms));
   let browser, sockets = [];
@@ -75,6 +75,8 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure 
     }
     assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
     await page.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
+    const { runChoiceBrowserChecks } = await import("./choice-browser.mjs");
+    const ballotChecks = await runChoiceBrowserChecks({ page, base, output, adminPassword });
     await page.go("/board/new"); await page.wait("!!document.querySelector('.board-editor fieldset')&&!document.querySelector('.board-editor fieldset').disabled");
     assert.equal(await page.evaluate("!!document.querySelector('.board-identity input[type=password]')"), false);
     await page.evaluate("(()=>{for(const [selector,value] of [['#board-title','Browser fixture story'],['#board-content','Browser fixture content']]){const el=document.querySelector(selector);Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}})()");
@@ -100,6 +102,6 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure 
     // Restore only the synthetic cookie in memory to separately verify restart validity.
     if (!persistedFromDisk) await page.send("Network.setCookies", { cookies: [{ name: member.name, value: member.value, domain: member.domain, path: member.path, expires: member.expires, httpOnly: member.httpOnly, secure: member.secure, sameSite: member.sameSite }] });
     await page.go("/board"); await page.wait("document.querySelector('header .name-current')?.textContent==='친구2'");
-    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
+    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
   } finally { await close(); }
 }

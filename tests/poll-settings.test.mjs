@@ -9,7 +9,7 @@ test("poll settings validate choices, title and voting period on server input", 
   assert.equal(value.title, "검토 기준"); assert.equal(value.allow_vote_change, true);
   assert.equal(value.voting_starts_at, null); assert.equal(value.voting_ends_at, null);
   for (const invalid of [{ quarter: undefined }, { quarter: "" }, { quarter: "abc" }, { quarter: "2099-q1" }, { title: " " }, { options: ["one"] }, { options: ["one", " "] }, { vote_mode: "unknown" }, { scheduled: true, start: "2026-10-30T10:00", end: "2026-10-30T09:00" }]) assert.throws(() => parsePollInput({ ...fixture, ...invalid }, true, quarters));
-  assert.equal(parsePollInput({ ...fixture, vote_mode: "multiple" }, true, quarters).allow_vote_change, false);
+  assert.equal(parsePollInput({ ...fixture, vote_mode: "multiple" }, true, quarters).allow_vote_change, true);
   assert.equal(value.quarter, "2026-q4");
   assert.throws(() => parsePollInput({ ...fixture, quarter: "abc" }, false, quarters));
 });

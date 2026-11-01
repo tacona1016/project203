@@ -21,6 +21,6 @@ export default async function AdminPollPage({ params }: { params: Promise<{ slug
   return <SitePage label="ADMIN / POLLS" title={data.poll.title} description={data.poll.description}>
     <Link href="/admin/polls" className="text-link mb-8">← 모든 투표 관리</Link>
     <PollMeta poll={data.poll} status={data.status} />
-    {data.results && <div className="my-12 max-w-3xl">{data.poll.poll_type === "text" ? <TextResponses responses={data.responses ?? []} /> : <PollResults options={data.options} results={data.results} />}<AdminPollList items={[{ ...data, results: data.results }]} /></div>}
+    {data.results && <div className="my-12 max-w-3xl">{data.poll.poll_type === "text" ? <TextResponses responses={data.responses ?? []} /> : <PollResults options={data.options} results={data.results} multiple={data.poll.vote_mode === "multiple"} />}<AdminPollList items={[{ ...data, results: data.results }]} /></div>}
   </SitePage>;
 }

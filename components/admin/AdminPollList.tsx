@@ -32,7 +32,7 @@ export function AdminPollList({ items }: { items: PollSummary[] }) {
     {!items.length && <p className="interaction-notice">등록된 투표가 없습니다.</p>}
     {items.map((item) => <article className="poll-card" key={item.poll.id}>
       <h2 className="mb-5 text-xl font-medium">{item.poll.title}</h2><PollMeta poll={item.poll} status={item.status} />
-      {item.results && <p className="form-note mt-5">참여자 {item.results.participant_count}명 · 총 {item.results.total_votes}{item.poll.poll_type === "text" ? "응답" : "표"}</p>}
+      {item.results && <p className="form-note mt-5">참여자 {item.results.participant_count}명 · {item.poll.poll_type === "choice" && item.poll.vote_mode === "multiple" ? `총 선택 ${item.results.total_votes}개` : `총 ${item.results.total_votes}${item.poll.poll_type === "text" ? "응답" : "표"}`}</p>}
       {item.status === "CLOSED" && !item.poll.is_closed && <p className="form-note mt-3">기간이 종료되었습니다. 다시 진행하려면 종료일을 수정하세요.</p>}
       <div className="admin-actions">
         <Link href={`/admin/polls/${item.poll.slug}`} className="text-link">View</Link>

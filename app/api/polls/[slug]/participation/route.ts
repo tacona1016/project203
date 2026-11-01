@@ -8,7 +8,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     if (new URL(request.url).searchParams.size) throw new HttpError(400, "다른 회원의 참여 기록은 조회할 수 없습니다.");
     const { participantId } = await requireApiSession();
     const { poll } = await getPoll(client, pollSlug((await params).slug));
-    // Both choice selections and text could otherwise reconstruct hidden outcomes.
+    // The RPC returns this session member's complete canonical choice set (or
+    // own text response). Never accept another identity from query parameters.
     return getParticipation(client, poll.id, participantId);
   });
 }

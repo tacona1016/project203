@@ -49,7 +49,7 @@ export function parsePollInput(value: Record<string, unknown>, creating: boolean
   // On edit, options are required only if the server finds zero existing votes.
   if (value.poll_type === "choice" && (creating || options.length > 0) && (options.length < 2 || options.length > 20 || options.some((item) => !item || Array.from(item).length > 100))) throw new Error("선택지는 2~20개, 각 1~100자로 입력해주세요.");
   return { quarter: value.quarter, title, description, poll_type: value.poll_type, results_visibility: value.results_visibility, text_max_length: Number(textMaxLength),
-    vote_mode: value.poll_type === "text" ? "single" : value.vote_mode, allow_vote_change: (value.poll_type === "text" || value.vote_mode === "single") && value.allow_vote_change,
+    vote_mode: value.poll_type === "text" ? "single" : value.vote_mode, allow_vote_change: value.allow_vote_change,
     voting_starts_at: start, voting_ends_at: end, is_hidden: value.is_hidden, options: value.poll_type === "choice" ? options : [] };
 }
 

@@ -48,6 +48,17 @@ export type Vote = {
   updated_at: string;
 };
 
+// Current choice ballots live separately so historical repeat-click votes remain
+// unchanged. An inactive row preserves selection history for Admin edit locks.
+export type ChoiceSelection = {
+  poll_id: DatabaseId;
+  participant_id: string;
+  option_id: DatabaseId;
+  is_selected: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CommentRecord = {
   id: DatabaseId;
   quarter: string;
@@ -64,10 +75,17 @@ export type PollResultsData = {
   participant_count: number;
 };
 
-export type VoteStatus = "success" | "vote_changed" | "unchanged" | "already_voted" | "inactive_participant" | "poll_not_found" | "invalid_option" | "poll_upcoming" | "poll_closed" | "legacy_votes_conflict" | "invalid_poll_type" | "invalid_response" | "response_too_long";
+export type VoteStatus = "success" | "vote_changed" | "unchanged" | "already_voted" | "inactive_participant" | "poll_not_found" | "invalid_option" | "invalid_selection" | "poll_upcoming" | "poll_closed" | "legacy_votes_conflict" | "invalid_poll_type" | "invalid_response" | "response_too_long";
 export type PollStatus = "UPCOMING" | "ACTIVE" | "CLOSED" | "HIDDEN";
 export type PollSummary = { poll: PollRecord; status: PollStatus; results: PollResultsData | null; server_time: string };
-export type PollParticipation = { option_id: DatabaseId | null; text_response: string | null; vote_count: number };
+export type PollParticipation = {
+  option_id: DatabaseId | null;
+  option_ids: DatabaseId[];
+  text_response: string | null;
+  vote_count: number;
+  selection_count: number;
+  has_participated: boolean;
+};
 export type TextResponse = Pick<Vote, "id" | "participant_id" | "text_response" | "created_at" | "updated_at"> & { participant_name: string };
 export type PollOutcome = { results: PollResultsData | null; responses: TextResponse[] | null };
 export type PollInput = {
@@ -101,6 +119,7 @@ export type Database = {
       polls: Table<PollRecord, Omit<PollRecord, "created_at">>;
       poll_options: Table<PollOption, Omit<PollOption, "id">>;
       votes: Table<Vote, never>;
+      poll_choice_selections: Table<ChoiceSelection, never>;
       comments: Table<CommentRecord, Pick<CommentRecord, "quarter" | "participant_id" | "content">, [{
         foreignKeyName: "comments_participant_id_fkey";
         columns: ["participant_id"];
@@ -122,6 +141,11 @@ export type Database = {
         Args: { p_poll_id: DatabaseId; p_option_id: DatabaseId; p_participant_id: string };
         Returns: { status: VoteStatus };
       };
+      submit_choice_ballot: {
+        Args: { p_poll_id: DatabaseId; p_option_ids: DatabaseId[]; p_participant_id: string };
+        Returns: { status: VoteStatus };
+      };
+      get_poll_participation: { Args: { p_poll_id: DatabaseId; p_participant_id: string }; Returns: PollParticipation | null };
       get_poll_results: { Args: { p_poll_id: DatabaseId }; Returns: PollResultsData };
       get_poll_catalog: { Args: { p_slug?: string | null; p_include_hidden?: boolean }; Returns: PollSummary[] };
       get_poll_detail: { Args: { p_slug: string; p_admin?: boolean }; Returns: PollData | null };

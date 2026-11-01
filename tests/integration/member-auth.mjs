@@ -194,7 +194,8 @@ try {
   await expectStatus(a.call("/api/polls/changeable/votes", "POST", { optionId: 202 }), 200);
   const choice = await (await a.call("/api/polls/changeable/participation")).json(); assert.equal(choice.option_id, 202); assert.equal(choice.vote_count, 1);
   assert.equal((await (await b.call("/api/polls/changeable/participation")).json()).vote_count, 0);
-  await expectStatus(a.call("/api/polls/repeat/votes", "POST", { optionId: 301 }), 200); await expectStatus(a.call("/api/polls/repeat/votes", "POST", { optionId: 302 }), 200);
+  await expectStatus(a.call("/api/polls/repeat/votes", "POST", { optionIds: [301, 302, 303] }), 200);
+  assert.equal(await (await a.call("/api/polls/repeat/votes", "POST", { optionIds: [301] })).json(), "already_voted");
   assert.equal(await (await a.call("/api/polls/land-priority/votes", "POST", { optionId: 102 })).json(), "already_voted");
   assert.equal(await (await a.call("/api/polls/upcoming/votes", "POST", { optionId: 401 })).json(), "poll_upcoming");
   assert.equal(await (await a.call("/api/polls/closed/votes", "POST", { optionId: 501 })).json(), "poll_closed");
@@ -216,12 +217,22 @@ try {
   await expectStatus(a.call("/api/board/posts", "POST", { ...body, post_type: "notice" }), 403);
   await expectStatus(a.call("/api/board/posts", "POST", { ...body, author_id: id(2) }), 400);
   checks.push("Session-only authorship; choice change/repeat; own text response only; hidden results absent in API/HTML/RSC; board ownership and notices");
+  const { runChoiceBallotChecks } = await import("./choice-ballots.mjs");
+  checks.push(...await runChoiceBallotChecks({ a, b, anonymous, id }));
 
   await expectStatus(a.call("/api/admin/polls", "POST", {}), 403);
   await expectStatus(a.call("/api/admin/access", "POST", { password: env.ADMIN_PASSWORD }), 200);
+  const createMarkup = await (await a.call("/admin/polls/new")).text();
+  assert(createMarkup.includes('method="post"'));
+  assert(createMarkup.includes('<fieldset disabled=""'), "The server-rendered Admin form must wait for hydration");
   const settings = { quarter: "2026-q4", title: "Admin fixture poll", description: "Fixture only", poll_type: "choice", results_visibility: "live", text_max_length: 1000, options: ["One", "Two"], vote_mode: "single", allow_vote_change: true, scheduled: false, is_hidden: false };
   const created = await a.call("/api/admin/polls", "POST", settings); assert.equal(created.status, 200); const createdSlug = (await created.json()).slug;
   await expectStatus(a.call(`/api/admin/polls/${createdSlug}`, "PATCH", { ...settings, title: "Edited fixture poll" }), 200);
+  const multipleSettings = { ...settings, title: "Canonical choices settings", vote_mode: "multiple", options: [] };
+  for (const invalid of [{ quarter: "2027-q1" }, { vote_mode: "single" }, { options: ["changed", "options"] }]) await expectStatus(a.call("/api/admin/polls/multi-edit", "PATCH", { ...multipleSettings, ...invalid }), 409);
+  await expectStatus(a.call("/api/admin/polls/multi-edit", "PATCH", { ...multipleSettings, allow_vote_change: false }), 200);
+  const lockedMultiple = await (await a.call("/api/admin/polls/multi-edit")).json(); assert.equal(lockedMultiple.poll.allow_vote_change, false);
+  await expectStatus(a.call("/api/admin/polls/multi-edit", "PATCH", multipleSettings), 200);
   await expectStatus(a.call("/api/admin/polls/text-private/state", "POST", { action: "close" }), 200);
   assert.notEqual((await (await b.call("/api/polls/text-private/results")).json()).responses, null);
   await expectStatus(a.call("/api/admin/polls/text-private/state", "POST", { action: "reopen" }), 200);
@@ -243,7 +254,7 @@ try {
   await expectStatus(a.login(2, bPassword), 200); a.cookies.set("project203_admin", adminProof); await expectStatus(a.call("/api/admin/polls", "POST", {}), 403);
   checks.push("Admin create/edit/close/reopen/hide/unhide; results publication; board comment ownership; both sessions required and cannot transfer; shared passwords; expiry/deactivation/logout");
 
-  if (process.argv.includes("--browser")) { const { runBrowser } = await import("./member-browser.mjs"); await runBrowser({ base, root, aPassword, bPassword, id, setDbFailure }); checks.push("Chrome mobile/autofill/Enter/navigation/two-tab logout and DB outage/recovery"); }
+  if (process.argv.includes("--browser")) { const { runBrowser } = await import("./member-browser.mjs"); await runBrowser({ base, root, aPassword, bPassword, id, setDbFailure, adminPassword: env.ADMIN_PASSWORD }); checks.push("Chrome mobile/autofill/Enter/navigation/two-tab logout, DB recovery, checkbox/change/success/uncertain feedback and Admin GUI settings"); }
   if (!production) {
     await writeFile(registryFile, registry.replace(JSON.stringify(registered[1]), JSON.stringify({ ...registered[1], presentationPublished: true })));
     await start();

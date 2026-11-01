@@ -101,7 +101,7 @@
   .name-current > :first-child { min-width: 0; overflow-wrap: anywhere; }
   .name-current button { flex-shrink: 0; }
   .name-current button { min-height: 2.75rem; padding-inline: 0.25rem; color: var(--color-muted); text-decoration: underline; }
-  button, select, input[type="radio"] { cursor: pointer; }
+  button, select, input[type="radio"], input[type="checkbox"] { cursor: pointer; }
   button:disabled { cursor: default; }
 
   .identity-prompt { margin-bottom: 1.5rem; }
@@ -135,6 +135,9 @@
   .interaction-button:disabled { background: var(--color-line); color: var(--color-muted); }
   .form-note { font-size: 0.8125rem; line-height: 1.7; color: var(--color-muted); }
   .form-feedback { min-height: 1.75rem; margin-top: 1rem; font-size: 0.875rem; color: var(--color-accent); }
+  .vote-feedback { margin-top: 1.5rem; padding: 1rem 1.125rem; background: var(--color-surface); color: var(--color-ink); font-size: 0.875rem; line-height: 1.8; overflow-wrap: anywhere; }
+  .vote-feedback[data-tone="success"] { background: var(--color-accent-soft); }
+  .vote-feedback[data-tone="error"] { color: #9c3223; }
   .form-error { font-size: 0.875rem; line-height: 1.8; color: #9c3223; }
   .interaction-notice { max-width: 45rem; padding-block: 2rem; color: var(--color-muted); }
   .comment-form textarea {
