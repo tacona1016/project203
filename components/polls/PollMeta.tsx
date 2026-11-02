@@ -1,7 +1,8 @@
 import type { PollRecord, PollStatus } from "@/lib/supabase/types";
 import { formatPollQuarter, POLL_STATUS_LABELS, votingPeriod } from "@/lib/polls";
+import { PollDeadline } from "./PollDeadline";
 
-export function PollMeta({ poll, status }: { poll: PollRecord; status: PollStatus }) {
+export function PollMeta({ poll, status, serverTime }: { poll: PollRecord; status: PollStatus; serverTime?: string }) {
   return <div className="poll-meta">
     <div className="flex flex-wrap gap-2">
       <span className="quarter-badge">{formatPollQuarter(poll.quarter)}</span>
@@ -12,5 +13,6 @@ export function PollMeta({ poll, status }: { poll: PollRecord; status: PollStatu
       {!poll.voting_starts_at && !poll.voting_ends_at && <span className="quarter-badge">상시 투표</span>}
     </div>
     <p className="mt-4 text-sm text-muted">{votingPeriod(poll)}</p>
+    {serverTime && <PollDeadline key={serverTime} poll={poll} status={status} serverTime={serverTime} />}
   </div>;
 }

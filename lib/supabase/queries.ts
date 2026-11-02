@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { HttpError } from "@/lib/auth/http";
 import type { Database, DatabaseId, PollData } from "./types";
 import { canShowPollResults } from "@/lib/polls";
+import { requireAccessSession } from "@/lib/auth/session";
 
 type Client = SupabaseClient<Database>;
 export const COMMENTS_PAGE_SIZE = 20;
@@ -26,13 +27,51 @@ export async function getParticipation(client: Client, pollId: DatabaseId, parti
   if (error) throw error;
   if (!data) throw new HttpError(404, "참여 기록을 찾지 못했습니다.");
   return data;
+<<<<<<< HEAD
+=======
+}
+
+async function registeredParticipantCount(client: Client) {
+  // The numerator includes historical respondents, so count all registered
+  // identities rather than silently comparing it with active members only.
+  const { count, error } = await client.from("participants").select("id", { count: "exact", head: true }).retry(false);
+  return !error && typeof count === "number" ? count : undefined;
+>>>>>>> e9843ed (.)
 }
 
 export async function getPollCatalog(client: Client, includeHidden = false) {
   const { data, error } = await client.rpc("get_poll_catalog", { p_include_hidden: includeHidden });
   if (error) throw error;
   // Defense in depth: do not serialize unpublished aggregates, including in RSC props.
-  return data.map((summary) => includeHidden || canShowPollResults(summary.poll, summary.status) ? summary : { ...summary, results: null });
+  const visible = data.map((summary) => includeHidden || canShowPollResults(summary.poll, summary.status) ? summary : { ...summary, results: null });
+  const denominator = visible.some((item) => item.results) ? await registeredParticipantCount(client) : undefined;
+  return visible.map((summary) => summary.results && denominator !== undefined
+    ? { ...summary, results: { ...summary.results, eligible_participant_count: denominator } } : summary);
+}
+
+/** Session-only identity; fetch poll IDs, never other members' choices or text. */
+export async function getMemberPollCatalog(client: Client) {
+  const session = await requireAccessSession();
+  const catalog = await getPollCatalog(client);
+  const participated = new Set<string>();
+  try {
+    // Batch by type rather than one RPC per poll. 40 choice polls have at most
+    // 800 option rows under the existing 20-option limit (PostgREST cap: 1000).
+    await Promise.all((["choice", "text"] as const).map(async (type) => {
+      const ids = catalog.filter((item) => item.poll.poll_type === type).map((item) => item.poll.id);
+      for (let start = 0; start < ids.length; start += 40) {
+        const { data, error } = await client.from(type === "choice" ? "poll_choice_selections" : "votes")
+          .select("poll_id").eq("participant_id", session.participantId)
+          .in("poll_id", ids.slice(start, start + 40)).retry(false);
+        if (error || !Array.isArray(data)) throw error ?? new Error("Participation unavailable");
+        for (const row of data) participated.add(String(row.poll_id));
+      }
+    }));
+    return catalog.map((summary) => ({ ...summary, ownParticipation: { hasParticipated: participated.has(String(summary.poll.id)) } }));
+  } catch {
+    // A failed private lookup must never be reported as "not participated".
+    return catalog.map((summary) => ({ ...summary, ownParticipation: null }));
+  }
 }
 
 export async function getPoll(client: Client, slug: string, includeHidden = false): Promise<PollData> {
@@ -41,7 +80,9 @@ export async function getPoll(client: Client, slug: string, includeHidden = fals
   if (error) throw error;
   if (!data) throw new HttpError(404, "투표를 찾지 못했습니다.");
   if (data.poll.poll_type === "choice" && !data.options.length) throw new Error("POLL_OPTIONS_MISSING");
-  return includeHidden || canShowPollResults(data.poll, data.status) ? data : { ...data, results: null, responses: null };
+  if (!includeHidden && !canShowPollResults(data.poll, data.status)) return { ...data, results: null, responses: null };
+  const denominator = data.results ? await registeredParticipantCount(client) : undefined;
+  return data.results && denominator !== undefined ? { ...data, results: { ...data.results, eligible_participant_count: denominator } } : data;
 }
 
 export async function submitTextResponse(client: Client, pollId: DatabaseId, participantId: string, text: string) {

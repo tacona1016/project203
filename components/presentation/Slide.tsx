@@ -16,7 +16,7 @@ const tones = {
 
 export function Slide({ id, number, label, tone = "default", children }: SlideProps) {
   return (
-    <section id={id} aria-label={label} className={`presentation-slide ${tones[tone]}`}>
+    <section id={id} aria-label={label} data-presentation-section data-section-number={number} data-section-label={label} className={`presentation-slide ${tones[tone]}`}>
       <div className="site-container">
         <div className="slide-label"><span>{number}</span><span>{label}</span></div>
         {children}

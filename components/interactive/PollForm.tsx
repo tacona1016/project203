@@ -10,6 +10,15 @@ import { PollMeta } from "@/components/polls/PollMeta";
 import Link from "next/link";
 import { TextBallot } from "./TextBallot";
 import { TextResponses } from "./TextResponses";
+import { CopyLink } from "@/components/CopyLink";
+import { ParticipationRate } from "@/components/polls/ParticipationRate";
+
+type Feedback = { tone: "success" | "error" | "uncertain"; message: string };
+const normalize = (ids: readonly DatabaseId[]) => [...new Set(ids.map(String))].sort();
+const sameSelection = (left: readonly DatabaseId[], right: readonly DatabaseId[]) => {
+  const a = normalize(left), b = normalize(right);
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+};
 
 type Feedback = { tone: "success" | "error" | "uncertain"; message: string };
 const normalize = (ids: readonly DatabaseId[]) => [...new Set(ids.map(String))].sort();
@@ -50,7 +59,8 @@ export function PollForm({ pollId, initialData, initialError = "" }: { pollId: s
         <Link href={`/polls/${data.poll.quarter}`} className="text-link mb-6">Polls / {formatPollQuarter(data.poll.quarter)}</Link>
         <h2 className="section-title">{data.poll.title}</h2>
         {data.poll.description && <p className="mt-4 text-muted">{data.poll.description}</p>}
-        <div className="mt-6"><PollMeta poll={data.poll} status={data.status} /></div>
+        <div className="mt-6"><PollMeta poll={data.poll} status={data.status} serverTime={data.server_time} /></div>
+        <div className="mt-5"><CopyLink label="투표 링크 복사" /></div>
       </header>
       <div className="grid gap-12 lg:grid-cols-2 lg:gap-20">
         <div className="min-w-0">
@@ -61,7 +71,11 @@ export function PollForm({ pollId, initialData, initialError = "" }: { pollId: s
           {data.poll.poll_type === "text" ? <TextBallot key={`${participant.id}-${data.poll.id}`} data={data} onRefresh={refresh} />
             : <Ballot key={`${participant.id}-${data.poll.id}`} data={data} onRefresh={refresh} />}
         </div>
+<<<<<<< HEAD
         {data.results ? data.poll.poll_type === "text" ? <TextResponses responses={data.responses ?? []} /> : <PollResults options={data.options} results={data.results} multiple={data.poll.vote_mode === "multiple"} />
+=======
+        {data.results ? data.poll.poll_type === "text" ? <div className="min-w-0"><ParticipationRate results={data.results} /><TextResponses responses={data.responses ?? []} /></div> : <PollResults options={data.options} results={data.results} multiple={data.poll.vote_mode === "multiple"} />
+>>>>>>> e9843ed (.)
           : <p className="interaction-notice">{data.poll.poll_type === "text" ? "전체 응답은 투표 종료 후 공개됩니다." : "결과는 투표 종료 후 공개됩니다."}</p>}
       </div>
     </>}
@@ -168,6 +182,10 @@ function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<
       : voted && (!editing || !changeAllowed) ? <section aria-label="내 선택" className="py-4">
         <h3 className="font-medium text-accent">✓ 투표에 참여했습니다.</h3><p className="mt-5 text-sm text-muted">현재 선택</p>
         <ul className="mt-2 grid gap-2 text-lg font-medium">{currentOptions.map(option => <li key={option.id}>{option.label}</li>)}</ul>
+<<<<<<< HEAD
+=======
+        {!!currentOptions.length && <p className="form-note mt-3">{single ? "1개 선택을 저장했습니다." : `${currentOptions.length}개 항목에 각각 1표가 반영되어 있습니다.`} {changeAllowed ? "투표가 진행 중인 동안 선택을 변경할 수 있습니다." : "현재 설정에서는 선택을 변경할 수 없습니다."}</p>}
+>>>>>>> e9843ed (.)
         {!currentOptions.length && <p className="form-note mt-3">기존 참여 기록을 확인해주세요.</p>}
         {changeAllowed ? <button type="button" className="text-link mt-6" disabled={pending || checking} onClick={() => { setSelected(currentIds); setEditing(true); setFeedback(null); }}>선택 변경하기</button>
           : active && <p className="form-note mt-5">참여 후에는 선택을 변경할 수 없습니다.</p>}
@@ -180,6 +198,14 @@ function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<
           </label>)}
         </fieldset>
         {!single && <p className="form-note mt-4">여러 항목을 한 번에 선택할 수 있습니다. 같은 선택지에는 한 사람당 1표만 반영됩니다.</p>}
+<<<<<<< HEAD
+=======
+        {!single && selected.length > 0 && <section className="ballot-selection-summary mt-5" aria-label="제출할 선택">
+          <h3 className="text-sm font-medium">제출할 선택 · {selected.length}개</h3>
+          <ul className="mt-2 flex flex-wrap gap-2 text-sm">{data.options.filter(option => selected.includes(String(option.id))).map(option => <li key={option.id}>{option.label}</li>)}</ul>
+          <p className="form-note mt-3">저장 버튼을 누르면 위 선택 목록이 반영됩니다.{editing ? " 기존 선택에 누적하지 않고 이 목록으로 교체합니다." : ""}</p>
+        </section>}
+>>>>>>> e9843ed (.)
         <div className="mt-6 flex flex-wrap items-center gap-5"><button type="submit" className="interaction-button" disabled={pending || checking || !participation || selected.length === 0}>{pending ? "저장 중..." : editing ? "변경 저장" : single ? "투표하기" : `${selected.length}개 선택 · 투표하기`}</button>
           {editing && <button type="button" className="text-link" disabled={pending || checking} onClick={() => { setEditing(false); setSelected([]); }}>취소</button>}
         </div>

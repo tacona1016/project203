@@ -1,5 +1,6 @@
 # 세션 인계
 
+<<<<<<< HEAD
 최근 갱신: 2026-11-01. 재개 시 이 파일과 실제 변경 사항을 먼저 확인한다. 비밀번호·키·쿠키·개인정보는 기록하지 않는다.
 
 ## 현재 개발 목표
@@ -55,3 +56,68 @@ POLLS의 반복 누적을 복수선택으로 전환하고 운영에 반영한다
 - test:browser: Chrome 390px/1440px, 복수선택·선택 변경·연속 제출·완료/응답 손실·실패·Close/Reopen·주관식·Admin GUI·기존 인증/게시판 통과.
 - test:production: 합성 production build/start·Secure 쿠키·secret canary·API 회귀 통과.
 - 운영: Preview/Production 빌드 READY, 데이터 보존·고유 집계·service_role 읽기 RPC·접근 권한·비공개 결과 검사 통과. 운영 쓰기/사용자 E2E·실제 PG 동시성 미검증은 위 항목과 구분한다.
+=======
+최근 갱신: 2026-11-02. 재개 시 이 문서와 .verification/website-features-baseline.json을 먼저 확인한다. 비밀번호·쿠키·키·개인정보는 기록하지 않는다.
+
+## 현재 개발 목표
+
+203 PROJECT UI/UX·기능 개선. HOME 공지/할 일/목표 로드맵, 발표 목차/진행률/탐색/발표모드, Archive 검색, Poll 필터/결과/참여율/복사, BOARD 본인 댓글 수정/기기 초안/NEW/목록복귀, Admin 대시보드/입력 오류/확인을 구현하고 로컬 검증했다.
+
+**로컬 코드와 테스트만 허용. push·배포·운영 DB/환경변수/저장소 설정 변경 금지. 회원·보안 구조 및 성능/운영체계 개편은 이번 범위 제외. 기존 migration·seed/db push 실행 금지.**
+
+## 완료한 작업
+
+- 기존 AGENTS·인계·보고서·dirty Git 및 실제 코드를 확인했다. 시작 시 원격 main/Production은 584220b, READY, 저장소 Public이었다. 로컬 HEAD는 .git 쓰기 제한으로 ddd552e이며 이전 완료 작업을 초기화하지 않았다.
+- 시작198개 파일 해시와 직전 인계는 .verification/website-features-baseline.json, .verification/handoff-before-website-features.md에 보존했다. 새 변경과 오래된 Git HEAD diff를 구분한다.
+- 독립 Agent 3명이 먼저 분석하고 Home/발표·Poll/Board·Admin 파일을 분리했다. Main이 CSS·서버 조회·공통 타입·관계/후보 UI·통합 fixture·문서를 통합했다. 동시 편집 충돌 없음.
+- 공통 회원/관리자 인증, 서버 전용 Supabase, canonical choice 투표 저장, 결과 공개 정책, Q4 MDX 내용과 기존 데이터를 유지했다. 인증 파일·proxy·package/lock·quarters·Q4 MDX·기존 migration 해시 보존 확인.
+- HOME 실제 상태는 미정 유지. 공지는 제목 3개만, 목표 로드맵은 Q4 계획으로 표시한다. 실제 관계·공동 일정·후보 배열은 비우고 합성 사례는 로컬 fixture 복사본에만 주입했다.
+- 발표 탐색·진행률·전체화면/인쇄, Archive 검색, Poll 상태/본인 필터와 결과 정렬/동률/분모/복사, Board 댓글 PATCH·UI·초안·검색복귀, Admin 현황/확인/필드 오류를 구현했다.
+- 새 댓글 함수 SQL과 TEST 전용 SQL을 작성했다. 실제 적용은 하지 않았다. 읽기 확인에서 운영 함수가 없고 기존 updated_at trigger/서버 권한이 있는 것을 확인했다.
+- 최종 단위60개, typecheck, lint, build, API 통합, Chrome, 로컬 production fixture 모두 통과했다. 실제 운영 DB 테스트·새 함수 실행은 미수행이다.
+- 최종 보고 docs/WEBSITE_UX_FEATURE_IMPROVEMENTS.md와 README/Board 사용법을 정리했다. 초안 7일은 복원 만료이며 브라우저 닫힌 동안 정시 물리 삭제를 보장하지 않는다.
+
+## 수정한 파일
+
+- 정확한 시작 대비 목록: .verification/website-features-changed-files.json. 수정39개·생성30개·삭제0개. 보고서4절에 영역별 파일/목적을 정리했다. 최종 문서 갱신 후 manifest를 다시 생성한다.
+- HOME: app/page, components/home, data/project-plan, lib/board/notices.
+- 발표/Archive/Polls: app/archive·polls, components/presentation·polls, Poll/PollForm/PollResults, CopyLink, lib/poll-view.
+- BOARD/Admin: app/board·admin/page, 댓글 PATCH route, components/board·admin, lib/board/data·draft·view·text.
+- Main 통합: globals.css, Supabase types/queries, content-links/RelatedContent, land-candidates/LandComparison, fixtures와 회귀 검사.
+- 새 SQL: supabase/migrations/20261102000000_board_comment_edit.sql, supabase/tests/board_comment_edit.sql.
+
+## 미완료 작업 및 승인 대기
+
+- 별도 TEST PostgreSQL에서 신규 댓글 함수 검증, 실제 잠금/동시성 검증. 로컬 PostgreSQL/CLI가 없어 실행하지 못했다. TEST SQL은 명시 설정 없이 실행되지 않으며 ROLLBACK해도 sequence 간격이 남을 수 있다.
+- 승인 후 신규 함수만 운영 SQL Editor에 적용하고 승인된 배포에서 확인해야 댓글 수정이 운영에서 동작한다. 기존 SQL·seed 재실행 불필요/금지.
+- 실제 관계/일정/후보는 사용자 확정 데이터가 없으므로 미등록. 자금·통합검색·추가 DB 분류/관리 GUI는 설계만이며 개인 읽음 알림은 미진행이다.
+- 실기기 iPhone Safari/WebKit, 실제 OS 쿠키 디스크 유지, 운영 E2E 및 전체 PDF 페이지 육안 검수는 미검증이다.
+- 저장소 Public의 코드/MDX/추적 이미지 노출 위험은 보고만 했다. 설정 변경은 별도 승인 필요.
+
+## 발생한 오류와 해결
+
+- 새 RelatedContent의 JSX try/catch lint 오류 → DB 오류 처리와 렌더 분리.
+- 발표 scroll-padding+scroll-margin 중복으로 빠른 이전 이동 실패 → 단일 offset·즉시 이동과 관찰 기준 정리, portrait/landscape Chrome 통과.
+- 초안 등록 후 pagehide 재생성/다른 유형 삭제·응답 전 경고 억제 가능성 → 서버 ACK ref, 현재 scope만 삭제, ACK 전 경고 유지.
+- hydration 전 결과 정렬/복사 조작 → 준비 전 비활성화.
+- Chrome 하네스 이전 문서/CSS·Board 권한 준비 대기 및 문자열 정규식 이스케이프 오류 → 문서 marker·명시 준비 대기·RegExp 안전 문자열로 수정. 최종 전체 Chrome 통과.
+- Node MODULE_TYPELESS_PACKAGE_JSON 경고 및 기존 postcss ESLint 경고1은 남아 있다. 불필요한 패키지/설정 변경을 만들지 않았다.
+
+## 다음 실행할 작업
+
+1. 현재 로컬 검증·구현은 완료 상태다. 최종 파일/문서 검토와 사용자 보고를 이어간다.
+2. 운영 적용 요청을 받으면 해당 요청 범위와 TEST DB 검증부터 확인한다. 승인 없이는 push·배포·운영 SQL 실행하지 않는다.
+3. 새 댓글 함수 외 DB 구조 변경 없음. 앱 롤백 시 신규 함수는 미사용 상태로 남겨도 되며 기존 행 복원/삭제는 필요 없다.
+
+## 테스트 결과
+
+- npm test: 60/60, 실패0·skip0 (직전47 + 새13).
+- npm run typecheck: 성공.
+- npm run lint: 오류0·기존 postcss 경고1.
+- npm run build: MDX/공개 manifest 검증과 Next16.4.2 프로덕션 빌드 성공.
+- npm run test:integration: 성공, 실제 Next API + 합성 HTTP DB.
+- npm run test:browser: 성공. Chrome 320/390/430/768/1440 기본 UI 회귀, 새 발표390/768/1440 및844×390, 목차/전체화면/PDF·필터·결과·초안·댓글·관리 확인 포함.
+- npm run test:production: 성공. 로컬 합성 fixture build/start+보호 API 회귀이며 Vercel 운영 검증이 아니다.
+- 산출물: .verification/member-browser/report.json, PNG, feature-presentation.pdf; .verification/member-auth-report.json. 모두 Git 제외. 실제 PostgreSQL/RLS·신규 함수·운영 데이터 회귀로 간주하지 않는다.
+- 최종 파일 검토: git diff --check 성공(기존 CRLF 안내만), 문서 상대 링크 누락0, 중요파일24개 시작 해시 보존. README/보고서·인계 갱신 완료.
+>>>>>>> e9843ed (.)

@@ -82,6 +82,13 @@ BOARD 일반 글은 작성자와 관리자만 관리하며 공지·고정·전�
 
 이번 안정성 개선의 범위·검증과 운영 확인 사항은 [운영 개선 기록](docs/OPERATIONS_IMPROVEMENTS.md)을 참고하세요.
 
+<<<<<<< HEAD
+=======
+모바일 메뉴, 본인 투표 참여 상태, BOARD 글자 수와 관리자 설정 요약의 변경 및 검증은 [UI/UX 개선 보고서](docs/UI_UX_IMPROVEMENT_REPORT.md)에 정리했습니다. 로그인 시도 제한·저장소 Private 전환·백업 자동화는 실제 운영 설정을 확인하고 별도 승인 후 적용합니다. 코드의 429 안내 자체가 로그인 시도 제한을 시행하는 것은 아닙니다.
+
+HOME 공지·목표 로드맵, 발표자료 목차·발표 모드, 투표 필터·결과, BOARD 댓글 수정·기기 초안 등 후속 변경은 [웹사이트 UX·기능 개선 보고서](docs/WEBSITE_UX_FEATURE_IMPROVEMENTS.md)를 참고하세요. 댓글 수정은 신규 RPC SQL 검토·적용이 필요하며, 실제 연결 자료·일정·후보지는 코드 설정에 등록하기 전까지 표시하지 않습니다.
+
+>>>>>>> e9843ed (.)
 ## DB와 이미지
 
 이번 회원 인증 통합에는 **DB migration이나 seed 재실행이 필요 없습니다.** 기존 participant UUID, 투표, 댓글, 게시글, RLS와 서버 전용 RPC를 유지합니다. 운영 DB에서 schema/seed/과거 migration을 반복 실행하지 마세요. 기존 설치 SQL과 TEST DB 회귀 SQL은 `supabase/`에 보관합니다.

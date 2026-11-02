@@ -1,5 +1,10 @@
 export type ProjectStatus = {
   phase: string;
+<<<<<<< HEAD
+=======
+  /** Agreed current objective; null means it has not yet been set. */
+  goal: string | null;
+>>>>>>> e9843ed (.)
   nextAction: string;
   /** Confirmed update date in YYYY-MM-DD format. */
   updatedAt: string;

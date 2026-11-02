@@ -16,11 +16,30 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     const socket = new WebSocket(tab.webSocketDebuggerUrl); sockets.push(socket);
     await new Promise(resolve => socket.addEventListener("open", resolve, { once: true }));
     let sequence = 0; const pending = new Map();
-    socket.addEventListener("message", ({ data }) => { const m = JSON.parse(data); if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); clearTimeout(p.timer); if (m.error) p.reject(Error("CDP request failed")); else p.resolve(m.result); } });
+    socket.addEventListener("message", ({ data }) => { const m = JSON.parse(data);
+      if (m.method === "Page.javascriptDialogOpening" && m.params?.type === "beforeunload") { socket.send(JSON.stringify({ id: ++sequence, method: "Page.handleJavaScriptDialog", params: { accept: true } })); return; }
+      if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); clearTimeout(p.timer); if (m.error) p.reject(Error("CDP request failed")); else p.resolve(m.result); } });
     const send = (method, params = {}) => new Promise((resolve, reject) => { const n = ++sequence; const timer = setTimeout(() => reject(Error("CDP timeout: " + method)), 15000); pending.set(n, { resolve, reject, timer }); socket.send(JSON.stringify({ id: n, method, params })); });
-    const evaluate = async expression => { const r = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw Error("Browser evaluation failed"); return r.result.value; };
-    const wait = async expression => { for (let i = 0; i < 150; i++) { if (await evaluate(expression)) return; await pause(100); } throw Error("Browser state did not settle: " + expression); };
-    const go = async route => { await send("Page.navigate", { url: base + route }); await wait("document.readyState==='complete'&&!!document.querySelector('h1')"); };
+    const evaluate = async expression => {
+      const r = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
+      if (r.exceptionDetails) {
+        // Navigation can briefly evaluate in the document being destroyed. Only
+        // this known condition is retryable; do not swallow application errors
+        // or log evaluated expressions (login expressions contain fixture data).
+        const detail = r.exceptionDetails.exception;
+        if (detail?.className === "ReferenceError" && /(?:location|document) is not defined/.test(detail.description ?? "")) throw Error("Browser document is navigating");
+        throw Error(`Browser evaluation failed (${detail?.className ?? "unknown"})`);
+      }
+      return r.result.value;
+    };
+    const wait = async expression => { for (let i = 0; i < 150; i++) { try { if (await evaluate(expression)) return; } catch (error) { if (error.message !== "Browser document is navigating") throw error; } await pause(100); } throw Error("Browser state did not settle: " + expression); };
+    let navigationSequence = 0;
+    const go = async route => {
+      const marker = `${Date.now()}-${++navigationSequence}`;
+      await evaluate(`window.fixtureNavigationDocument=${JSON.stringify(marker)}`);
+      const navigation = await send("Page.navigate", { url: base + route });
+      await wait(`${navigation.loaderId ? `window.fixtureNavigationDocument!==${JSON.stringify(marker)}&&` : ""}document.readyState==='complete'&&!!document.querySelector('h1')`);
+    };
     await send("Page.enable"); await send("Runtime.enable"); await send("Network.enable");
     return { send, evaluate, wait, go };
   }
@@ -38,11 +57,21 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     await pause(500); for (const socket of sockets) socket.close(); sockets = [];
     if (browser?.exitCode === null) { await Promise.race([new Promise(r => browser.once("exit", r)), pause(2000)]); if (browser.exitCode === null) browser.kill(); }
   }
+  async function rateLimitFeedback(page, endpoint, password, member = false) {
+    await page.wait("!!document.querySelector('input[name=password]')&&!document.querySelector('input[name=password]').disabled");
+    await page.evaluate(`(()=>{const input=document.querySelector('input[name=password]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(password)});input.dispatchEvent(new Event('input',{bubbles:true}));${member ? `document.querySelector('select[name=participantId]').value=${JSON.stringify(id(1))};` : ""}window.fixtureOriginalFetch=window.fetch;window.fetch=async function(input,init){if(new URL(typeof input==='string'?input:input.url,location.href).pathname===${JSON.stringify(endpoint)})return new Response('<html>Too many attempts</html>',{status:429,headers:{'Retry-After':'60','Content-Type':'text/html'}});return window.fixtureOriginalFetch(input,init);};})()`);
+    try {
+      await page.evaluate("document.querySelector('input[name=password]').form.requestSubmit()");
+      await page.wait("!!document.querySelector('[role=alert]')&&document.querySelector('[role=alert]').textContent.includes('60초')");
+      assert.equal(await page.evaluate("document.body.textContent.includes('Too many attempts')"), false);
+    } finally { await page.evaluate("window.fetch=window.fixtureOriginalFetch;delete window.fixtureOriginalFetch"); }
+  }
   try {
     let page = await launch(); await page.send("Network.clearBrowserCookies");
     await page.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
     await page.go("/quarter/2026-q4"); await page.wait("location.pathname==='/access'");
     await page.evaluate(`localStorage.setItem('project203_participant',JSON.stringify({id:${JSON.stringify(id(2))},display_name:'친구2'}))`);
+    await rateLimitFeedback(page, "/api/access", aPassword, true);
     await login(page, 1, aPassword); await page.wait("location.pathname==='/quarter/2026-q4'");
     assert.equal(await page.evaluate("!!document.querySelector('dialog')"), false);
     assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
@@ -75,8 +104,21 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     }
     assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
     await page.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
+<<<<<<< HEAD
     const { runChoiceBrowserChecks } = await import("./choice-browser.mjs");
     const ballotChecks = await runChoiceBrowserChecks({ page, base, output, adminPassword });
+=======
+    await page.go("/admin");
+    await rateLimitFeedback(page, "/api/admin/access", adminPassword);
+    const { runChoiceBrowserChecks } = await import("./choice-browser.mjs");
+    const ballotChecks = await runChoiceBrowserChecks({ page, base, output, adminPassword });
+    const { runUiUxBrowserChecks } = await import("./ui-ux-browser.mjs");
+    const uiChecks = await runUiUxBrowserChecks({ page, base, output });
+    const { runPresentationPollBrowser } = await import("./presentation-polls-browser.mjs");
+    const presentationChecks = await runPresentationPollBrowser({ page, base, output });
+    const { runBoardWorkflowBrowser } = await import("./board-workflow-browser.mjs");
+    const workflowChecks = await runBoardWorkflowBrowser({ page, base, output, id });
+>>>>>>> e9843ed (.)
     await page.go("/board/new"); await page.wait("!!document.querySelector('.board-editor fieldset')&&!document.querySelector('.board-editor fieldset').disabled");
     assert.equal(await page.evaluate("!!document.querySelector('.board-identity input[type=password]')"), false);
     await page.evaluate("(()=>{for(const [selector,value] of [['#board-title','Browser fixture story'],['#board-content','Browser fixture content']]){const el=document.querySelector(selector);Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}})()");
@@ -87,6 +129,8 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     const created = await page.send("Target.createTarget", { url: base + "/board" });
     const tabs = await (await fetch("http://127.0.0.1:9230/json/list")).json(); const other = await connect(tabs.find(t => t.id === created.targetId));
     await other.wait("document.querySelector('header .name-current')?.textContent==='친구1'");
+    await page.evaluate("(()=>{const toggle=document.querySelector('.header-menu-toggle');if(getComputedStyle(toggle).display!=='none'&&toggle.getAttribute('aria-expanded')!=='true')toggle.click();})()");
+    await page.wait("getComputedStyle(document.querySelector('.header-menu')).display!=='none'");
     await page.evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='로그아웃').click()");
     await page.wait("location.pathname==='/access'"); await other.wait("location.pathname==='/access'");
     assert.equal(await other.evaluate("fetch('/api/access/session').then(r=>r.status)"), 401);
@@ -102,6 +146,10 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     // Restore only the synthetic cookie in memory to separately verify restart validity.
     if (!persistedFromDisk) await page.send("Network.setCookies", { cookies: [{ name: member.name, value: member.value, domain: member.domain, path: member.path, expires: member.expires, httpOnly: member.httpOnly, secure: member.secure, sameSite: member.sameSite }] });
     await page.go("/board"); await page.wait("document.querySelector('header .name-current')?.textContent==='친구2'");
+<<<<<<< HEAD
     await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
+=======
+    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Member/admin HTML 429 shows safe Retry-After feedback", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, ...uiChecks, ...presentationChecks, ...workflowChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
+>>>>>>> e9843ed (.)
   } finally { await close(); }
 }

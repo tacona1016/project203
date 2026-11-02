@@ -55,6 +55,14 @@ try {
   ];
   const registry = (await readFile(registryFile, "utf8")).replace("export const quarters: readonly Quarter[] = [", `export const quarters: readonly Quarter[] = [\n${registered.map(q => JSON.stringify(q)).join(",\n")},`);
   await writeFile(registryFile, registry);
+<<<<<<< HEAD
+=======
+  const linkFile = path.join(root, "data/content-links.ts");
+  await writeFile(linkFile, (await readFile(linkFile, "utf8")).replace("export const contentLinks: readonly ContentLinkGroup[] = [];", 'export const contentLinks: readonly ContentLinkGroup[] = [{quarter:"2026-q4",pollSlugs:["land-priority","hidden","missing"],decisionPostIds:["90","1","999"]}];'));
+  const candidateFile = path.join(root, "data/land-candidates.ts");
+  const candidateFixtures = ["A", "B"].map(key => ({ id: `fixture-${key}`, name: `합성 후보 ${key}`, location: "테스트 전용 가상 위치", areaPyeong: 200, access: "미확인", buildability: "미확인", road: "미확인", utilities: "미확인", terrain: "미확인", surroundings: "미확인", extraCosts: "미확인", needsVerification: "실제 후보지가 아닌 테스트 자료" }));
+  await writeFile(candidateFile, (await readFile(candidateFile, "utf8")).replace("export const landCandidates: readonly LandCandidate[] = [];", `export const landCandidates: readonly LandCandidate[] = ${JSON.stringify(candidateFixtures)};`));
+>>>>>>> e9843ed (.)
   await mkdir(path.join(root, "app/quarter/2026-q3"), { recursive: true });
   await writeFile(path.join(root, "app/quarter/2026-q3/page.mdx"), 'import { getQuarter } from "@/data/quarters";\n\n<Presentation quarter={getQuarter("2026-q3")}><h1>fixture-unpublished-mdx-must-stay-private</h1></Presentation>\n');
   for (const directory of ["home", "board", "shared"]) await mkdir(path.join(root, "private-assets/site", directory), { recursive: true });
@@ -106,6 +114,11 @@ try {
   if (production) assert(issued.includes("Secure"));
   assert.equal((await (await a.call("/api/access/session")).json()).participant.id, id(1));
   await expectStatus(b.login(2, bPassword), 200);
+<<<<<<< HEAD
+=======
+  const { runPollParticipationChecks } = await import("./poll-participation.mjs");
+  checks.push(...await runPollParticipationChecks({ a, b, anonymous, id }));
+>>>>>>> e9843ed (.)
   const home = await (await a.call("/")).text(), archive = await (await a.call("/archive")).text();
   for (const html of [home, archive]) {
     assert(html.includes("/quarter/2026-q4"));
@@ -244,6 +257,8 @@ try {
   const adminProof = a.cookies.get("project203_admin"); b.cookies.set("project203_admin", adminProof);
   await expectStatus(b.call("/api/admin/polls", "POST", {}), 403);
   await expectStatus(a.call("/api/board/posts", "POST", { ...body, post_type: "notice", is_pinned: true }), 200);
+  const { runWebsiteFeatureChecks } = await import("./website-features.mjs");
+  checks.push(...await runWebsiteFeatureChecks({ a, b, anonymous, id, adminPassword: env.ADMIN_PASSWORD }));
   const sharedA = new Browser(), sharedB = new Browser(); await expectStatus(sharedA.login(3, shared), 200); await expectStatus(sharedB.login(4, shared), 200);
   assert.equal((await (await sharedA.call("/api/access/session")).json()).participant.id, id(3)); assert.equal((await (await sharedB.call("/api/access/session")).json()).participant.id, id(4));
   const expired = new Browser(); expired.cookies.set("project203_member", createMemberToken(secret, id(1), aPassword, Math.floor(Date.now() / 1000) - SESSION_DURATION).token); await expectStatus(expired.call("/api/access/session"), 401);

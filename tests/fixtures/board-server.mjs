@@ -7,11 +7,19 @@ const joined = p => ({ ...p, author_name: name(p.author_id), comment_count: comm
 const list = p => { const row=joined(p); return Object.fromEntries(Object.entries(row).filter(([key])=>key!=="content"&&key!=="deleted_at")); };
 function reset() { posts = Array.from({length:13},(_,i)=>({id:i+1,author_id:person(1),title:`기존 이야기 ${i+1}`,content:`본문 검색 단어 ${i+1}`,post_type:"general",is_pinned:false,created_at:new Date(Date.now()-i*1000).toISOString(),updated_at:new Date(Date.now()-i*1000).toISOString(),deleted_at:null})); comments=[];seq=100; }
 reset();
+posts.push({id:90,author_id:person(1),title:"합성 결정 공지",content:"fixture-decision-body-not-for-home",post_type:"notice",is_pinned:true,created_at:now(),updated_at:now(),deleted_at:null});
 http.createServer(async (req,res)=>{
  const url=new URL(req.url,"http://127.0.0.1:3103"),chunks=[];for await(const chunk of req)chunks.push(chunk);const raw=Buffer.concat(chunks),body=raw.length?JSON.parse(raw.toString()):{};
  const json=(data,status=200)=>res.writeHead(status,{"Content-Type":"application/json"}).end(JSON.stringify(data));
  const fail=(code,status=400)=>json({code,message:"fixture rejection"},status);
  if(url.pathname==="/_test"){if(body.reset)reset();return json({posts,comments});}
+ if(url.pathname==="/rest/v1/board_posts"&&req.method==="GET"){
+  if(req.headers.apikey!=="fixture-only-backend-key")return fail("42501",403);
+  let rows=posts.filter(p=>!p.deleted_at);
+  for(const [key,value] of url.searchParams){if(value.startsWith('eq.'))rows=rows.filter(p=>String(p[key])===value.slice(3));if(value.startsWith('in.('))rows=rows.filter(p=>value.slice(4,-1).split(',').includes(String(p[key])));}
+  rows.sort((a,b)=>Number(b.is_pinned)-Number(a.is_pinned)||b.created_at.localeCompare(a.created_at)||b.id-a.id);
+  const fields=url.searchParams.get('select')?.split(',')??['id','title'];return json(rows.slice(0,Number(url.searchParams.get('limit')||rows.length)).map(row=>Object.fromEntries(fields.map(key=>[key,row[key]]))));
+ }
  if(!url.pathname.startsWith("/rest/v1/rpc/")||!/(board_|_board_)/.test(url.pathname)){
   const headers=Object.fromEntries(Object.entries(req.headers).filter(([k])=>!['host','connection','content-length'].includes(k)));
   try {
@@ -42,6 +50,12 @@ http.createServer(async (req,res)=>{
  if(action==='delete_board_post'){if(!target)return fail('P4040');if(!admin&&(target.author_id!==actor||target.post_type==='notice'))return fail('P4030');target.deleted_at=now();return json({success:true});}
  const parent=posts.find(p=>p.id===postId&&!p.deleted_at);if(!parent)return fail('P4040');
  if(action==='create_board_comment'){const comment={id:++seq,post_id:postId,author_id:actor,content:body.p_content,created_at:now(),updated_at:now(),deleted_at:null};comments.push(comment);return json({id:comment.id});}
+ if(action==='edit_board_comment'){
+  const target=comments.find(c=>c.id===id&&c.post_id===postId&&!c.deleted_at);if(!target)return fail('P4040');
+  if(target.author_id!==actor)return fail('P4030');
+  if(typeof body.p_content!=='string'||Array.from(body.p_content).length>2000||!body.p_content.trim())return fail('22023');
+  target.content=body.p_content.trim();target.updated_at=now();return json({id:target.id,content:target.content,updated_at:target.updated_at});
+ }
  if(action==='delete_board_comment'){const target=comments.find(c=>c.id===id&&c.post_id===postId&&!c.deleted_at);if(!target)return fail('P4040');if(!admin&&target.author_id!==actor)return fail('P4030');target.deleted_at=now();return json({success:true});}
  return fail('PGRST202');
 }).listen(3103,'127.0.0.1',()=>console.log('Board local protocol fixture ready (no production data).'));

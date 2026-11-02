@@ -11,7 +11,7 @@ import { getPoll } from "@/lib/supabase/queries";
 import { pollSlug } from "@/lib/site-data";
 import { HttpError } from "@/lib/auth/http";
 
-export const metadata = { title: "Manage Poll" };
+export const metadata = { title: "투표 상세 관리" };
 export default async function AdminPollPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireAdminSession();
   const client = getSupabaseAdminClient();

@@ -44,3 +44,9 @@ export async function deleteBoardComment(postId: DatabaseId, id: DatabaseId) {
   const actor = await requireBoardActor();
   return checked(await (await protectedClient()).rpc("delete_board_comment", { p_post_id: postId, p_id: id, p_actor_id: actor.participantId, p_is_admin: actor.isAdmin }));
 }
+export async function editBoardComment(postId: DatabaseId, id: DatabaseId, content: string) {
+  const actor = await requireBoardActor();
+  return checked(await (await protectedClient()).rpc("edit_board_comment", {
+    p_post_id: postId, p_id: id, p_actor_id: actor.participantId, p_content: content,
+  }));
+}

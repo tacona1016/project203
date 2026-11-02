@@ -70,6 +70,8 @@ export type CommentRecord = {
 export type Comment = CommentRecord & { participant: Pick<Participant, "id" | "display_name"> };
 
 export type PollResultsData = {
+  /** Current registered members, including inactive accounts; published outcomes only. */
+  eligible_participant_count?: number;
   counts: Record<string, number>;
   total_votes: number;
   participant_count: number;
@@ -77,7 +79,15 @@ export type PollResultsData = {
 
 export type VoteStatus = "success" | "vote_changed" | "unchanged" | "already_voted" | "inactive_participant" | "poll_not_found" | "invalid_option" | "invalid_selection" | "poll_upcoming" | "poll_closed" | "legacy_votes_conflict" | "invalid_poll_type" | "invalid_response" | "response_too_long";
 export type PollStatus = "UPCOMING" | "ACTIVE" | "CLOSED" | "HIDDEN";
+<<<<<<< HEAD
 export type PollSummary = { poll: PollRecord; status: PollStatus; results: PollResultsData | null; server_time: string };
+=======
+export type PollSummary = {
+  poll: PollRecord; status: PollStatus; results: PollResultsData | null; server_time: string;
+  /** Only the session member's participation; null/undefined means unavailable. */
+  ownParticipation?: { hasParticipated: boolean } | null;
+};
+>>>>>>> e9843ed (.)
 export type PollParticipation = {
   option_id: DatabaseId | null;
   option_ids: DatabaseId[];
@@ -115,6 +125,7 @@ type Table<Row, Insert, Relations extends Relationship[] = []> = {
 export type Database = {
   public: {
     Tables: {
+      board_posts: Table<Omit<BoardPost, "author_name" | "comment_count">, never>;
       participants: Table<Participant, Omit<Participant, "id" | "created_at">>;
       polls: Table<PollRecord, Omit<PollRecord, "created_at">>;
       poll_options: Table<PollOption, Omit<PollOption, "id">>;
@@ -136,6 +147,7 @@ export type Database = {
       write_board_post: { Args: { p_id: DatabaseId | null; p_actor_id: string; p_is_admin: boolean; p_title: string; p_content: string; p_post_type: string; p_is_pinned: boolean }; Returns: { id: DatabaseId } };
       delete_board_post: { Args: { p_id: DatabaseId; p_actor_id: string; p_is_admin: boolean }; Returns: { success: boolean } };
       create_board_comment: { Args: { p_post_id: DatabaseId; p_actor_id: string; p_content: string }; Returns: { id: DatabaseId } };
+      edit_board_comment: { Args: { p_post_id: DatabaseId; p_id: DatabaseId; p_actor_id: string; p_content: string }; Returns: { id: DatabaseId; content: string; updated_at: string } };
       delete_board_comment: { Args: { p_post_id: DatabaseId; p_id: DatabaseId; p_actor_id: string; p_is_admin: boolean }; Returns: { success: boolean } };
       submit_vote: {
         Args: { p_poll_id: DatabaseId; p_option_id: DatabaseId; p_participant_id: string };

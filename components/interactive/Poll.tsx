@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getPoll } from "@/lib/supabase/queries";
 import { PollForm } from "./PollForm";
+import { RelatedContent } from "@/components/RelatedContent";
 import { getPollLoadErrorMessage, reportPollLoadError } from "@/lib/supabase/poll-errors";
 
 async function PollContent({ pollId }: { pollId: string }) {
@@ -12,7 +13,7 @@ async function PollContent({ pollId }: { pollId: string }) {
     reportPollLoadError(pollId, "poll", error);
     return { data: null, error: getPollLoadErrorMessage(error) };
   });
-  return <PollForm pollId={pollId} initialData={result.data} initialError={result.error} />;
+  return <><PollForm pollId={pollId} initialData={result.data} initialError={result.error} />{result.data && <RelatedContent pollSlug={pollId} />}</>;
 }
 
 export function Poll({ pollId }: { pollId: string }) {
