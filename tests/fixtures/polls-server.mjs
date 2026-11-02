@@ -5,18 +5,11 @@ let voteFailure = null, voteRequestCount = 0;
 let participantFailure = null;
 let participantFailureAfter = 0;
 let participantRequestCount = 0;
-<<<<<<< HEAD
-const now = () => new Date().toISOString();
-function reset() {
-  people = Array.from({ length: 10 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`, display_name: `친구${i + 1}`, is_active: true, display_order: i + 1, created_at: now() }));
-  polls = []; options = []; votes = []; comments = []; choiceSelections = []; sequence = 100; voteFailure = null; voteRequestCount = 0;
-=======
 let participationFailure = false, participationRequests = [];
 const now = () => new Date().toISOString();
 function reset() {
   people = Array.from({ length: 10 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`, display_name: `친구${i + 1}`, is_active: true, display_order: i + 1, created_at: now() }));
   polls = []; options = []; votes = []; comments = []; choiceSelections = []; sequence = 100; voteFailure = null; voteRequestCount = 0; participationFailure = false; participationRequests = [];
->>>>>>> e9843ed (.)
   const slugs = ["land-priority", "changeable", "repeat", "upcoming", "closed", "hidden", "current-poll", "text-live", "text-private", "text-fixed", "choice-private", "multi-edit", "multi-private", "ui-multi", "ui-uncertain", "ui-failure", "ui-double"];
   slugs.forEach((slug, i) => {
     const id = i + 1, text = slug.startsWith("text-");
@@ -40,11 +33,7 @@ http.createServer(async (req, res) => {
   const fail = code => json({ code, message: "fixture validation rejected" }, 400);
   const url = new URL(req.url, "http://127.0.0.1:3102"); let body = {};
   if (req.method === "POST") { const chunks = []; for await (const chunk of req) chunks.push(chunk); body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); }
-<<<<<<< HEAD
-  if (url.pathname === "/_test") { if (body.reset) { reset(); participantFailure = null; participantFailureAfter = 0; } if (Object.hasOwn(body, "participantFailure")) { participantFailure = body.participantFailure; participantFailureAfter = body.participantFailureAfter ?? 0; participantRequestCount = 0; } if (Object.hasOwn(body, "voteFailure")) { voteFailure = body.voteFailure; voteRequestCount = 0; } if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, choiceSelections, comments, participantRequestCount, voteRequestCount }); }
-=======
   if (url.pathname === "/_test") { if(Object.hasOwn(body,"participationFailure")) participationFailure=body.participationFailure; if (body.reset) { reset(); participantFailure = null; participantFailureAfter = 0; } if (Object.hasOwn(body, "participantFailure")) { participantFailure = body.participantFailure; participantFailureAfter = body.participantFailureAfter ?? 0; participantRequestCount = 0; } if (Object.hasOwn(body, "voteFailure")) { voteFailure = body.voteFailure; voteRequestCount = 0; } if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, choiceSelections, comments, participantRequestCount, voteRequestCount, participationRequests }); }
->>>>>>> e9843ed (.)
   if (req.headers.apikey !== "fixture-only-backend-key") return json({ message: "server only" }, 403);
   const table = url.pathname.replace("/rest/v1/", "");
   const match = row => [...url.searchParams].every(([key, value]) => value.startsWith("eq.") ? String(row[key]) === value.slice(3) : value.startsWith("in.(") ? value.slice(4, -1).split(",").includes(String(row[key])) : true);
@@ -54,15 +43,12 @@ http.createServer(async (req, res) => {
   }
   const joined = c => ({ ...c, participant: { id: c.participant_id, display_name: people.find(p => p.id === c.participant_id)?.display_name } });
   if (req.method === "GET") {
-<<<<<<< HEAD
-=======
     if (["poll_choice_selections", "votes"].includes(table) && url.searchParams.get("select") === "poll_id") {
       participationRequests.push({ table, participant: url.searchParams.get("participant_id"), fields: url.searchParams.get("select") });
       if (participationFailure) return json({ code: "57014", message: "fixture-private-lookup-outage" }, 503);
       const rows = (table === "votes" ? votes : choiceSelections).filter(match).map(row => ({ poll_id: row.poll_id }));
       return json(rows);
     }
->>>>>>> e9843ed (.)
     if (table === "participants") participantRequestCount++;
     if (table === "participants" && participantFailure && participantFailureAfter-- <= 0) {
       if (participantFailure === "connection") { req.socket.destroy(); return; }

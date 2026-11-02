@@ -39,13 +39,6 @@ export default async function HomePage() {
 
         <section aria-labelledby="project-status-title" className="mb-16 bg-surface px-6 py-7 sm:px-8">
           <h2 id="project-status-title" className="eyebrow text-accent">프로젝트 현황</h2>
-<<<<<<< HEAD
-          {projectStatus ? <dl className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="min-w-0"><dt className="text-xs text-muted">현재 단계</dt><dd className="mt-2 wrap-anywhere">{projectStatus.phase}</dd></div>
-            <div className="min-w-0"><dt className="text-xs text-muted">다음 행동</dt><dd className="mt-2 wrap-anywhere">{projectStatus.nextAction}</dd></div>
-            <div className="min-w-0"><dt className="text-xs text-muted">기준일</dt><dd className="mt-2"><time dateTime={projectStatus.updatedAt}>{projectStatus.updatedAt.replaceAll("-", ".")}</time></dd></div>
-          </dl> : <p className="mt-4 text-sm leading-7 text-muted">현재 단계와 다음 행동은 논의 후 업데이트합니다.</p>}
-=======
           <dl className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div className="min-w-0"><dt className="text-xs text-muted">현재 단계</dt><dd className="mt-2 wrap-anywhere">{projectStatus?.phase ?? "미정"}</dd></div>
             <div className="min-w-0"><dt className="text-xs text-muted">진행 목표</dt><dd className="mt-2 wrap-anywhere">{projectStatus?.goal ?? "미정"}</dd></div>
@@ -69,7 +62,6 @@ export default async function HomePage() {
             <Link href="/board" className="text-link">게시판 전체 보기 →</Link>
           </div>
           <Suspense fallback={<p className="interaction-notice" role="status">공지를 불러오는 중...</p>}><LatestNotices /></Suspense>
->>>>>>> e9843ed (.)
         </section>
 
         <section aria-labelledby="current-title" className="pb-20 sm:pb-28">

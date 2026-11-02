@@ -1,9 +1,5 @@
 "use client";
 
-<<<<<<< HEAD
-export function PollResults({ options, results, multiple = false }: { options: PollOption[]; results: PollResultsData; multiple?: boolean }) {
-  const { counts, total_votes: total, participant_count: participantCount } = results;
-=======
 import { useId, useState, useSyncExternalStore } from "react";
 import type { PollOption, PollResultsData } from "@/lib/supabase/types";
 import { choiceResultRows } from "@/lib/poll-view";
@@ -16,7 +12,6 @@ export function PollResults({ options, results, multiple = false }: { options: P
   const id = useId();
   const ready = useSyncExternalStore(subscribe, () => true, () => false);
   const rows = choiceResultRows(options, results, multiple, order);
->>>>>>> e9843ed (.)
 
   return (
     <div className="poll-results" aria-label="현재 투표 결과" data-result-mode={multiple ? "multiple" : "single"}>
@@ -31,14 +26,7 @@ export function PollResults({ options, results, multiple = false }: { options: P
         </select>
       </label>
       <ol className="mt-7 grid gap-6">
-<<<<<<< HEAD
-        {options.map((option) => {
-          const count = counts[option.id] ?? 0;
-          const denominator = multiple ? participantCount : total;
-          const percentage = denominator ? Math.round(count / denominator * 100) : 0;
-=======
         {rows.map(({ option, count, percentage, leader }) => {
->>>>>>> e9843ed (.)
           return (
             <li key={option.id}>
               <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-sm">
@@ -53,10 +41,7 @@ export function PollResults({ options, results, multiple = false }: { options: P
         })}
       </ol>
       {multiple && <p className="form-note mt-6">참여자 기준 선택률입니다. 복수 선택이므로 비율의 합은 100%를 넘을 수 있습니다.</p>}
-<<<<<<< HEAD
-=======
       {!multiple && <p className="form-note mt-6">전체 유효 표를 기준으로 계산한 비율입니다. 반올림으로 합이 100%와 다를 수 있습니다.</p>}
->>>>>>> e9843ed (.)
       {total === 0 && <p className="form-note mt-6">아직 투표가 없습니다. 첫 의견을 남겨주세요.</p>}
     </div>
   );

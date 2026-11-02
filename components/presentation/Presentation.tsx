@@ -4,12 +4,9 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { isPresentationPublished, type Quarter } from "@/data/quarters";
 import { requireAccessSession } from "@/lib/auth/session";
 import { notFound } from "next/navigation";
-<<<<<<< HEAD
-=======
 import Link from "next/link";
 import { RelatedContent } from "@/components/RelatedContent";
 import { PresentationNavigator } from "./PresentationNavigator";
->>>>>>> e9843ed (.)
 
 type PresentationProps = {
   quarter: Quarter;

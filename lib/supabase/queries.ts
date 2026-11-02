@@ -27,8 +27,6 @@ export async function getParticipation(client: Client, pollId: DatabaseId, parti
   if (error) throw error;
   if (!data) throw new HttpError(404, "참여 기록을 찾지 못했습니다.");
   return data;
-<<<<<<< HEAD
-=======
 }
 
 async function registeredParticipantCount(client: Client) {
@@ -36,7 +34,6 @@ async function registeredParticipantCount(client: Client) {
   // identities rather than silently comparing it with active members only.
   const { count, error } = await client.from("participants").select("id", { count: "exact", head: true }).retry(false);
   return !error && typeof count === "number" ? count : undefined;
->>>>>>> e9843ed (.)
 }
 
 export async function getPollCatalog(client: Client, includeHidden = false) {

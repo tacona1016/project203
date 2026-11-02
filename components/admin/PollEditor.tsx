@@ -1,15 +1,9 @@
 "use client";
 
-<<<<<<< HEAD
-import { useState, useSyncExternalStore, type FormEvent } from "react";
-=======
 import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
->>>>>>> e9843ed (.)
 import { useRouter } from "next/navigation";
 import type { PollData } from "@/lib/supabase/types";
 import { fromSeoulInput, parsePollInput, toSeoulInput } from "@/lib/polls";
-
-const subscribe = () => () => {};
 
 const subscribe = () => () => {};
 
@@ -48,12 +42,8 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-<<<<<<< HEAD
-    if (!ready || pending) return;
-=======
     if (!ready || pending || submitting.current) return;
     setAttempted(true);
->>>>>>> e9843ed (.)
     const body = { quarter, title, description, options: quarterLocked ? [] : options,
       poll_type: pollType, results_visibility: visibility, text_max_length: pollType === "text" ? textMaxLength : poll?.text_max_length ?? 1000,
       vote_mode: pollType === "text" ? "single" : mode, allow_vote_change: allowChange, scheduled, start, end, is_hidden: hidden };
@@ -77,11 +67,7 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
     } catch (error) { setError(error instanceof Error ? error.message : "저장하지 못했습니다."); submitting.current = false; setPending(false); }
   }
 
-<<<<<<< HEAD
-  return <form onSubmit={submit} method="post" className="admin-form" aria-busy={!ready || pending}>
-=======
   return <form onSubmit={submit} method="post" noValidate className="admin-form" aria-busy={!ready || pending}>
->>>>>>> e9843ed (.)
     <fieldset disabled={!ready || pending}>
       <legend className="sr-only">투표 설정</legend>
       <section><h2>기본 정보</h2>
@@ -120,11 +106,7 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
         </fieldset>
         <label className="check-label"><input type="checkbox" checked={allowChange} onChange={(event) => setAllowChange(event.target.checked)} />선택 변경 허용</label>
         {mode === "multiple" && <p className="form-note mt-3">여러 선택지를 한 번에 제출합니다. 변경을 허용하면 기존 선택 전체를 새 선택으로 바꿀 수 있습니다.</p>}
-<<<<<<< HEAD
-      </section> : <section><h2>Response Policy</h2><p className="mb-4">1인 1응답</p>
-=======
       </section> : <section><h2>응답 설정</h2><p className="mb-4">1인 1응답</p>
->>>>>>> e9843ed (.)
         <label className="check-label"><input type="checkbox" checked={allowChange} onChange={(event) => setAllowChange(event.target.checked)} />응답 수정 허용</label>
         <label htmlFor="text-max-length">최대 응답 글자 수</label><input id="text-max-length" type="number" min={10} max={5000} step={1} required value={textMaxLength} aria-invalid={textLengthInvalid} aria-describedby={textLengthInvalid ? "text-max-length-error" : undefined} onChange={(event) => setTextMaxLength(Number(event.target.value))} />
         {textLengthInvalid && <p id="text-max-length-error" className="form-error mt-3">10~5,000자 사이의 정수로 입력해주세요.</p>}

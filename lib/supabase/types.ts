@@ -79,15 +79,11 @@ export type PollResultsData = {
 
 export type VoteStatus = "success" | "vote_changed" | "unchanged" | "already_voted" | "inactive_participant" | "poll_not_found" | "invalid_option" | "invalid_selection" | "poll_upcoming" | "poll_closed" | "legacy_votes_conflict" | "invalid_poll_type" | "invalid_response" | "response_too_long";
 export type PollStatus = "UPCOMING" | "ACTIVE" | "CLOSED" | "HIDDEN";
-<<<<<<< HEAD
-export type PollSummary = { poll: PollRecord; status: PollStatus; results: PollResultsData | null; server_time: string };
-=======
 export type PollSummary = {
   poll: PollRecord; status: PollStatus; results: PollResultsData | null; server_time: string;
   /** Only the session member's participation; null/undefined means unavailable. */
   ownParticipation?: { hasParticipated: boolean } | null;
 };
->>>>>>> e9843ed (.)
 export type PollParticipation = {
   option_id: DatabaseId | null;
   option_ids: DatabaseId[];

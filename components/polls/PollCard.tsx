@@ -18,11 +18,7 @@ export function PollCard({ summary, showCounts = true }: { summary: PollSummary;
     {showCounts && results && <ParticipationRate results={results} />}
     <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
       {showCounts && <p className="text-sm text-muted">{results ? `참여자 ${results.participant_count}명 · ${poll.poll_type === "choice" && poll.vote_mode === "multiple" ? `총 선택 ${results.total_votes}개` : `총 ${results.total_votes}${poll.poll_type === "text" ? "응답" : "표"}`}` : "결과는 투표 종료 후 공개됩니다."}</p>}
-<<<<<<< HEAD
-      <Link className="text-link" href={`/polls/${poll.slug}`}>{status === "CLOSED" ? "결과 보기" : status === "UPCOMING" ? "투표 살펴보기" : poll.poll_type === "text" ? "Respond" : "Vote"} →</Link>
-=======
       <Link className="text-link" href={`/polls/${poll.slug}`}>{status === "CLOSED" ? "결과 보기" : status === "UPCOMING" ? "투표 살펴보기" : participated ? poll.poll_type === "text" ? "내 응답 보기" : "내 선택 보기" : poll.poll_type === "text" ? "응답하기" : "투표하기"} →</Link>
->>>>>>> e9843ed (.)
     </div>
   </article>;
 }

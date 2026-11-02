@@ -21,7 +21,8 @@ Use Node.js 22+; use `npm.cmd` if PowerShell blocks npm.
 - `npm ci`: install locked dependencies.
 - `npm run dev`: start local development.
 - `npm run check:presentations`: validate publication metadata and MDX files.
-- `npm run build`: run presentation validation, then production compilation.
+- `npm run check:conflicts`: reject standalone Git conflict markers in source, MDX, docs, and SQL.
+- `npm run build`: run conflict/publication checks, then production compilation.
 - `npm run start`: serve the production build.
 - `npm run lint` / `npm run typecheck`: ESLint and strict TypeScript/route checks.
 - `npm test`: Node test runner; no separate coverage threshold.
