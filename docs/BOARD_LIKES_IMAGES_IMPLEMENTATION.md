@@ -1,6 +1,6 @@
 # BOARD 수정·좋아요·비공개 사진 첨부
 
-2026-11-03. 기존 인증·게시판/투표/MDX 데이터를 유지한 구현이다. 최초 로컬 검증 후 사용자가 개발·migration·배포를 사전 승인했다. **신규 DB migration 2개와 Private 버킷 적용은 완료됐다.** GitHub/Vercel 반영과 실제 접근 검증의 최신 진행 상황은 `docs/SESSION_HANDOFF.md`를 따른다. 기존 데이터·과거 migration은 변경하지 않았다.
+2026-11-03. 기존 인증·게시판/투표/MDX 데이터를 유지한 구현이다. 최초 로컬 검증 후 사용자가 개발·migration·배포를 사전 승인했다. **신규 DB migration 2개·Private 버킷·GitHub main 반영·Vercel Production READY 확인을 완료했다.** 기존 데이터·과거 migration은 변경하지 않았다. 로그인한 회원의 실제 운영 업로드 E2E는 미검증이다.
 
 ## 1. 상태와 현재 구현 확인
 
@@ -11,7 +11,7 @@
 | 게시글·댓글 좋아요 | 구현 완료 / 테스트 완료 / DB 적용 완료 | 합성 API·Chrome, 실제 DB 권한·조회 RPC 검증. 실제 DB 쓰기 동시성은 미검증 |
 | 사진 업로드·열람·삭제 | 구현 완료 / 테스트 완료 / 버킷 적용 완료 | 실제 Sharp 및 합성 Storage API·Chrome. 실제 Storage 업로드는 미실행 |
 | DB/Storage SQL·TEST SQL | 구현 완료 / 신규 migration 운영 적용 완료 | 서버 발급 version으로 이력 저장. 별도 TEST PostgreSQL 행위 검증 필요 |
-| 앱 배포 | 진행 중 | 사용자 사전 승인에 따라 GitHub·Vercel 반영. 인계 문서에서 최신 결과 확인 |
+| 앱 배포 | 운영 적용 완료 / 빌드 검증 완료 | 기능 commit4811b7e, Production READY. 실제 회원 로그인 이후 E2E는 미검증 |
 
 시작 시 원격 main/Production은 `03118e2`, READY였다. root는 `.git` 쓰기 제한 때문에 이전 복구 미커밋 변경을 보존한 `fix/rebase-integrity` 상태였다. 원격은 연결 도구로 확인했다. rebase와 충돌 마커는 없었다. 시작231파일 해시는 `.verification/board-features-baseline.json`에 보존했다. 별도 로컬 검토 저장소 `.verification/board-feature-branch`의 `feat/board-likes-images`에 체크포인트를 보관한다. root의 기존 변경을 초기화하거나 main을 갱신하지 않았다.
 
@@ -140,3 +140,15 @@ DB와 Storage를 한 PostgreSQL transaction으로 묶을 수 없으므로 추적
 앱을 이전 버전으로 되돌려도 새 테이블/버킷을 삭제하지 않는다. 좋아요·첨부 metadata/object를 보존하고 후속 호환 앱으로 복구한다. 업로드된 개인 사진을 public으로 옮기거나 DB만 먼저 지우지 않는다. 기존 글/댓글/투표·UUID는 변경하지 않는다.
 
 미완료: 별도 TEST PostgreSQL 동시성·실제 Storage 업로드/삭제, 실제 운영 회원 E2E, Safari 실기기, HEIC/AVIF/댓글 사진·자동 정리 스케줄. 로컬 새 npm 의존성 다운로드는 오프라인 캐시 제한으로 실행하지 못했고 이미 설치된 동일 잠금 버전 Sharp를 사용했다. Linux 설치·빌드 검증과 앱 배포의 최신 결과는 세션 인계에 기록한다. 운영 SQL·Private 버킷 적용은 완료됐으며 정리 작업은 실행하지 않았다.
+
+## 14. GitHub·Vercel 실제 적용 결과
+
+- 기능 commit: `4811b7e2420a85744b354c8580ce1f52e62d31a5`. 원격 최신03118e2를 parent로42파일만 변경하고 main을 fast-forward했다. 강제 push·과거 이력 변경·파일 삭제는 없다. `feat/board-likes-images` 브랜치도 보관했다.
+- Production: `dpl_kG7pYMxX3cNo3AwuZfaEmrbGw6uD`, **READY**, `https://project203.vercel.app`. 같은 기능 commit의 Preview도 READY다. Preview에 서버 환경변수가 없어 인증 기능까지 검증한 것은 아니다.
+- Vercel Linux 설치·Next16.4.2 production build 통과, 빌드 로그 오류 없음. 기존 `engines >=22` 때문에 프로젝트 설정24 대신26이 사용된다는 경고와 npm/ESM 경고가 있다. 원인과 무관한 Node/환경변수 설정은 바꾸지 않았다. 로컬 fresh npm ci는 별도 미검증이다.
+- 신규3테이블 RLS,10개 RPC의 SECURITY INVOKER·anon/authenticated 실행 차단·server 실행 허용, 버킷 Private/3MiB/WebP, 실제 조회 RPC와 Security Advisor 경고0을 검증했다. 기존8테이블 전체 행 지문이 전후 동일하다. 실제 사용자 콘텐츠에 테스트 행이나 파일은 생성하지 않았다.
+- 운영 URL HTTP 검사는 Vercel URL 조회 도구의 대상 접근 오류 및 로컬 네트워크 실패로 완료하지 못했다. 공개 웹 조회 대안도 접근 불가였다. READY와 운영 로그인·사진 업로드 성공을 동일하게 보고하지 않는다.
+- 원본 `.git` 쓰기 제한으로 로컬 refs는 이전 상태를 유지한다. 작업 파일과 이전 변경은 보존했고 연결 도구로 GitHub에 반영했다. 이후 로컬 Git 작업 전 원격 최신 상태와 diff를 다시 대조해야 하며 오래된 로컬 main을 강제로 push하면 안 된다.
+- 저장소는 Public 상태를 유지했다. 신규 사진은 Private Storage에만 저장하도록 구현했으며 개인 사진·환경변수·인증 정보는 커밋하지 않았다. 저장소 공개 범위·과금·도메인은 변경하지 않았다.
+
+이후 문서 상태 기록 commit은 기능 코드를 바꾸지 않는다. 마지막 배포 ID·SHA와 조회 결과는 Git 제외 `.verification/board-features-validation.json`에도 보관한다.
