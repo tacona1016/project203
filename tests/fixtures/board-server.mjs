@@ -1,4 +1,5 @@
 import http from "node:http";
+import { boardExtras } from "./board-extras.mjs";
 const now = () => new Date().toISOString(), person = n => `00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
 let posts = [], comments = [], seq = 100;
 const active = id => /^00000000-0000-4000-8000-00000000000[1-9]$/.test(id) || id === person(10);
@@ -7,12 +8,14 @@ const joined = p => ({ ...p, author_name: name(p.author_id), comment_count: comm
 const list = p => { const row=joined(p); return Object.fromEntries(Object.entries(row).filter(([key])=>key!=="content"&&key!=="deleted_at")); };
 function reset() { posts = Array.from({length:13},(_,i)=>({id:i+1,author_id:person(1),title:`기존 이야기 ${i+1}`,content:`본문 검색 단어 ${i+1}`,post_type:"general",is_pinned:false,created_at:new Date(Date.now()-i*1000).toISOString(),updated_at:new Date(Date.now()-i*1000).toISOString(),deleted_at:null})); comments=[];seq=100; }
 reset();
+const extras = boardExtras({ posts:()=>posts,comments:()=>comments,active,now });
 posts.push({id:90,author_id:person(1),title:"합성 결정 공지",content:"fixture-decision-body-not-for-home",post_type:"notice",is_pinned:true,created_at:now(),updated_at:now(),deleted_at:null});
 http.createServer(async (req,res)=>{
- const url=new URL(req.url,"http://127.0.0.1:3103"),chunks=[];for await(const chunk of req)chunks.push(chunk);const raw=Buffer.concat(chunks),body=raw.length?JSON.parse(raw.toString()):{};
+ const url=new URL(req.url,"http://127.0.0.1:3103"),chunks=[];for await(const chunk of req)chunks.push(chunk);const raw=Buffer.concat(chunks),body=raw.length&&(!url.pathname.startsWith('/storage/v1/')||req.method==='DELETE')?JSON.parse(raw.toString()):{};
  const json=(data,status=200)=>res.writeHead(status,{"Content-Type":"application/json"}).end(JSON.stringify(data));
  const fail=(code,status=400)=>json({code,message:"fixture rejection"},status);
- if(url.pathname==="/_test"){if(body.reset)reset();return json({posts,comments});}
+ if(url.pathname==="/_test"){if(body.reset){reset();extras.reset();}extras.configure(body);return json({posts,comments,...extras.stats()});}
+ if(extras.handle({req,res,url,raw,body,json,fail}))return;
  if(url.pathname==="/rest/v1/board_posts"&&req.method==="GET"){
   if(req.headers.apikey!=="fixture-only-backend-key")return fail("42501",403);
   let rows=posts.filter(p=>!p.deleted_at);

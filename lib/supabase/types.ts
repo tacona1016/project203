@@ -1,4 +1,4 @@
-import type { BoardPage, BoardPost, BoardComment } from "@/lib/board/types";
+import type { BoardPage, BoardPost, BoardComment, BoardEngagement, BoardImageRecord, LikeState } from "@/lib/board/types";
 
 // 기존 숫자 ID를 유지하고 SDK·폼에서 사용하는 문자열/숫자 표현을 처리합니다.
 export type DatabaseId = string | number;
@@ -121,7 +121,7 @@ type Table<Row, Insert, Relations extends Relationship[] = []> = {
 export type Database = {
   public: {
     Tables: {
-      board_posts: Table<Omit<BoardPost, "author_name" | "comment_count">, never>;
+      board_posts: Table<Omit<BoardPost, "author_name" | "comment_count" | "likes" | "images">, never>;
       participants: Table<Participant, Omit<Participant, "id" | "created_at">>;
       polls: Table<PollRecord, Omit<PollRecord, "created_at">>;
       poll_options: Table<PollOption, Omit<PollOption, "id">>;
@@ -137,6 +137,16 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      get_board_engagement: { Args: { p_post_id: DatabaseId; p_actor_id: string; p_comment_ids: DatabaseId[] }; Returns: BoardEngagement };
+      set_board_like: { Args: { p_post_id: DatabaseId; p_comment_id: DatabaseId | null; p_actor_id: string; p_liked: boolean }; Returns: LikeState };
+      reserve_board_image: { Args: { p_post_id: DatabaseId; p_id: string; p_actor_id: string; p_is_admin: boolean; p_token: string; p_hash: string; p_bytes: number; p_width: number; p_height: number }; Returns: BoardImageRecord };
+      finish_board_image: { Args: { p_post_id: DatabaseId; p_id: string; p_actor_id: string; p_is_admin: boolean; p_token: string }; Returns: BoardImageRecord };
+      get_board_image: { Args: { p_post_id: DatabaseId; p_id: string }; Returns: BoardImageRecord | null };
+      begin_board_image_delete: { Args: { p_post_id: DatabaseId; p_id: string; p_actor_id: string; p_is_admin: boolean; p_token: string }; Returns: BoardImageRecord | null };
+      abort_board_image: { Args: { p_id: string; p_token: string }; Returns: BoardImageRecord | null };
+      purge_board_image: { Args: { p_id: string; p_token: string }; Returns: { deleted: boolean } };
+      board_image_cleanup_candidates: { Args: Record<string, never>; Returns: string[] };
+      claim_board_image_cleanup: { Args: { p_id: string; p_token: string }; Returns: BoardImageRecord | null };
       get_board_page: { Args: { p_search: string; p_page: number }; Returns: BoardPage };
       get_board_post: { Args: { p_id: DatabaseId }; Returns: BoardPost | null };
       get_board_comments: { Args: { p_post_id: DatabaseId; p_page: number }; Returns: BoardComment[] };

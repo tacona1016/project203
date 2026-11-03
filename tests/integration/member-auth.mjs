@@ -253,6 +253,8 @@ try {
   await expectStatus(a.call("/api/board/posts", "POST", { ...body, post_type: "notice", is_pinned: true }), 200);
   const { runWebsiteFeatureChecks } = await import("./website-features.mjs");
   checks.push(...await runWebsiteFeatureChecks({ a, b, anonymous, id, adminPassword: env.ADMIN_PASSWORD }));
+  const { runBoardEngagementChecks } = await import("./board-engagement.mjs");
+  checks.push(...await runBoardEngagementChecks({ a, b, anonymous, id, adminPassword: env.ADMIN_PASSWORD }));
   const sharedA = new Browser(), sharedB = new Browser(); await expectStatus(sharedA.login(3, shared), 200); await expectStatus(sharedB.login(4, shared), 200);
   assert.equal((await (await sharedA.call("/api/access/session")).json()).participant.id, id(3)); assert.equal((await (await sharedB.call("/api/access/session")).json()).participant.id, id(4));
   const expired = new Browser(); expired.cookies.set("project203_member", createMemberToken(secret, id(1), aPassword, Math.floor(Date.now() / 1000) - SESSION_DURATION).token); await expectStatus(expired.call("/api/access/session"), 401);

@@ -41,7 +41,7 @@ Inspect impact and preserve behavior. Run relevant tests, lint, typecheck, and b
 
 ## Commit & Pull Request Guidelines
 
-Use focused imperative subjects. PRs explain behavior, validation, SQL/security impact, and UI evidence. Push/deployment requires explicit authorization.
+Use focused imperative subjects. PRs explain behavior, validation, SQL/security impact, and UI evidence. Push/deployment requires explicit authorization. The user's standing authorization in `docs/DEVELOPMENT_AUTHORIZATION.md` covers routine project pushes, non-destructive migrations, and deployments; do not ask again within that scope. Destructive changes and security relaxation still require separate confirmation.
 
 ## Security & Configuration
 

@@ -5,6 +5,7 @@ import { requireBoardActor } from "@/lib/auth/board-session";
 import { canManageBoardPost } from "./validation";
 import type { BoardInput } from "./types";
 import type { DatabaseId } from "@/lib/supabase/types";
+import { getBoardEngagement } from "./engagement";
 
 function checked<T>({ data, error }: { data: T | null; error: { code?: string } | null }): T {
   if (error?.code === "P4030") throw new HttpError(403, "이 작업을 수행할 권한이 없습니다.");
@@ -19,10 +20,15 @@ export async function getBoardPage(search: string, page: number) {
 export async function getBoardPost(id: DatabaseId) {
   const result = await (await protectedClient()).rpc("get_board_post", { p_id: id });
   if (!result.error && result.data === null) throw new HttpError(404, "게시글을 찾지 못했습니다.");
-  return checked(result);
+  const post = checked(result);
+  const extras = await getBoardEngagement(id).catch(() => null);
+  return { ...post, likes: extras?.post ?? null, images: extras?.images ?? null };
 }
 export async function getBoardComments(id: DatabaseId, page = 1) {
-  return checked(await (await protectedClient()).rpc("get_board_comments", { p_post_id: id, p_page: page }));
+  const comments = checked(await (await protectedClient()).rpc("get_board_comments", { p_post_id: id, p_page: page }));
+  if (!comments.length) return comments;
+  const extras = await getBoardEngagement(id, comments.map(comment => comment.id)).catch(() => null);
+  return comments.map(comment => ({ ...comment, likes: extras?.comments[String(comment.id)] ?? null }));
 }
 export async function writeBoardPost(id: DatabaseId | null, input: BoardInput) {
   const actor = await requireBoardActor();

@@ -76,6 +76,8 @@ Poll은 분기별로 분류하고 `/polls`에서 Current, `/polls/<quarter>`에�
 
 BOARD 일반 글은 작성자와 관리자만 관리하며 공지·고정·전환은 관리자만 가능합니다. 별도 게시판 비밀번호 입력은 없습니다. [게시판 운영 문서](docs/board.md)를 참고하세요.
 
+게시글·댓글 좋아요와 회원 전용 사진 첨부(최대3장)는 [구현·적용 보고서](docs/BOARD_LIKES_IMAGES_IMPLEMENTATION.md)에 정리했습니다. 신규 SQL과 비공개 Storage 버킷은 적용 완료됐으며 앱 배포의 최신 결과는 세션 인계를 참고하세요. 기존 `private-assets/site/` 장식용 이미지와 별개입니다. 일반 개발·배포의 [사전 승인 범위](docs/DEVELOPMENT_AUTHORIZATION.md)를 따릅니다.
+
 객관식 복수선택 개편에는 새 DB migration이 필요합니다. 원본 votes는 보존하며, 기존 중복의 집계 변화는 승인 전 차단합니다. [복수선택 정책과 적용 순서](docs/POLL_CHOICE_BALLOTS.md)를 확인하고, SQL 적용 전 새 앱을 운영에 배포하지 마세요. 운영 반영 결과는 [세션 인계](docs/SESSION_HANDOFF.md)에 기록합니다.
 
 투표 결과와 최종 합의는 구분합니다. 확정된 내용만 기존 관리자 공지에 [의사결정 기록 템플릿](docs/DECISION_RECORD_TEMPLATE.md)으로 남깁니다. 장기 기록의 수동 백업·TEST 복구·운영 확인 범위는 [백업과 복구](docs/BACKUP_RESTORE.md)를 따릅니다.

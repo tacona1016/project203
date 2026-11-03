@@ -48,6 +48,8 @@
 
 ## 관련 파일
 
+좋아요·게시글 사진 첨부의 구현과 적용 이력은 [BOARD 좋아요·사진 구현 보고서](BOARD_LIKES_IMAGES_IMPLEMENTATION.md)를 참고하세요. 새 SQL·Private bucket은 운영 적용 완료됐으며 앱 배포 결과는 세션 인계에 기록합니다. 기존 댓글 수정 RPC는 재사용하며 재생성할 필요가 없습니다. 회원별 세션이 좋아요와 사진 권한의 기준이고, 사진은 브라우저 임시저장에 포함하지 않습니다.
+
 - `app/board/`, `components/board/`: 화면과 권한 표시
 - `app/api/board/`: 글·댓글 API
 - `lib/auth/board-session.ts`: 공통 회원 세션으로부터 게시판 작성자·관리자 권한 결정

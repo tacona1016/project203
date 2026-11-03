@@ -8,6 +8,7 @@ import type { BoardComment } from "@/lib/board/types";
 import type { DatabaseId } from "@/lib/supabase/types";
 import { useBoard } from "./BoardProvider";
 import { BoardBody } from "./BoardBody";
+import { BoardLikeButton } from "./BoardLikeButton";
 
 export function BoardComments({ postId, initial, count }: { postId: DatabaseId; initial: BoardComment[]; count: number }) {
   const { viewer, loading } = useBoard(), router = useRouter();
@@ -66,6 +67,7 @@ export function BoardComments({ postId, initial, count }: { postId: DatabaseId; 
         <p id={`board-comment-edit-count-${comment.id}`} className="form-note mt-3">{boardTextLength(editContent)} / {BOARD_LIMITS.comment}자</p>
         <div className="mt-4 flex flex-wrap gap-5"><button className="interaction-button" type="submit" disabled={pending || !boardTextLength(editContent) || boardTextLength(editContent) > BOARD_LIMITS.comment}>{pending ? "저장 중..." : "수정 저장"}</button><button className="text-link" type="button" disabled={pending} onClick={() => { setEditing(null); setEditContent(""); setError(""); }}>수정 취소</button></div>
       </form> : <BoardBody>{comment.content}</BoardBody>}
+      <BoardLikeButton url={`${url}/${comment.id}/like`} initial={comment.likes} />
     </li>)}</ul>
     {!comments.length && <p className="form-note py-6">첫 번째 이야기를 남겨주세요.</p>}
     {hasMore && <button type="button" className="text-link my-6" disabled={pending} onClick={more}>{pending ? "불러오는 중..." : "댓글 더 보기"}</button>}

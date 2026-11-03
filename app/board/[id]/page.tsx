@@ -9,6 +9,8 @@ import { databaseId, HttpError } from "@/lib/auth/http";
 import { formatKoreanDate } from "@/lib/polls";
 import { boardReturnTo } from "@/lib/board/view";
 import { BoardBody } from "@/components/board/BoardBody";
+import { BoardLikeButton } from "@/components/board/BoardLikeButton";
+import { BoardImageGallery } from "@/components/board/BoardImageGallery";
 
 export const metadata = { title: "게시글" };
 export default async function PostPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string; saved?: string }> }) {
@@ -24,7 +26,7 @@ export default async function PostPage({ params, searchParams }: { params: Promi
     {query.saved === "1" && <p className="form-feedback mb-8" role="status">게시글이 저장되었습니다.</p>}
     <article className="board-post"><div className="board-post-meta">{post.post_type === "notice" && <span className="board-notice-badge">{post.is_pinned ? "NOTICE · 고정" : "NOTICE"}</span>}<strong>{post.author_name}</strong>
       <span>작성 <time dateTime={post.created_at}>{formatKoreanDate(post.created_at)}</time></span>{post.updated_at !== post.created_at && <span>수정 <time dateTime={post.updated_at}>{formatKoreanDate(post.updated_at)}</time></span>}
-    </div><BoardBody className="board-post-content">{post.content}</BoardBody><BoardPostActions post={post} returnTo={returnTo} /></article>
+    </div><BoardBody className="board-post-content">{post.content}</BoardBody><BoardImageGallery images={post.images} /><div className="board-post-footer"><BoardLikeButton url={`/api/board/posts/${post.id}/like`} initial={post.likes} /><BoardPostActions post={post} returnTo={returnTo} /></div></article>
     <BoardIdentity />
     {comments ? <BoardComments postId={post.id} initial={comments} count={post.comment_count} /> : <p className="interaction-notice" role="alert">댓글을 불러오지 못했습니다. 페이지를 새로고침해주세요.</p>}
   </SitePage>;

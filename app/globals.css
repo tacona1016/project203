@@ -1154,3 +1154,32 @@
 
 .secondary-link { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0.65rem 1rem; border:1px solid var(--color-line); color:var(--color-ink); font-size:0.875rem; }
 .secondary-link:hover { border-color:var(--color-accent); color:var(--color-accent); }
+
+/* BOARD engagement and authenticated attachments */
+@layer components {
+  .board-post-footer { display:flex; flex-wrap:wrap; align-items:center; gap:1rem 2rem; margin-top:2rem; }
+  .board-post-footer .board-post-actions { margin-top:0; }
+  .board-like-control { margin-top:1rem; }
+  .board-like-button { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; min-height:44px; padding:.55rem .9rem; border:1px solid var(--color-line); color:var(--color-muted); background:transparent; font-size:.875rem; }
+  .board-like-button.is-liked { color:var(--color-accent); border-color:var(--color-accent); }
+  .board-like-button:disabled { cursor:wait; opacity:.6; }
+  .board-like-button:focus-visible, .board-gallery button:focus-visible { outline:2px solid var(--color-accent); outline-offset:4px; }
+  .board-gallery { margin-top:2rem; }
+  .board-gallery-grid, .board-photo-previews { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr)); gap:1rem; }
+  .board-gallery-grid button { min-width:0; background:var(--color-surface); }
+  .board-gallery-grid img { width:100%; height:auto; max-height:28rem; object-fit:contain; }
+  .board-image-dialog { width:min(94vw,1200px); max-height:94dvh; padding:1rem; border:0; background:var(--color-background); color:var(--color-foreground); }
+  .board-image-dialog::backdrop { background:rgb(0 0 0/.65); }
+  .board-image-dialog > div { display:grid; gap:1rem; }
+  .board-image-dialog button { justify-self:end; min-height:44px; }
+  .board-image-dialog img { width:100%; height:auto; max-height:78dvh; object-fit:contain; }
+  .board-image-picker { margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--color-line); }
+  .board-photo-add { display:block; font-size:.875rem; }
+  .board-photo-add input { display:block; max-width:100%; margin-top:.75rem; min-height:44px; }
+  .board-photo-previews { margin-top:1rem; }
+  .board-photo-previews > div { min-width:0; padding:.75rem; background:var(--color-surface); }
+  .board-photo-previews > div.is-removed { opacity:.6; }
+  .board-photo-previews img { width:100%; height:160px; object-fit:contain; }
+  .board-photo-previews button { min-height:44px; margin-top:.5rem; }
+  .board-photo-previews p { overflow-wrap:anywhere; }
+}
