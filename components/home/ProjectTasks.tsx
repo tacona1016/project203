@@ -1,15 +1,25 @@
 import Link from "next/link";
-import { projectStatus } from "@/data/project-status";
+import { projectStatus, type ProjectStatus } from "@/data/project-status";
+import { projectEventHref } from "@/data/project-plan";
 
-export function ProjectTasks() {
-  return <section className="home-tasks mb-16" aria-labelledby="tasks-title">
-    <p className="eyebrow text-accent">지금 할 일</p>
-    <h2 id="tasks-title" className="mt-4 text-2xl font-medium tracking-tight sm:text-3xl">같은 정보를 보고, 다음 행동을 정합니다.</h2>
-    <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">{projectStatus?.nextAction ?? "프로젝트의 다음 행동은 아직 미정입니다. 발표자료와 의견을 살펴보고 함께 정합니다."}</p>
-    <div className="mt-6 flex flex-wrap gap-3">
-      <Link href="/polls?participation=pending" className="secondary-link">내 미참여 투표 →</Link>
-      <Link href="/board" className="secondary-link">공지·의견 살펴보기 →</Link>
-      <Link href="/archive" className="secondary-link">발표자료 보기 →</Link>
+export function ProjectTasks({ status = projectStatus }: { status?: ProjectStatus | null } = {}) {
+  const links = status?.relatedLinks?.flatMap(link => {
+    const href = projectEventHref(link.href);
+    return href && link.label.trim() ? [{ ...link, href }] : [];
+  }) ?? [];
+  return <section className="home-tasks home-section" aria-labelledby="project-status-title" data-home-section="status">
+    <div className="home-section-heading">
+      <h2 id="project-status-title" className="home-section-title">프로젝트 현황과 다음 행동</h2>
+      {status && <time className="text-xs text-muted" dateTime={status.updatedAt}>{status.updatedAt.replaceAll("-", ".")} 기준</time>}
+    </div>
+    {status ? <dl className="home-status-facts">
+      <div><dt>현재 단계</dt><dd>{status.phase}</dd></div>
+      {status.goal && status.goal !== status.nextAction && <div><dt>논의 목표</dt><dd>{status.goal}</dd></div>}
+      <div><dt>다음 행동</dt><dd>{status.nextAction}</dd></div>
+    </dl> : <p className="text-sm leading-7 text-muted">현재 프로젝트 단계와 다음 행동은 논의 후 업데이트됩니다.</p>}
+    <div className="home-poll-links">
+      {links.map(link => <Link key={link.href} href={link.href} className="text-link">{link.label} →</Link>)}
+      <Link href="/board" className="text-link">의견 나누기 →</Link>
     </div>
   </section>;
 }

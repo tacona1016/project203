@@ -1,4 +1,6 @@
-export const BOARD_IMAGES = { maximum: 3, bytes: 3 * 1024 * 1024, pixels: 16_000_000, dimension: 2400, bucket: "board-attachments" } as const;
+// Keep the original/read limit for uploads and legacy images. New stored bytes
+// have a separate, decimal 500 KB ceiling; do not tighten legacy image reads.
+export const BOARD_IMAGES = { maximum: 3, bytes: 3 * 1024 * 1024, storedBytes: 500_000, pixels: 16_000_000, dimension: 1920, bucket: "board-attachments" } as const;
 export const BOARD_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export type BoardImageType = typeof BOARD_IMAGE_TYPES[number];
 

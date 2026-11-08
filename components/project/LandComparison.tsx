@@ -1,7 +1,7 @@
 import { candidateAmount, candidateSource, type LandCandidate } from "@/data/land-candidates";
 
 export function LandComparison({ candidates }: { candidates: readonly LandCandidate[] }) {
-  return <section className="land-comparison" aria-labelledby="land-comparison-title">
+  return <section className="land-comparison" aria-labelledby="land-comparison-title" data-home-section="candidates">
     <p className="eyebrow text-accent">후보지 검토</p>
     <h2 id="land-comparison-title" className="mt-4 text-3xl font-medium">같은 기준으로 비교하기.</h2>
     <p className="form-note mt-4">Q4 평가 기준에 따라 확인한 사실과 아직 확인할 항목을 구분합니다. 후보 등록은 구매 결정을 뜻하지 않습니다.</p>

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import sharp from "sharp";
+import { detailedJpeg, noisePixels } from "../fixtures/board-photo-samples.mjs";
 
 export async function runBoardEngagementChecks({ a, b, anonymous, id, adminPassword }) {
   const base="http://127.0.0.1:3100";
@@ -55,7 +56,19 @@ export async function runBoardEngagementChecks({ a, b, anonymous, id, adminPassw
   await control({extraFailures:{publicBucket:0}});
   assert.equal((await anonymous.call(imageUrl)).status,401);
   const binary=await b.call(imageUrl);assert.equal(binary.status,200);assert.equal(binary.headers.get('content-type'),'image/webp');assert.match(binary.headers.get('cache-control'),/private.*no-store/);assert.match(binary.headers.get('vary'),/Cookie/);
-  const meta=await sharp(Buffer.from(await binary.arrayBuffer())).metadata();assert.equal(meta.exif,undefined);assert.equal(meta.format,'webp');
+  const storedBytes=Buffer.from(await binary.arrayBuffer());assert(storedBytes.length<=500_000);assert.equal(images[0].byte_size,storedBytes.length);
+  const meta=await sharp(storedBytes).metadata();assert.equal(meta.exif,undefined);assert.equal(meta.format,'webp');
+  const rawLegacy=noisePixels(1000,1000),legacyBytes=await sharp(rawLegacy.data,{raw:rawLegacy.raw}).webp({quality:100}).toBuffer(),legacyId=randomUUID();
+  assert(legacyBytes.length>500_000&&legacyBytes.length<=3*1024*1024);
+  await control({legacyImage:{id:legacyId,post_id:post,uploaded_by:id(1),width:1000,height:1000,base64:legacyBytes.toString('base64')}});
+  const legacyRead=await b.call(`${root}/images/${legacyId}`);assert.equal(legacyRead.status,200);assert.deepEqual(Buffer.from(await legacyRead.arrayBuffer()),legacyBytes,"old >500KB images remain byte-for-byte readable");
+  const detailed=await detailedJpeg(),compressedPost=await create(),compressedId=randomUUID();assert(detailed.length>1_000_000);
+  const compressedResponse=await upload(a,compressedPost,compressedId,detailed,'image/jpeg');assert.equal(compressedResponse.status,200);
+  const compressed=await compressedResponse.json(),compressedBinary=await a.call(`/api/board/posts/${compressedPost}/images/${compressedId}`),compressedBytes=Buffer.from(await compressedBinary.arrayBuffer());
+  assert.equal(compressedBinary.status,200);assert(compressedBytes.length<=500_000);assert.equal(compressed.byte_size,compressedBytes.length);assert(compressed.width<=1920&&compressed.height<=1920);
+  const trackedCompressed=(await state()).images.find(image=>image.id===compressedId);assert.equal(trackedCompressed.sha256,createHash('sha256').update(compressedBytes).digest('hex'));assert(trackedCompressed.storage_path.endsWith('.webp'));
+  assert.equal((await upload(a,compressedPost,compressedId,detailed,'image/jpeg')).status,200,"adaptive compression retries preserve the final hash and idempotency key");
+  assert.equal((await(await a.call(`/api/board/posts/${compressedPost}/images`)).json()).length,1);
   const optimized=await a.call(`/_next/image?url=${encodeURIComponent(imageUrl)}&w=640&q=75`);assert.notEqual(optimized.status,200);
   assert.equal((await b.call(imageUrl,"DELETE")).status,403);
   await b.call('/api/admin/access','POST',{password:adminPassword});
@@ -63,7 +76,7 @@ export async function runBoardEngagementChecks({ a, b, anonymous, id, adminPassw
   assert.equal((await b.call(imageUrl,'DELETE')).status,403);
   assert.equal((await b.call(root,'PATCH',input)).status,200,"administrator retains existing text management rights");
   await b.call('/api/admin/access/lock','POST');
-  assert.equal((await a.call(root,"PATCH",input)).status,200);assert.equal((await(await a.call(`${root}/images`)).json()).length,1);
+  assert.equal((await a.call(root,"PATCH",input)).status,200);assert.equal((await(await a.call(`${root}/images`)).json()).length,2);
   const group=await create(),ids=Array.from({length:4},()=>randomUUID());
   const concurrent=await Promise.all(ids.map(photoId=>upload(a,group,photoId)));assert.equal(concurrent.filter(r=>r.status===200).length,3);assert.equal(concurrent.filter(r=>r.status===409).length,1);
   const failurePost=await create(),failureId=randomUUID();
@@ -85,5 +98,5 @@ export async function runBoardEngagementChecks({ a, b, anonymous, id, adminPassw
   const savedPhotoId=(await(await a.call(`/api/board/posts/${failurePost}/images`)).json())[0].id;
   await a.call(`/api/board/posts/${failurePost}`,'DELETE');assert.equal((await a.call(`/api/board/posts/${failurePost}/images/${savedPhotoId}`)).status,404);
   await a.call(root,'DELETE');assert.equal((await a.call(like,'PUT')).status,404);
-  return ["BOARD post/comment likes are session-bound, idempotent, private, persistent across edits and guarded on deleted/inactive contents", "BOARD private photos validate/reencode bytes, enforce concurrent three slots, reconcile lost ACKs and tracked cleanup failures without deleting posts", "BOARD images require member cookies, never expose Storage paths or optimizer URLs, and enforce author-only mutations"];
+  return ["BOARD post/comment likes are session-bound, idempotent, private, persistent across edits and guarded on deleted/inactive contents", "BOARD private photos validate/reencode bytes, enforce concurrent three slots, reconcile lost ACKs and tracked cleanup failures without deleting posts", "BOARD images require member cookies, never expose Storage paths or optimizer URLs, and enforce author-only mutations", "Adaptive compression stores <=500000 bytes with correct size/hash and idempotent retries; existing >500KB photos remain unchanged and readable"];
 }

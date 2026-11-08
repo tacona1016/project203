@@ -16,6 +16,7 @@ export function BoardImageGallery({ images }: { images?: BoardImage[] | null }) 
   return <section className="board-gallery" aria-label="첨부 사진">
     <div className="board-gallery-grid">{images.map((image, index) => <button type="button" key={image.id} onClick={event => { opener.current = event.currentTarget; setActive(image); }} aria-label={`첨부 사진 ${index + 1} 크게 보기`}>
       <img src={boardImageUrl(image.post_id, image.id)} width={image.width} height={image.height} alt={`첨부 사진 ${index + 1}`} loading="lazy" />
+      <span className="form-note mt-2 block">사진 {index + 1} · {Math.ceil(image.byte_size / 1000)}KB</span>
     </button>)}</div>
     <dialog ref={dialog} className="board-image-dialog" onClose={() => { setActive(null); opener.current?.focus(); }} onCancel={() => setActive(null)} onClick={event => { if (event.target === event.currentTarget) setActive(null); }}>
       <div><button type="button" className="text-link" onClick={() => setActive(null)} autoFocus>사진 닫기</button>

@@ -1,12 +1,23 @@
 // Synthetic protocol fixture only. This is not a PostgreSQL or Storage emulator.
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 export function boardExtras({ posts, comments, active, now }) {
   const likes = new Map(), commentLikes = new Map(), images = new Map(), objects = new Map(), failures = {};
   const consume = key => { if (!failures[key]) return false; failures[key]--; return true; };
   const visible = row => Object.fromEntries(Object.entries(row).filter(([k]) => !["storage_path", "uploaded_by", "sha256", "state", "upload_token", "updated_at"].includes(k)));
   const state = (map, id, actor) => ({ count: map.get(String(id))?.size ?? 0, liked: map.get(String(id))?.has(actor) ?? false });
   return {
-    configure(body) { Object.assign(failures, body.extraFailures ?? {}); if (body.ageImages) for (const image of images.values()) image.updated_at = new Date(Date.now() - 125_000).toISOString(); },
+    configure(body) {
+      Object.assign(failures, body.extraFailures ?? {});
+      if (body.ageImages) for (const image of images.values()) image.updated_at = new Date(Date.now() - 125_000).toISOString();
+      // Test-only historical object bypasses the new upload codec, like a photo
+      // already stored by the previous release. This hook is never an app API.
+      if (body.legacyImage) {
+        const { id, post_id, uploaded_by, width, height, base64 } = body.legacyImage, bytes = Buffer.from(base64, "base64");
+        const storage_path = `posts/${post_id}/${id}.webp`;
+        images.set(id, { id, post_id, uploaded_by, storage_path, width, height, byte_size: bytes.length, content_type: "image/webp", sort_order: 1, sha256: createHash("sha256").update(bytes).digest("hex"), state: "ready", upload_token: randomUUID(), created_at: now(), updated_at: now() });
+        objects.set(storage_path, bytes);
+      }
+    },
     stats() { return { images: [...images.values()], storageCount: objects.size, postLikes: [...likes.values()].reduce((n,s) => n+s.size,0), commentLikes: [...commentLikes.values()].reduce((n,s) => n+s.size,0) }; },
     reset() { likes.clear(); commentLikes.clear(); images.clear(); objects.clear(); },
     handle({ req, res, url, raw, body, json, fail }) {

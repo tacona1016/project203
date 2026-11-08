@@ -65,3 +65,15 @@ Chrome은 기존 로그인·회원/관리자 권한·객관식 단일/복수·�
 ## 롤백 원칙
 
 기존 READY 배포와 백업 커밋을 보존한다. 필요 시 승인된 이전 앱 배포를 사용하며 기존 votes/canonical 선택·게시글·댓글을 되돌리거나 삭제하지 않는다. 복수선택 도입 전 앱으로 무작정 되돌리지 않는다. 새 checker는 DB와 무관하며 오류가 나면 실제 파일/행을 검토한다.
+
+## 배포 후 로컬 확인 기록
+
+아래는 배포 후 로컬 문서에 추가한 기록이며 릴리스 커밋 자체에는 포함되지 않는다.
+
+- GitHub main: `03118e261fa1596d90c67efb4c1c002eb6a08c26`, 부모 e46d233, 수정/추가24파일, 일반 커밋·force=false 갱신 성공.
+- 신규 배포: `dpl_73nyKKVvnQVneCAZm6HEBVRnnrnP`, Production READY, 위 SHA 일치. `project203.vercel.app` alias 확인.
+- 실제 Vercel 로그에서 conflict/publication 검사·컴파일·Build Completed·Deployment completed를 확인했다.
+- 프로젝트 Node 설정은24.x지만 기존 engines>=22 범위로 실제 빌드에는26.x가 선택됐다는 경고가 있었다. 빌드 성공과 구분해 기록하며 이번에 버전을 바꾸지 않았다.
+- 서비스 GET은 shell EACCES, Vercel URL fetch는 INVALID_ARGUMENT/프로젝트 접근 범위 오류로 미검증이다. READY를 로그인 후 E2E 성공으로 간주하지 않는다.
+- DB·기존 migration·회원 비밀번호·환경변수 변경 없음. 기존 정상 배포도 보존했다. 새 댓글 수정 RPC는 별도 운영 적용 전제다.
+- 원격 반영은 완료됐지만 로컬 .git 쓰기 제한으로 로컬 refs는 이전 SHA이며 복구 파일이 미커밋 변경으로 보인다. 로컬 보존본을 stash한 뒤 정상 터미널에서 fetch/fast-forward로 동기화한다. 자동 reset/force/stash 삭제는 하지 않는다.

@@ -7,6 +7,7 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
   const output = path.resolve(".verification/member-browser"); await mkdir(output, { recursive: true });
   const pause = ms => new Promise(r => setTimeout(r, ms));
   let browser, sockets = [];
+  const diagnostics = { uncaughtExceptions: 0, hydrationErrors: 0 };
   async function launch() {
     browser = spawn(process.env.BROWSER_BIN ?? "C:/Program Files/Google/Chrome/Application/chrome.exe", ["--headless=new", "--disable-gpu", "--in-process-gpu", "--no-sandbox", "--no-first-run", "--no-default-browser-check", "--disable-background-networking", "--remote-debugging-port=9230", `--user-data-dir=${path.join(output, "profile")}`, "about:blank"], { windowsHide: true, stdio: "ignore" });
     for (let i = 0; i < 100; i++) { try { const tabs = await (await fetch("http://127.0.0.1:9230/json/list")).json(); if (tabs.length) return connect(tabs.find(t => t.type === "page")); } catch {} await pause(100); }
@@ -17,6 +18,9 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     await new Promise(resolve => socket.addEventListener("open", resolve, { once: true }));
     let sequence = 0; const pending = new Map();
     socket.addEventListener("message", ({ data }) => { const m = JSON.parse(data);
+      if (m.method === "Runtime.exceptionThrown") diagnostics.uncaughtExceptions++;
+      if (m.method === "Runtime.consoleAPICalled" && m.params?.type === "error"
+        && m.params.args?.some(arg => /hydration failed|did not match|hydrated.*mismatch/i.test(arg.value ?? ""))) diagnostics.hydrationErrors++;
       if (m.method === "Page.javascriptDialogOpening" && m.params?.type === "beforeunload") { socket.send(JSON.stringify({ id: ++sequence, method: "Page.handleJavaScriptDialog", params: { accept: true } })); return; }
       if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); clearTimeout(p.timer); if (m.error) p.reject(Error("CDP request failed")); else p.resolve(m.result); } });
     const send = (method, params = {}) => new Promise((resolve, reject) => { const n = ++sequence; const timer = setTimeout(() => reject(Error("CDP timeout: " + method)), 15000); pending.set(n, { resolve, reject, timer }); socket.send(JSON.stringify({ id: n, method, params })); });
@@ -94,7 +98,7 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
       await page.go(route);
       await page.wait(`location.pathname===${JSON.stringify(route)}&&document.querySelector('header .name-current')?.textContent==='친구1'`);
       assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"), `Mobile overflow: ${route}`);
-      if (route === "/") assert(await page.evaluate("document.body.textContent.includes('현재 단계와 다음 행동은 논의 후 업데이트합니다.')"));
+      if (route === "/") assert(await page.evaluate("document.body.textContent.includes('현재 프로젝트 단계와 다음 행동은 논의 후 업데이트됩니다.')"));
     }
     await page.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 960, deviceScaleFactor: 1, mobile: false });
     for (const route of ["/", "/archive", "/quarter/2026-q4"]) {
@@ -110,6 +114,8 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     const ballotChecks = await runChoiceBrowserChecks({ page, base, output, adminPassword });
     const { runUiUxBrowserChecks } = await import("./ui-ux-browser.mjs");
     const uiChecks = await runUiUxBrowserChecks({ page, base, output });
+    const { runCompactBrowserChecks } = await import("./compact-browser.mjs");
+    const compactChecks = await runCompactBrowserChecks({ page, base, output });
     const { runPresentationPollBrowser } = await import("./presentation-polls-browser.mjs");
     const presentationChecks = await runPresentationPollBrowser({ page, base, output });
     const { runBoardWorkflowBrowser } = await import("./board-workflow-browser.mjs");
@@ -143,6 +149,8 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     // Restore only the synthetic cookie in memory to separately verify restart validity.
     if (!persistedFromDisk) await page.send("Network.setCookies", { cookies: [{ name: member.name, value: member.value, domain: member.domain, path: member.path, expires: member.expires, httpOnly: member.httpOnly, secure: member.secure, sameSite: member.sameSite }] });
     await page.go("/board"); await page.wait("document.querySelector('header .name-current')?.textContent==='친구2'");
-    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Member/admin HTML 429 shows safe Retry-After feedback", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, ...uiChecks, ...presentationChecks, ...workflowChecks, ...boardExtrasChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
+    assert.deepEqual(diagnostics, { uncaughtExceptions: 0, hydrationErrors: 0 });
+    await writeFile(path.join(output, "stabilization-console.json"), JSON.stringify(diagnostics, null, 2));
+    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Member/admin HTML 429 shows safe Retry-After feedback", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, ...uiChecks, ...compactChecks, ...presentationChecks, ...workflowChecks, ...boardExtrasChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
   } finally { await close(); }
 }
