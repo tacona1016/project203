@@ -2,6 +2,7 @@ import http from "node:http";
 import { boardExtras } from "./board-extras.mjs";
 const now = () => new Date().toISOString(), person = n => `00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
 let posts = [], comments = [], seq = 100;
+let homeBoardMode = null;
 const active = id => /^00000000-0000-4000-8000-00000000000[1-9]$/.test(id) || id === person(10);
 const name = id => `친구${Number(id.slice(-2))}`;
 const joined = p => ({ ...p, author_name: name(p.author_id), comment_count: comments.filter(c => c.post_id === p.id && !c.deleted_at).length });
@@ -10,14 +11,17 @@ function reset() { posts = Array.from({length:13},(_,i)=>({id:i+1,author_id:pers
 reset();
 const extras = boardExtras({ posts:()=>posts,comments:()=>comments,active,now });
 posts.push({id:90,author_id:person(1),title:"합성 결정 공지",content:"fixture-decision-body-not-for-home",post_type:"notice",is_pinned:true,created_at:now(),updated_at:now(),deleted_at:null});
+posts.push({id:91,author_id:person(1),title:"합성 일반 공지",content:"fixture-notice-body-not-for-home",post_type:"notice",is_pinned:false,created_at:now(),updated_at:now(),deleted_at:null});
 http.createServer(async (req,res)=>{
  const url=new URL(req.url,"http://127.0.0.1:3103"),chunks=[];for await(const chunk of req)chunks.push(chunk);const raw=Buffer.concat(chunks),body=raw.length&&(!url.pathname.startsWith('/storage/v1/')||req.method==='DELETE')?JSON.parse(raw.toString()):{};
  const json=(data,status=200)=>res.writeHead(status,{"Content-Type":"application/json"}).end(JSON.stringify(data));
  const fail=(code,status=400)=>json({code,message:"fixture rejection"},status);
- if(url.pathname==="/_test"){if(body.reset){reset();extras.reset();}extras.configure(body);return json({posts,comments,...extras.stats()});}
+ if(url.pathname==="/_test"){if(body.reset){reset();extras.reset();homeBoardMode=null;}if(Object.hasOwn(body,"homeBoardMode"))homeBoardMode=body.homeBoardMode;if(body.changePost)Object.assign(posts.find(p=>p.id===body.changePost.id),body.changePost);extras.configure(body);return json({posts,comments,...extras.stats()});}
  if(extras.handle({req,res,url,raw,body,json,fail}))return;
  if(url.pathname==="/rest/v1/board_posts"&&req.method==="GET"){
   if(req.headers.apikey!=="fixture-only-backend-key")return fail("42501",403);
+  if(homeBoardMode==="error")return json({code:"XX000",message:"fixture-private-board-outage"},503);
+  if(homeBoardMode==="empty")return json([]);
   let rows=posts.filter(p=>!p.deleted_at);
   for(const [key,value] of url.searchParams){if(value.startsWith('eq.'))rows=rows.filter(p=>String(p[key])===value.slice(3));if(value.startsWith('in.('))rows=rows.filter(p=>value.slice(4,-1).split(',').includes(String(p[key])));}
   rows.sort((a,b)=>Number(b.is_pinned)-Number(a.is_pinned)||b.created_at.localeCompare(a.created_at)||b.id-a.id);

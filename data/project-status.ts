@@ -5,6 +5,8 @@ export type ProjectStatus = {
   nextAction: string;
   /** Confirmed update date in YYYY-MM-DD format. */
   updatedAt: string;
+  /** Existing internal pages only; add links after an actual discussion. */
+  relatedLinks?: readonly { label: string; href: string }[];
 };
 
 // Replace null only after the project has agreed its stage, next action and date.

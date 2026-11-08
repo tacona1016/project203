@@ -1,5 +1,7 @@
 # BOARD 수정·좋아요·비공개 사진 첨부
 
+2026-11-04 후속: 신규 사진을500,000bytes 이하로 자동 압축하는 로컬 구현·검증은 [500KB 압축 보고서](BOARD_IMAGE_COMPRESSION.md)에 정리했다. 아래는 기존 BOARD 배포 기록이며 후속 압축 정책은 아직 운영에 배포하지 않았다.
+
 2026-11-03. 기존 인증·게시판/투표/MDX 데이터를 유지한 구현이다. 최초 로컬 검증 후 사용자가 개발·migration·배포를 사전 승인했다. **신규 DB migration 2개·Private 버킷·GitHub main 반영·Vercel Production READY 확인을 완료했다.** 기존 데이터·과거 migration은 변경하지 않았다. 로그인한 회원의 실제 운영 업로드 E2E는 미검증이다.
 
 ## 1. 상태와 현재 구현 확인

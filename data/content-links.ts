@@ -1,5 +1,8 @@
 // Add relationships only after a real discussion/decision. Empty by default.
-// IDs refer to existing Board notices; presentation content remains in MDX.
+// IDs refer to confirmed, existing Board notices; presentation content stays in MDX.
+// Register only final agreements in decisionPostIds. Home also uses these IDs
+// to show the three most recently registered decision notices. Removing an ID
+// stops featuring a superseded decision without deleting its Board history.
 export type ContentLinkGroup = { quarter: string; pollSlugs: readonly string[]; decisionPostIds: readonly string[] };
 export const contentLinks: readonly ContentLinkGroup[] = [];
 

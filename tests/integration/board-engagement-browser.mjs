@@ -13,15 +13,20 @@ export async function runBoardEngagementBrowser({ page, base, output }) {
   await page.send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:true});
   await page.go('/board/new');await page.wait("!!document.querySelector('.board-draft-tools input')&&!document.querySelector('.board-draft-tools input').disabled");
   const title='사진 재시도 브라우저 합성 글';await field('#board-title',title);await field('#board-content','사진 실패에도 본문을 보존합니다.');await choose();
+  assert(await page.evaluate("document.querySelector('.board-image-picker').textContent.includes('장당 500KB 이하')&&document.querySelector('.board-image-picker').textContent.includes('원본 한 장당 3MiB')"));
+  assert(await page.evaluate("document.querySelector('.board-photo-previews [role=status]').textContent.includes('사진 선택 완료')"));
   assert.equal(await page.evaluate("Object.values(localStorage).some(value=>value.includes('data:image/')||value.includes('blob:'))"),false);
   await control({extraFailures:{upload:1}});await page.evaluate("document.querySelector('.board-editor').requestSubmit()");
   await page.wait("document.querySelector('.board-editor .form-error')?.textContent.includes('본문은 저장')");
+  assert(await page.evaluate("document.querySelector('.board-photo-previews [role=status]').textContent.includes('업로드 실패')"));
   assert.equal((await stats()).posts.filter(p=>p.title===title).length,1);
   await page.evaluate("document.querySelector('.board-editor').requestSubmit()");
   await page.wait(`new RegExp('^/board/[0-9]+$').test(location.pathname)&&document.querySelector('h1')?.textContent===${JSON.stringify(title)}`);
   const postId=await page.evaluate("location.pathname.split('/').at(-1)");
   assert.equal((await stats()).posts.filter(p=>p.title===title).length,1);
   await page.wait("document.querySelectorAll('.board-gallery-grid img').length===1&&document.querySelector('.board-gallery-grid img').complete");
+  assert(await page.evaluate("/사진 1 · [0-9]+KB/.test(document.querySelector('.board-gallery-grid button').textContent)"));
+  assert((await stats()).images.filter(image=>String(image.post_id)===postId).every(image=>image.byte_size<=500000));
   const original=(await stats()).images.find(i=>String(i.post_id)===postId&&i.state==='ready').id;
   const like="document.querySelector('.board-post-footer .board-like-button')";
   await page.wait(`!!${like}&&!${like}.disabled`);
@@ -41,6 +46,7 @@ export async function runBoardEngagementBrowser({ page, base, output }) {
   await page.wait("document.querySelector('.board-comments [role=status]')?.textContent.includes('수정이 저장')");
   assert.equal(await page.evaluate("document.querySelector('.board-comments li .board-like-button').getAttribute('aria-pressed')"),'true');
   await page.go(`/board/${postId}/edit`);await page.wait("document.querySelector('.board-editor > fieldset')?.disabled===false&&document.querySelectorAll('.board-photo-previews img').length===1");
+  assert(await page.evaluate("/업로드 완료 · [0-9]+KB/.test(document.querySelector('.board-photo-previews [role=status]').textContent)"));
   await field('#board-content','사진 교체 후에도 댓글과 좋아요를 보존합니다.');
   await page.evaluate("Array.from(document.querySelectorAll('.board-photo-previews button')).find(b=>b.textContent==='사진 삭제').click()");
   assert(await page.evaluate("document.querySelector('.board-photo-previews').textContent.includes('삭제 예정')"));
@@ -58,5 +64,5 @@ export async function runBoardEngagementBrowser({ page, base, output }) {
     assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"));
     const screenshot=await page.send('Page.captureScreenshot',{format:'png'});await writeFile(path.join(output,`board-likes-images-${width}.png`),Buffer.from(screenshot.data,'base64'));
   }
-  return ['BOARD photo picker/preview/retry saves one post, strips file state from drafts, replaces photos and preserves comments/likes', 'BOARD optimistic likes, double-click lock, lost-ACK reconciliation, reload persistence and own comment edits work in Chrome', 'BOARD authenticated gallery opens/closes with Escape and has no overflow at 390/768/1440px'];
+  return ['BOARD photo picker/preview/retry saves one post, strips file state from drafts, replaces photos and preserves comments/likes', 'BOARD optimistic likes, double-click lock, lost-ACK reconciliation, reload persistence and own comment edits work in Chrome', 'BOARD authenticated gallery opens/closes with Escape and has no overflow at 390/768/1440px', 'BOARD automatic 500KB guidance, original 3MiB limit, selected/failed/completed states and stored KB labels are visible'];
 }

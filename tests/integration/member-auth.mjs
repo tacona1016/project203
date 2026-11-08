@@ -60,6 +60,12 @@ try {
   const candidateFile = path.join(root, "data/land-candidates.ts");
   const candidateFixtures = ["A", "B"].map(key => ({ id: `fixture-${key}`, name: `합성 후보 ${key}`, location: "테스트 전용 가상 위치", areaPyeong: 200, access: "미확인", buildability: "미확인", road: "미확인", utilities: "미확인", terrain: "미확인", surroundings: "미확인", extraCosts: "미확인", needsVerification: "실제 후보지가 아닌 테스트 자료" }));
   await writeFile(candidateFile, (await readFile(candidateFile, "utf8")).replace("export const landCandidates: readonly LandCandidate[] = [];", `export const landCandidates: readonly LandCandidate[] = ${JSON.stringify(candidateFixtures)};`));
+  // Synthetic component data stays in this isolated copy, never root or DB.
+  await mkdir(path.join(root, "app/fixture-project-status"), { recursive: true });
+  await writeFile(path.join(root, "app/fixture-project-status/page.tsx"), `import {ProjectTasks} from "@/components/home/ProjectTasks";
+import {UpcomingEvents} from "@/components/home/UpcomingEvents";
+import {requireAccessSession} from "@/lib/auth/session";
+export default async function Page(){await requireAccessSession("/fixture-project-status");return <main className="site-container home-page"><h1>합성 현황 검증</h1><ProjectTasks status={{phase:"합성 단계",goal:"합성 논의 목표",nextAction:"합성 다음 행동",updatedAt:"2026-11-08",relatedLinks:[{label:"합성 관련 발표",href:"/quarter/2026-q4"},{label:"노출되면 안 되는 외부 링크",href:"//outside.invalid"}]}}/><UpcomingEvents entries={[{id:"confirmed-fixture",title:"합성 확정 일정",startsAt:"2099-01-01T09:00:00+09:00",href:"/board"},{id:"past-fixture",title:"합성 과거 일정",startsAt:"2000-01-01T09:00:00+09:00"}]}/></main>}`);
   await mkdir(path.join(root, "app/quarter/2026-q3"), { recursive: true });
   await writeFile(path.join(root, "app/quarter/2026-q3/page.mdx"), 'import { getQuarter } from "@/data/quarters";\n\n<Presentation quarter={getQuarter("2026-q3")}><h1>fixture-unpublished-mdx-must-stay-private</h1></Presentation>\n');
   for (const directory of ["home", "board", "shared"]) await mkdir(path.join(root, "private-assets/site", directory), { recursive: true });
@@ -119,7 +125,14 @@ try {
     assert.equal(html.includes("/quarter/2027-q1"), false);
     assert.equal(html.includes("/quarter/2026-q3"), false);
   }
-  assert(home.includes("현재 단계와 다음 행동은 논의 후 업데이트합니다."));
+  assert(home.includes("현재 프로젝트 단계와 다음 행동은 논의 후 업데이트됩니다."));
+  const homeOrder = [...home.matchAll(/<section\b[^>]*data-home-section="([^"]+)"/g)].map(match => match[1]);
+  // Suspense can send a section in a later hidden HTML fragment; its byte
+  // position is not DOM order. Chrome checks the settled, visible DOM below.
+  assert.deepEqual(homeOrder.slice(0, 4), ["intro", "presentation", "polls", "status"]);
+  assert.deepEqual([...homeOrder].sort(), ["intro", "presentation", "polls", "status", "decisions", "notices", "roadmap", "candidates"].sort());
+  const { runHomeStabilizationChecks } = await import("./home-stabilization.mjs");
+  checks.push(...await runHomeStabilizationChecks({ a }));
   for (const slug of ["2027-q1", "2026-q3"]) {
     const draft = await a.call(`/quarter/${slug}`); assert.equal(draft.status, 404);
     assert.equal((await draft.text()).includes("fixture-unpublished-mdx-must-stay-private"), false);

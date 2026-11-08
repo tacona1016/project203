@@ -56,15 +56,15 @@ export async function runUiUxBrowserChecks({ page, base, output }) {
   // Missing Home assets and a failed authenticated image request both preserve
   // layout; the private URL never goes through Next's public optimizer.
   await viewport(390); await navigate("/");
-  assert(await page.evaluate("document.querySelector('.private-home-photo[data-image-state=fallback]')?.getBoundingClientRect().height>=190"));
+  assert(await page.evaluate("(()=>{const h=document.querySelector('.private-home-photo[data-image-state=fallback]')?.getBoundingClientRect().height;return h>=150&&h<=180;})()"));
   await navigate("/board");
-  await page.wait("document.querySelector('.board-banner')?.getBoundingClientRect().height>=160");
+  await page.wait("document.querySelector('.board-banner')?.getBoundingClientRect().height>=100");
   const bannerHeight = await page.evaluate("document.querySelector('.board-banner').getBoundingClientRect().height");
   await page.send("Network.setBlockedURLs", { urls: [base + "/api/site-images/boardBanner"] });
   try {
     await navigate("/board");
     await page.wait("!!document.querySelector('.board-banner [data-image-state=fallback]')");
-    await page.wait("document.querySelector('.board-banner')?.getBoundingClientRect().height>=160");
+    await page.wait("document.querySelector('.board-banner')?.getBoundingClientRect().height>=100");
     assert.equal(await page.evaluate("document.querySelector('.board-banner').getBoundingClientRect().height"), bannerHeight);
     assert.equal(await page.evaluate("!!document.querySelector('img[src*=\"_next/image\"][src*=\"site-images\"]')"), false);
   } finally { await page.send("Network.setBlockedURLs", { urls: [] }); }

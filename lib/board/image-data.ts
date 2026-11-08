@@ -36,6 +36,9 @@ export async function uploadBoardImage(postId: DatabaseId, imageId: string, inpu
   let encoded;
   try { encoded = await encodeBoardImage(input, contentType); }
   catch (error) { if (error instanceof ImageInputError) throw new HttpError(error.status, error.message); throw error; }
+  // Defense in depth: never reserve/upload oversized output even if the codec
+  // changes. Legacy GETs keep using the original 3 MiB read ceiling below.
+  if (!encoded.bytes.length || encoded.bytes.length > BOARD_IMAGES.storedBytes) throw new HttpError(413, "이미지 압축 결과가 500KB를 초과했습니다.");
   const item = boardFeatureResult(await client.rpc("reserve_board_image", { p_post_id: postId, p_id: imageId, p_actor_id: actor.participantId, p_is_admin: actor.isAdmin,
     p_token: randomUUID(), p_hash: encoded.sha256, p_bytes: encoded.bytes.length, p_width: encoded.width, p_height: encoded.height }).retry(false));
   if (item.state === "ready") return publicBoardImage(item);
