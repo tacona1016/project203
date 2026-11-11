@@ -2,6 +2,15 @@
 
 2026-11-11. 이번 작업은 코드/로컬 검증과 승인 전 적용 준비다. 로그인 정책·세션·비밀번호 매핑은 변경하지 않았다. **운영 DB migration, Production 배포, Secret 설정, 자동 백업 활성화는 별도 승인 대기**다.
 
+## 최종 PR·Preview 확인
+
+- PR: https://github.com/tacona1016/project203/pull/3 (open, 미병합).
+- 기능 원격 commit `84b690e8c9d305560cd5c75c90eb5d15f8db42e3`, tree `1c2b5334628c4cf7c52707de512725eeaf246203`. 검증된 로컬 fe279f3 tree와 동일, 앱·검사 소스262파일 차이0. 로컬67072c4/fe279f3와 root 작업은 보존했다.
+- GitHub Actions **42998636842 / job130448922141 SUCCESS**: npm ci, unit93, typecheck, lint, build 성공. conflict/presentation 검사는 build에 포함된다. 기존 경고 외 새 실패 없음.
+- Git Preview **dpl_FLnMTSUQ5UhBGM7YTjSj7CSBqeKU READY**, https://project203-erjob1mmk-project203.vercel.app . 위 Git SHA 일치, target=null. Git 자동 Preview만 사용했다.
+- Preview `/access` 실제 HTTP503/안전한 연결 안내. 필수5변수 이름/target만 decrypt=false로 재조회했으며 Production에만 존재한다. API/보호사진 조회 도구는401을 배포 인증 오류로 분류하여 앱401과 배포 보호 계층을 구분한 본문 검증은 미완료다. 보호 접근 가이드에 따라 확인했으나 로컬 Vercel CLI가 없어 추가 인증 경로를 사용하지 않았다. 인증 우회·환경변수 복사/설정 변경 없음.
+- **Preview 빌드 검증 완료 / 회원 E2E 미완료**. Production은 기존 main45f275a/dpl_93DHptBYoduALYQZWcQ4hCsaJobA 그대로다. 이번 개선을 운영 적용한 것으로 해석하지 않는다.
+- 위 확인 후 보고서/인계만 문서 후속 커밋에 갱신한다. 코드·DB 제안·테스트 로직은 변경하지 않는다.
 ## 1. 시작 상태
 
 - GitHub main `45f275afb32c67748e8d43466291498fba97a1f5`, tree `95538d196f51c83c0f092cb6dcfbbbc4e31b9b3b`.
