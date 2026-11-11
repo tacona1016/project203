@@ -171,6 +171,9 @@ export type Database = {
       admin_create_poll: { Args: { p_data: PollInput }; Returns: { slug: string } };
       admin_update_poll: { Args: { p_poll_id: DatabaseId; p_data: PollInput }; Returns: { slug: string } };
       admin_set_poll_state: { Args: { p_poll_id: DatabaseId; p_action: string }; Returns: { slug: string } };
+      get_project_home: { Args: Record<string, never>; Returns: import("../project/model").ProjectHome & { statusConfigured: boolean } };
+      get_project_admin: { Args: Record<string, never>; Returns: import("../project/model").ProjectAdminState };
+      change_project_entry: { Args: { p_actor_id: string; p_kind: string; p_key: string; p_version: number; p_action: string; p_data: unknown; p_history_id: string | null }; Returns: { key: string; version: number } };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

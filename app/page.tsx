@@ -8,10 +8,9 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { getLatestPresentation } from "@/data/quarters";
 import { requireAccessSession } from "@/lib/auth/session";
 import { PrivateSiteImage } from "@/components/PrivateSiteImage";
-import { ProjectTasks } from "@/components/home/ProjectTasks";
+import { ProjectStatusSection, ProjectEventsSection } from "@/components/home/ManagedProject";
 import { HomeBoardUpdates } from "@/components/home/LatestNotices";
 import { ProjectRoadmap } from "@/components/home/ProjectRoadmap";
-import { UpcomingEvents } from "@/components/home/UpcomingEvents";
 import { landCandidates } from "@/data/land-candidates";
 import { LandComparison } from "@/components/project/LandComparison";
 
@@ -60,11 +59,11 @@ export default async function HomePage() {
           <Suspense fallback={<p className="interaction-notice" role="status">투표를 불러오는 중...</p>}><ActivePollSummary /></Suspense>
         </section>
 
-        <ProjectTasks />
+        <Suspense fallback={<p className="interaction-notice" role="status">프로젝트 현황을 불러오는 중...</p>}><ProjectStatusSection /></Suspense>
 
         <Suspense fallback={<p className="interaction-notice" role="status">공지와 결정사항을 불러오는 중...</p>}><HomeBoardUpdates /></Suspense>
         <ProjectRoadmap />
-        <UpcomingEvents />
+        <Suspense fallback={null}><ProjectEventsSection /></Suspense>
         {landCandidates.length > 0 && <LandComparison candidates={landCandidates} />}
       </main>
       <SiteFooter />

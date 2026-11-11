@@ -1182,6 +1182,22 @@
 @layer components {
   .home-page .home-intro { display:grid; gap:1.25rem; padding-block:1.75rem 2.5rem; }
   .home-intro-copy { min-width:0; align-self:center; }
+  .project-admin { max-width:58rem; min-width:0; }
+  .project-admin-links, .project-admin-tabs { display:flex; flex-wrap:wrap; gap:.5rem 1rem; margin-bottom:1.25rem; }
+  .project-admin-tabs button { min-height:44px; padding:.5rem .75rem; font-size:.875rem; border-bottom:2px solid transparent; }
+  .project-admin-tabs button[aria-pressed="true"] { color:var(--color-accent); border-color:var(--color-accent); }
+  .project-entry-list { display:grid; gap:.5rem; margin-bottom:1.5rem; }
+  .project-entry-list > button { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.5rem; text-align:left; padding:.75rem; border:1px solid var(--color-line); min-height:44px; }
+  .project-entry-list > button[aria-pressed="true"] { border-color:var(--color-accent); }
+  .project-entry-list small { color:var(--color-muted); }
+  .project-admin-form fieldset { min-width:0; }
+  .project-admin-form textarea { width:100%; min-width:0; padding:.75rem; border:1px solid var(--color-line); background:var(--color-paper); resize:vertical; }
+  .project-admin-form .project-visible, .project-poll-options label { display:flex; align-items:center; gap:.75rem; min-height:44px; }
+  .project-admin-form input[type="checkbox"] { flex-shrink:0; width:1.1rem; height:1.1rem; accent-color:var(--color-accent); }
+  .project-poll-options { max-height:18rem; overflow-y:auto; margin-block:1rem; border-block:1px solid var(--color-line); }
+  .project-revision { padding-block:.75rem; border-top:1px solid var(--color-line); }
+  .project-revision summary { cursor:pointer; min-height:44px; font-size:.875rem; overflow-wrap:anywhere; }
+  .project-revision pre { padding:.75rem; margin-bottom:.75rem; background:var(--color-surface); white-space:pre-wrap; overflow-wrap:anywhere; font-size:.75rem; max-height:24rem; overflow-y:auto; }
   .home-page .home-title { margin-top:.75rem; font-size:clamp(2.25rem,4.8vw,4rem); line-height:1.08; }
   .home-description { max-width:36rem; margin-top:.75rem; font-size:.875rem; line-height:1.8; color:var(--color-muted); }
   .home-page .private-home-photo { height:160px; margin:0; }

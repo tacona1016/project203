@@ -7,11 +7,13 @@ import { homeDecisionIds, selectHomeDecisions } from "@/lib/home-decisions";
 
 export type LatestNotice = { id: DatabaseId; title: string; is_pinned: boolean; created_at: string };
 
-export async function getLatestBoardNotices(): Promise<LatestNotice[]> {
-  const { data, error } = await (await protectedClient()).from("board_posts")
+export async function getLatestBoardNotices(excludedIds: readonly string[] = []): Promise<LatestNotice[]> {
+  let query = (await protectedClient()).from("board_posts")
     .select("id,title,is_pinned,created_at").eq("post_type", "notice").is("deleted_at", null)
-    .order("is_pinned", { ascending: false }).order("created_at", { ascending: false })
-    .order("id", { ascending: false }).limit(3).retry(false);
+    .order("created_at", { ascending: false }).order("id", { ascending: false });
+  const safeIds = excludedIds.filter(id => /^[1-9]\d{0,18}$/.test(id) && BigInt(id) <= BigInt("9223372036854775807"));
+  if (safeIds.length) query = query.not("id", "in", `(${safeIds.join(",")})`);
+  const { data, error } = await query.limit(3).retry(false);
   if (error) throw error;
   return data ?? [];
 }

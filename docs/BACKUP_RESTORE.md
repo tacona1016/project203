@@ -1,6 +1,78 @@
 # 데이터 백업과 복구
 
-확인일: **2026-10-31**. 이 문서는 수동 운영 절차다. 자동 스케줄·외부 저장소 연결·운영 복원을 활성화하지 않는다. 백업 파일과 인증 정보는 Git에 넣지 않는다.
+확인일: **2026-11-11**. 아래 최신 절차를 우선한다. 실제 운영 백업·외부 저장소·스케줄·복원은 활성화하지 않았다. 백업 파일과 인증 정보는 Git에 넣지 않는다.
+
+## 최신 상태와 구현 범위
+
+| 상태 | 확인 결과 |
+| --- | --- |
+| 운영 읽기 전용 확인 | public 앱 11테이블 모두 RLS. `board-attachments` Private/3MiB 제한, 객체 1개. 행·사진 원문 조회/변경 없음. |
+| 현재 백업 대상 | participants, polls, poll_options, votes, **poll_choice_selections**, comments, board_posts, board_post_comments, board_post_likes, board_comment_likes, board_post_images. 신규 프로젝트 관리 SQL 적용 후 project_admin_entries/project_admin_revisions도 자동 포함. |
+| 플랜 | 조직 Free 확인. 자동 백업 보유·최근 성공·PITR는 확인하지 못했다. |
+| 코드 | Node 내장 AES-256-GCM 암호화, public custom pg_dump, Storage 객체 다운로드, 해시/인증 태그 검증, 안전한 TEST 복원 가드, 수동 workflow 구현. |
+| 실제 실행 | 합성 데이터 암호화·변조 탐지 단위 테스트만 완료. pg_dump/psql/pg_restore/Docker가 로컬 PATH에 없고 저장소·키·TEST가 준비되지 않아 실제 운영 백업/복원은 미실행. |
+| 운영 활성화 | **승인 대기**. 신규 Secret·Object Storage·요금·예약 실행을 변경하지 않았다. |
+
+DB dump는 객체 본문을 포함하지 않는다. 현재 스크립트는 **DB와 Storage 파일을 따로 암호화**한다. `public` 스키마의 테이블·데이터·FK/CHECK·RPC/함수·트리거·인덱스·RLS·GRANT·sequence 정의/값을 custom archive에 포함한다. Storage bucket 설정·경로·메타데이터와 ready 이미지 해시는 암호화 manifest에 넣는다. Supabase managed auth/storage 스키마 전체나 역할 비밀번호를 덤프/덮어쓰지 않는다. 사이트 로그인 매핑·Vercel Secret·Git의 발표자료/장식용 사진은 별도 관리 대상이다. [공식 백업 범위](https://supabase.com/docs/guides/platform/backups)
+
+## 암호화 백업 실행
+
+`scripts/project-backup.mjs`는 **기본 실행이 도움말**이다. 설정은 프로세스에만 주입하고 콘솔/공개 workflow 입력에 Secret을 넣지 않는다. 예시 파일의 값은 실제 인증 정보가 아니다.
+
+| 설정 | 용도 |
+| --- | --- |
+| `PROJECT203_BACKUP_CONFIRMED=READ_ONLY_SOURCE` | 원본 읽기 확인 |
+| `BACKUP_SOURCE_REF`, `BACKUP_SOURCE_URL`, `BACKUP_SOURCE_KEY` | 원본 ref·정확히 대응하는 URL·서버 키 |
+| `BACKUP_DB_HOST`, `BACKUP_DB_USER`, `BACKUP_DB_PASSWORD` | 원본 direct DB 연결; port 기본5432/name postgres/SSL require |
+| `BACKUP_ENCRYPTION_KEY` | 별도 생성·별도 보관한 32bytes 키의 64자리 hex. 앱 세션 키와 혼용 금지 |
+| `BACKUP_GIT_SHA` | 로컬 백업 시 해당 코드 SHA; Actions에서는 GITHUB_SHA 사용 |
+| `PROJECT203_PG_CONTAINER=postgres:17` | 선택: 설치된 Docker에서 공식 PG17 도구 실행. 비밀번호는 argv가 아닌 환경으로 전달 |
+
+```powershell
+node scripts/project-backup.mjs check
+node scripts/project-backup.mjs create
+node scripts/project-backup.mjs verify backups/<생성된-백업-ID>
+```
+
+원본 연결은 read-only transaction/statement timeout을 사용한다. export한 동일 snapshot으로 DB dump와 행 개수·권한 inventory를 읽는다. Storage는 별도 서비스이므로 완전한 전역 snapshot은 아니다. 객체 수집 당시 크기/ETag 및 ready 이미지 SHA 불일치는 실패 처리한다. 백업 중 사진 삭제·업로드나 스키마 변경을 피하고 불일치하면 새 백업을 수행한다. 데이터 손상 복구를 위해 원본 UPDATE/DELETE는 하지 않는다.
+
+저장 경로는 Git ignore된 `backups/<ID>/`. SQL·사진은 메모리/스트림에서 즉시 암호화되고 평문 파일로 남기지 않는다. `manifest.enc`에는 실행 시각·Git SHA·각 파일 SHA256·행 개수·객체 경로/메타데이터가 있다. `receipt.json`은 개인정보 없이 성공/실패·단계·개수·manifest 해시를 기록한다. 실패하면 부분 암호화 파일을 보존하고 성공으로 표시하지 않는다. 권한 0600/0700은 POSIX 기준이며 Windows에서는 소유자만 읽는 ACL/암호화 디스크도 확인한다.
+
+## 비공개 외부 보관과 수동 workflow
+
+현재 구현한 업로드 대상은 **AWS S3 API**다. 다른 S3 호환 서비스를 검증한 것으로 간주하지 않는다. 원본 Supabase와 다른 승인된 비공개 bucket/prefix를 사용한다. bucket 생성·정책 변경은 자동 실행하지 않는다.
+
+- `BACKUP_DESTINATION_CONFIRMED=PRIVATE_APPROVED`, `BACKUP_S3_BUCKET`, `BACKUP_S3_PREFIX=project203-backups/<운영용-접미사>` 및 제한된 AWS 자격증명을 준비한다.
+- S3 Public Access Block 네 항목 true, bucket policy status IsPublic=false를 확인하지 못하면 업로드를 거부한다. bucket policy가 없어 조회가 실패해도 자동으로 공개 범위를 바꾸지 않는다. 운영자가 IAM/정책 확인 후 준비한다.
+- IAM은 해당 prefix PUT/HEAD와 공개 차단 설정 조회에 필요한 권한만 부여한다. 파일 업로드 후 서버 SHA256 checksum/길이까지 확인한다. 보관 위치·region·요금은 선택되지 않았으므로 실제 월 비용은 미확정이다. [AWS 비용 항목](https://aws.amazon.com/s3/pricing/)
+- `node scripts/project-backup.mjs create --upload`는 이 조건을 충족한 뒤에만 실행한다.
+- `.github/workflows/backup-manual.yml`: `workflow_dispatch`만 존재한다. main + `PROJECT203_BACKUP_READY=true` + `production-backup` environment가 모두 필요하다. 기본 비활성. **environment에 필수 승인자/브랜치 제한을 먼저 설정**한 뒤 Secret을 등록한다. 임의 PR 코드에 운영 Secret을 제공하지 않는다.
+- 공개 Actions artifact 업로드·commit·cron·자동 삭제·복원 step은 없다. 실패 exit/단계 코드만 로그로 남긴다. 수동 실행 성공 후 알림과 예약 실행은 별도 승인한다.
+
+권장 주기는 매주 DB+Storage 1세트, 중요 변경 직전 수동 추가, 주간4본+월간12본이다. `retention <비공개-receipts.json>`은 주/월별 최신 성공본을 고르는 **삭제 없는 계획**만 출력한다. 동일 백업이 두 보존 조건을 만족하면 한 번 보관한다. 실제 remote 정리·lifecycle·주간 cron은 복원 연습 뒤 별도 활성화한다.
+
+Free는 정기 off-site export가 권장되고, Pro는 일일 백업 최근7일을 제공한다. Free Storage1GB/egress5GB 기본 한도는 계정·청구기간별 사용량을 함께 확인한다. 백업 다운로드도 egress를 사용하며 유료화가 자동 승인된 것은 아니다. [Supabase 백업](https://supabase.com/docs/guides/platform/backups), [사용량/플랜](https://supabase.com/docs/guides/platform/billing-on-supabase)
+
+## 독립 TEST 복원 검증
+
+운영 복원 기능은 제공하지 않는다. TEST ref가 운영과 다르고 URL/direct DB host가 그 TEST ref와 정확히 대응해야 한다. `RESTORE_TEST_CONFIRM=ISOLATED_TEST_ONLY`와 CLI 확인 플래그를 모두 요구한다. TEST public 테이블/Storage가 비어 있지 않으면 중단한다. 기존 TEST를 DROP/TRUNCATE로 비우지 않는다.
+
+1. 승인된 별도 빈 TEST Supabase(PG17 호환)에 원본과 동일한 이름/제한의 **비공개 bucket만 미리 준비**한다. 원본과 다른 API 키와 DB 자격증명을 사용한다.
+2. `RESTORE_TEST_REF`, `RESTORE_TEST_URL`, `RESTORE_TEST_KEY`, `RESTORE_TEST_DB_HOST/USER/PASSWORD`, `RESTORE_TEST_CONFIRM`을 프로세스에 설정한다. 백업 키는 별도 안전한 장소에서 가져온다.
+3. `node scripts/project-backup.mjs verify backups/<ID>`로 AES 인증 태그·암호문/평문 SHA·크기를 먼저 확인한다.
+4. `node scripts/project-backup.mjs restore-test backups/<ID> --confirm-test-restore`를 실행한다. pg_restore는 public schema 재생성 항목만 제외하고 단일 transaction/exit-on-error/no-owner로 복원한다. `--clean`, reset, DROP은 사용하지 않는다.
+5. 행 개수·RLS·anon/authenticated의 테이블/컬럼/함수/sequence 권한을 원본 manifest와 대조한다. Storage 객체는 TEST에 no-upsert 업로드 후 다시 다운로드해 SHA/개수를 확인한다. 실제 회원 E2E는 [독립 TEST 절차](ISOLATED_TEST_ENVIRONMENT.md)로 추가 수행한다.
+6. 스크립트 성공은 해당 dump/객체의 검사 성공이다. 트리거·인덱스·sequence 다음 값·모든 앱 동작의 의미적 복구까지 보증하려면 TEST SQL/E2E와 운영자 검토가 필요하다. 신규 DB 스키마와 원본 snapshot의 동시성·허용 확장도 확인한다.
+
+현재 **백업 코드 구현 / 수동 workflow 코드 준비** 상태다. **자동 실행 설정, 실제 암호화 운영 백업, 원격 보관, TEST 복원은 미완료**다. 승인 없이 설정하지 않는다.
+
+## 데이터 손실 시 대응
+
+추가 쓰기를 멈추고 원본 증거 보존 → 백업 시각/손실 구간 비교 → 별도 TEST에서 복원·권한·앱 검증 → 운영 중단 시간/덮어쓰기 위험/롤백 계획 제시 → **운영 복원 별도 승인** → 승인 범위만 실행 → 새 백업·사건 기록. 백업이 있다는 이유로 즉시 운영 복원이나 기존 migration 재실행을 하지 않는다.
+
+---
+
+아래는 **2026-10-31~11-01 당시의 역사 기록**이다. 테이블7/8개·Storage0개·플랜 미확인은 현재 상태가 아니다. 옛 CLI/복원 예시는 현재 실행 지시가 아니며 위 스크립트·TEST 절차를 우선한다.
 
 ## 1. 확인 범위
 

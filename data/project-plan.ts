@@ -4,8 +4,9 @@ export type ProjectEvent = {
   /** ISO date/time with an explicit Z or UTC offset; displayed in Asia/Seoul. */
   startsAt: string;
   location?: string;
+  description?: string;
   /** Optional link to an existing protected project page. */
-  href?: string;
+  href?: string | null;
 };
 
 // Planning targets from the 2026 Q4 presentation, not actual completion dates.
@@ -19,7 +20,7 @@ export const projectRoadmap = [
 // Poll deadlines are shown separately from the database-backed Poll catalog.
 export const projectEvents: readonly ProjectEvent[] = [];
 
-export function projectEventHref(value: string | undefined): string | null {
+export function projectEventHref(value: string | null | undefined): string | null {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u0020]/.test(value)) return null;
   try {
     const url = new URL(value, "https://project203.invalid");
@@ -36,7 +37,7 @@ export function validProjectEvent(event: ProjectEvent): boolean {
   const day = new Date(`${event.startsAt.slice(0, 10)}T00:00:00Z`);
   if (!Number.isFinite(day.getTime()) || day.toISOString().slice(0, 10) !== event.startsAt.slice(0, 10)
     || !Number.isFinite(Date.parse(event.startsAt))) return false;
-  return event.href === undefined || projectEventHref(event.href) !== null;
+  return event.href == null || projectEventHref(event.href) !== null;
 }
 
 export function getUpcomingProjectEvents(entries: readonly ProjectEvent[] = projectEvents, now = Date.now()): ProjectEvent[] {
