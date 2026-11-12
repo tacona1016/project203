@@ -1,0 +1,52 @@
+name: Approved encrypted backup (manual only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        description: Check configuration or create an encrypted private backup
+        options: [check, backup]
+        default: check
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project203-manual-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    # Enable only after independent restore validation and owner approval.
+    if: github.ref == 'refs/heads/main' && vars.PROJECT203_BACKUP_READY == 'true'
+    environment: production-backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PROJECT203_PG_CONTAINER: postgres:17
+      PROJECT203_BACKUP_CONFIRMED: READ_ONLY_SOURCE
+      BACKUP_SOURCE_REF: ${{ vars.BACKUP_SOURCE_REF }}
+      BACKUP_SOURCE_URL: ${{ vars.BACKUP_SOURCE_URL }}
+      BACKUP_SOURCE_KEY: ${{ secrets.BACKUP_SOURCE_KEY }}
+      BACKUP_DB_HOST: ${{ vars.BACKUP_DB_HOST }}
+      BACKUP_DB_USER: ${{ vars.BACKUP_DB_USER }}
+      BACKUP_DB_PASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      BACKUP_DESTINATION_CONFIRMED: PRIVATE_APPROVED
+      BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+      BACKUP_S3_PREFIX: ${{ vars.BACKUP_S3_PREFIX }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.BACKUP_AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/project-backup.mjs check
+      - if: inputs.operation == 'backup'
+        run: node scripts/project-backup.mjs create --upload
+      # No GitHub artifact upload, public bundle, restore, pruning or schedule.

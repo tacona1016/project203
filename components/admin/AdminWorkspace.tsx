@@ -24,6 +24,7 @@ export async function AdminWorkspace({ overview = false, quarter: requestedQuart
     && Date.parse(item.poll.voting_ends_at) - Date.parse(item.server_time) <= 7 * 86400000)
     .sort((a, b) => a.poll.voting_ends_at!.localeCompare(b.poll.voting_ends_at!));
   return <>
+    {overview && <nav className="project-admin-links" aria-label="운영 관리"><Link href="/admin/project" className="secondary-link">현황·일정·결정 관리 →</Link><Link href="/admin/polls" className="text-link">투표 관리 →</Link></nav>}
     <div className="admin-workspace-actions"><div className="flex flex-wrap items-center gap-3"><Link href="/admin/polls/new" className="interaction-button">+ 투표 만들기</Link><Link href="/board/new?type=notice" className="secondary-link">공지 작성</Link>{overview && <Link className="text-link" href="/admin/polls">모든 투표 관리 →</Link>}</div><LockSiteButton admin /></div>
     {overview && catalog && <section aria-label="관리자 현황" className="mb-6">
       <h2 className="eyebrow text-accent">운영 현황</h2>

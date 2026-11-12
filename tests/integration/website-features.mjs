@@ -26,8 +26,8 @@ export async function runWebsiteFeatureChecks({ a, b, anonymous, id, adminPasswo
     title: `UX notice ${index}`, content: `fixture-home-private-body-${index}`, post_type: "notice", is_pinned: index % 2 === 0,
   })).status, 200);
   const state = await (await fetch("http://127.0.0.1:3103/_test")).json();
-  const expected = state.posts.filter(row => row.post_type === "notice" && !row.deleted_at)
-    .sort((left, right) => Number(right.is_pinned) - Number(left.is_pinned) || right.created_at.localeCompare(left.created_at) || right.id - left.id).slice(0, 3);
+  const expected = state.posts.filter(row => row.post_type === "notice" && !row.deleted_at && ![90,92,93].includes(row.id))
+    .sort((left, right) => right.created_at.localeCompare(left.created_at) || right.id - left.id).slice(0, 3);
   const home = await (await a.call("/")).text();
   for (const notice of expected) assert(home.includes(notice.title));
   assert.equal(home.includes("fixture-home-private-body-"), false);

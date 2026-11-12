@@ -1,5 +1,65 @@
 # 세션 인계
 
+## 2026-11-11 — Phase2 안정화·관리 기능 진행
+
+- 최종 PR/Preview: https://github.com/tacona1016/project203/pull/3 open·미병합. 기능 원격84b690e8c9d305560cd5c75c90eb5d15f8db42e3/tree1c2b5334628c4cf7c52707de512725eeaf246203 = 로컬fe279f3 tree, 전체 앱/검사262파일 차이0.38파일·삭제0. 연결 도구로 전체tree를 검증해 전송했고 force/mainpush 없음.
+- 실제 PR CI42998636842/job130448922141 SUCCESS(npm ci,unit93,type,lint,build). Git Preview dpl_FLnMTSUQ5UhBGM7YTjSj7CSBqeKU/84b690e READY, https://project203-erjob1mmk-project203.vercel.app . /access503는 Preview에 필수5변수 부재 때문이며 설정을 바꾸지 않았다. API/사진 도구401은 배포 보호/앱인증 계층을 구분한 본문 확인 미완료. 실제회원 E2E/PG/Storage/운영백업/TEST복원은 미검증. 최종 감사294파일/역사594blob, 신규현재 high/critical0·기존seed medium5·역사env예시 high1. 내용/키/쿠키 출력0.
+- 최종 문서: PROJECT203_PHASE2_IMPROVEMENTS.md, BACKUP_RESTORE.md, ISOLATED_TEST_ENVIRONMENT.md. .verification/phase2-*에 소스명세/보존/검증근거, member-browser/report.json/실제스크린샷 보관. 보고서/인계만 후속문서commit으로 갱신한다.
+- 다음은 별도 승인 단계: 전용TEST/Secret·Storage 준비→신규SQL proposal TEST 검증→실제회원/Storage E2E→운영migration 승인→Production 승인. 백업 저장소/키/비용·수동활성화·주간스케줄과 저장소Private/노출비밀교체도 별도 승인이다. Production·기존DB/Storage/매핑/인증정책은 변경0. 재개 시 아래 과거 진행중 문구보다 이 최종기록을 우선한다.
+
+- 로컬 최종 완료: test:production도21검사 PASS(로컬 build/start+합성 DB/Storage). 이전 단위93/Chrome44/HTTP23/type/lint/build 결과와 구분해 보관했다. .verification/member-auth-report.json은 마지막 production fixture 결과이며 Browser 보고서는 별도 member-browser/report.json에 보존. 실제 운영회원/PG/Storage·백업복원은 미검증.
+- 코드 checkpoint: 검토 repo 기능branch의 67072c4d3a715b3047989d1a77ee7a4d574d3a37, tree5a8233a2dff5dc7835d67ab479aabf7afde7ae57, parent45f275a.38파일/삭제0·normal commit. 이후 검증 문서만 후속 commit으로 갱신한다. Git fetch443 실패이므로 동일 오류를 반복하지 않고 연결 GitHub 도구의 전체 tree 대조 전송을 준비한다. 원격 main/Production/운영SQL 변경 없음.
+
+- 최신 검증: 단위93/93, typecheck/lint(오류0·기존경고1)/Production Build(conflicts·presentation 포함) PASS. test:browser는 실제 Chrome44 + 합성 HTTP23 PASS, 예외0/hydration0. 신규관리 UI/HOME390/768/1440·기존320/430 포함. 링크 없는 일정의 null href가 HOME에서 제외되는 실제 버그를 Chrome에서 찾아 수정+회귀1개 추가. 테스트 중 plain404와 Suspense 준비 시점을 구분하도록 기대/대기를 보완했다. OS 쿠키 저장 영속성·실PG/Storage는 미검증. test:production 로컬 production fixture 검사 진행 중.
+- 보존: 시작 기준274파일에서 삭제0, 인증/사진/발표/기존SQL61파일 해시 동일. CSS는 기존 규칙 무변경·새관리16줄만 추가. 이번 변경38파일을 검토 repo 기능branch에 명시적으로 복사했다(아직 커밋/PR 전). 루트 기존 dirty/HEAD 보존. 현재 원격main45f275a·Production dpl_93DHptBYoduALYQZWcQ4hCsaJobA READY/SHA일치를 재조회했다.
+
+- 구현 완료: 비회원404 hydration 예외를 실제 Chrome에서 재현 후 not-found만 세션별 header로 분리. 엄격한 useParticipant/인증 정책은 유지. /admin/project의 현황·일정·명시적 결정·복구 이력 UI/API, CAS409/원자적 SQL proposal, HOME 공유 조회/미적용 파일 fallback/장애 안내, 일반 공지의 결정 제외를 LIMIT 전에 적용했다.
+- 백업: scripts/backup/core.mjs + project-backup.mjs, 암호화/해시/가드/삭제 없는 보존 계획, 비활성 backup-manual workflow 작성. BACKUP_RESTORE 최신11테이블/실제 Private Storage로 갱신. TEST SQL/가드 실행기와 ISOLATED_TEST_ENVIRONMENT.md 준비. 운영 암호화 백업/복원/스케줄 활성화는 미실행.
+- 수정 파일 묶음: app/not-found,page,admin/project,api/admin/project; components/admin/ProjectAdmin,AdminWorkspace,home/ManagedProject,LatestNotices,UpcomingEvents; lib/project/*,lib/board/notices,lib/supabase/types; data/project-plan; globals.css,.gitignore; scripts/backup*,audit-public-source,test-project-database; supabase/proposals/project_admin_content.sql,tests SQL; 관련 unit/HTTP/Chrome 테스트와 문서. 시작274파일 해시와 비교하여 이번 변경만 별도 branch에 통합할 예정.
+- 현재 검사: 단위92/92 PASS. 합성 HTTP22항목 PASS(실제 DB 아님); typecheck PASS, lint 기존경고1/신규경고는 제거. 404 fix 포함 새 Chrome+관리 UI390/768/1440은 실행 중. 마지막 Production Build/TEST SQL/실Storage는 아직 완료 아님.
+- 공개 점검: 운영 branch273파일/로컬 reachable역사556blob 패턴검사에서 과거 .env.example의 현실적인 UUID/평문 비밀번호 예시(high)와 일부 participants seed 공개(medium) 확인. 실제 현재 운영 비밀번호와의 일치 여부는 조회하지 않음. 값은 출력하지 않았고 저장소Private/Secret교체는 승인 대기. Actions artifact 조회0개. 패턴스캔은 노출부재 증명이 아님.
+- 다음: Chrome 실패 수정·최종 type/lint/build·preservation 해시, 실TEST/복원 미검증 범위 보고, PROJECT203_PHASE2_IMPROVEMENTS.md 작성, 검토 repo 기능branch에 명시적 파일만 반영·PR/CI/안전Preview 가능 여부 확인. main/Production/운영SQL/Secret/과금은 변경하지 않는다.
+
+- 목표: 404 Provider 의존 오류, 암호화 DB/Storage 백업 도구, 독립 TEST 준비, ADMIN 현황/일정/결정 관리, HOME 일반 공지 누락 수정, 공개 Git 점검. 로그인 정책/세션/매핑·운영 DB/Secret/Production 배포는 이번 작업에서 변경하지 않는다. 이전 배포 승인을 확대 적용하지 않는다.
+- 시작 확인: 원격 main45f275a/tree95538d·Production dpl_93DHptBYoduALYQZWcQ4hCsaJobA READY 유지. 루트 기존 dirty 보존. 별도 검토 repo에 release/production-20261108을 기준으로 feat/phase2-admin-stability-20261111 생성. 시작274파일 해시 .verification/phase2-baseline.json, 주요 원본 phase2-before/에 보관.
+- 실제 메타데이터: public 앱11테이블 모두 RLS, board-attachments Private/3MiB/객체1개. 행/사진 원문은 조회하지 않았다. 조직 Free·활성프로젝트2개, 이 프로젝트의 독립TEST 없음. psql/pg_dump/docker/Supabase CLI/암호화 CLI가 로컬 PATH에 없어 실PostgreSQL 복원/새 migration 실행은 불가하며 코드·SQLproposal/TEST 절차를 준비한다. 비용/Secret/프로젝트 생성은 승인 전 미실행.
+- P0 분석: layout은 세션이 있을 때만 ParticipantProvider, not-found는 무조건 SiteHeader→NameSelector→useParticipant. 로그인 공개 route에 fixture 전용 notFound를 넣은 실제 Next SSR404는 통과했다. 클라이언트 hydration 재현·검사는 현재 실행 중이며 아직 예외 재현 완료라고 보고하지 않는다.
+- 다음: 404 Chrome 결과→최소 guard 수정, additive 프로젝트 관리 SQL·서버/API/UI·미적용 fallback, HOME 결정 제외를 limit 전에 적용, 암호화 백업/검사/TEST 복원 가드·수동 workflow, 회귀·build·Chrome·보안 audit, 기능 branch/PR·안전Preview. 모든 변경/검사 결과를 단계마다 갱신한다.
+
+---
+
+## 2026-11-08 — Production 릴리스 완료
+
+- 이번 사용자의 명시적 배포 승인으로 정상 PR 병합과 자동 Git Production 배포를 완료했다. 새 기능을 다시 개발하지 않았다. DB/Storage/RLS/Auth/회원·관리자 비밀번호/환경변수/과금/저장소 공개 범위 변경 없음.
+- GitHub 시작 main71457ceb1ed82f6440bc0649129cf6bd3621be13 → 최종 main **45f275afb32c67748e8d43466291498fba97a1f5**. PR **https://github.com/tacona1016/project203/pull/2**, 정상 rebase merge. 원격 기능 commit968d82a8f74007a4b0111e170b71d772a67356bd와 기존 로컬 ee2e978/3d445fa의 tree **95538d196f51c83c0f092cb6dcfbbbc4e31b9b3b**가 모두 같다.50파일 전체 반영, 삭제0, 인증/API/SQL/패키지 변경0. 기존 원격 이력/로컬 커밋 보존·force 없음.
+- PR Actions **42484558653 / job128743475142** 실제 성공: npm ci, 단위82/82, typecheck, lint, build(conflict/presentation 포함). 기존 로컬 Chrome43·HTTP21·production-mode HTTP19는 동일 코드 명세를 대조하여 재사용했다.
+- 신규 Production **dpl_93DHptBYoduALYQZWcQ4hCsaJobA**, **READY**, Git source/main SHA45f275a 일치, https://project203.vercel.app 연결 확인. 배포 URL https://project203-3219vfzav-project203.vercel.app . Git 연동 자동 배포만 사용했으며 기존 파일 Preview를 승격하거나 중복 수동 배포하지 않았다. 이전 정상 dpl_AnfDMN7vwsMv33ccErSakvSqk7o1은 보존했다.
+- 신규 빌드 로그 compile/Build Completed/Deployment completed 확인, 실패 오류0. 기존 npm/ESM/Node 범위 경고는 유지했다. 신규 deployment의 최근15분 error/fatal 런타임 로그 조회는 일치 로그 없음(전체 기능 E2E 보증 아님).
+- 실제 운영 HTTP(무인증): /access200 로그인 화면; HOME/ARCHIVE/POLLS/BOARD/ADMIN/Q4 요청은 로그인 화면으로 이동(조회 도구는 최종200을 반환). /api/polls·/api/admin/polls·보호사진401. HTML private/no-store 확인. 실제 회원 로그인 후 UI/Storage 업로드는 미검증이며 운영 테스트 데이터 생성0.
+- Preview Git 배포 dpl_73BrF7ddpp6g7gyFPY8524UuFWL8/968d82a READY. /access503 연결 안내·/api/polls401. 필수5변수는 Production에만 있는 상태 그대로이며 값은 복호화·출력·복사·변경하지 않았다. Preview 회원 E2E/Safari/실제 Storage E2E 미검증은 남는다.
+- Git 보존: root는 fix/rebase-integrity/e46d233의 이전 dirty 작업 그대로다. 별도 검토 repo .verification/board-feature-branch의 원래 통합 브랜치3d445fa는 clean·보존했다. 공개된 원격968d82a/45f275a commit 객체를 SHA 검증하여 읽어오고 새 로컬 ref **release/production-20261108 →45f275a**를 추가했다. 기존 refs는 이동하지 않았고 connectivity fsck 통과. 후속 Git 작업은 원격 최신을 재확인하고 배포 ref를 사용한다. 오래된 root main/통합 snapshot을 그대로 main으로 push하면 안 된다.
+- 완료 보고서: **docs/PRODUCTION_RELEASE_20261108.md**. .verification/release-source.json은50파일 blob SHA, release-validation.json은 배포/CI/HTTP/보존 영수증이다. 이번 최종 보고/인계는 배포 뒤 로컬 문서로 기록하며 추가 문서 전용 Production 배포를 만들지 않았다.
+- 남은 작업: 별도 테스트 DB/회원이 있는 Preview 설정과 실제 로그인·Storage E2E는 후속 승인 범위. 이번 배포 목표는 완료. 운영 migration·환경변수 변경은 필요 없고 실행하지 않았다.
+
+아래는 릴리스 이전 진행 기록이다. 현재 배포 결과는 위 완료 기록을 우선한다.
+
+---
+
+## 2026-11-08 — 승인된 Production 릴리스 진행
+
+- PR #2의 Validate application CI 성공: npm ci·단위82/82·typecheck·lint·build(내부 conflict/presentation 포함) 통과. Git Preview dpl_73BrF7ddpp6g7gyFPY8524UuFWL8/968d82a READY 확인. Preview 환경변수는 변경하지 않았다.
+- PR을 expected-head968d82a로 정상 rebase merge 완료. main 신규SHA45f275afb32c67748e8d43466291498fba97a1f5, tree95538d196f51c83c0f092cb6dcfbbbc4e31b9b3b로 검증된 로컬 tree와 동일.71457ceb 이전 이력/원격 기능 브랜치/기존 로컬 커밋 모두 보존했다. 강제 push·규칙 우회 없음. 자동 Production 배포를 확인 중이며 중복 수동 배포는 하지 않는다.
+
+- 현재 요청은 검증된 통합 코드의 정상 push/PR 병합/Production 배포에 대한 명시적 승인이다. DB migration·데이터 삭제·환경변수/인증·과금 변경은 승인 대상이 아니며 하지 않는다. 아래 이전 승인 대기 문구보다 이번 요청을 우선한다.
+- 시작 재확인: main71457ceb, 기존 Production dpl_AnfDMN7vwsMv33ccErSakvSqk7o1 READY·도메인 연결. Public 저장소 유지. 필수5환경변수는 값 복호화 없이 Production에만 존재함을 재확인했다. Preview 설정 변경 없음.
+- root fix/rebase-integrity/e46d233 dirty와 모든 기존 작업 보존. 별도 검토 repo의 clean HEAD3d445fa → ee2e978 →71457ceb 정상.273파일 명세 동일·50파일 변경·삭제0·인증/API/SQL/패키지 변경0. 이전82단위/Chrome43/HTTP21/production HTTP19/build 근거와 동일 코드이므로 중복 무거운 테스트는 생략하고 실제 PR CI를 확인한다.
+- 로컬 fetch/push는 GitHub443 연결 실패. 동일 오류를 반복하지 않고 GitHub 연결 도구로50파일을 전송했다. 원격 tree95538d196f51c83c0f092cb6dcfbbbc4e31b9b3b가 로컬3d445fa tree와 정확히 같다. metadata가 다른 신규 원격 commit968d82a8f74007a4b0111e170b71d772a67356bd 생성, parent71457ceb. 기존 로컬/원격 이력은 보존했고 force는 사용하지 않았다.
+- 원격 기능 브랜치 fix/stabilization-ux-integrated-20261108, PR https://github.com/tacona1016/project203/pull/2 생성 완료.50파일 전체 tree 검증, private-assets/.env/.verification 업로드 없음.
+- 진행 중: PR CI·mergeability/보호 규칙 확인 → 통과 후 정상 병합 → 자동 Production 신규SHA/READY/alias/log/비로그인HTTP 검증. 운영 로그인 후/실제 Storage E2E는 회원 비밀번호 없이 미검증으로 남긴다.
+- 아직 main 변경/Production 배포/DB·Storage·환경변수 변경 없음. 릴리스 최종 결과를 이 문서와 배포 보고서에 이어 기록한다.
+
+---
+
 ## 2026-11-08 — 안정화/UI 통합 최종 검증
 
 - 최종 Git checkpoint: 별도 .verification/board-feature-branch 저장소의 **fix/stabilization-ux-integrated-20261108**, 코드 commit **ee2e978c33e6ed2d98bc77004345b92cc0592005**, 직접 parent는 실제 최신 원격71457ceb다. root refs/기존 dirty/기존 브랜치들은 보존했다. 원격3커밋·trees/blobs를 SHA 검증 후 읽어와 connectivity fsck 통과. 원격 대비50파일(기존 Compact/압축 포함), 새 작업20파일. SQL/인증/API/패키지의 원격 대비 변경 없음. 코드 commit 후 이 영수증/보고서만 문서 후속 commit으로 남긴다. push/main/Production 변경 없음.

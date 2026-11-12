@@ -47,6 +47,10 @@ try {
   for (const port of [3100, 3102, 3103]) { let used = false; try { await fetch(`http://127.0.0.1:${port}`, { signal: AbortSignal.timeout(500) }); used = true; } catch {} assert.equal(used, false, `Port ${port} must be free`); }
   await mkdir(root, { recursive: true });
   for (const name of ["app", "components", "data", "lib", "public", "scripts", "proxy.ts", "mdx-components.tsx", "next.config.mjs", "tsconfig.json", "package.json", "postcss.config.mjs", "next-env.d.ts"]) await cp(name, path.join(root, name), { recursive: true });
+  // Force Next's real 404 boundary on a public login request in this copy only.
+  const accessFile = path.join(root, "app/access/page.tsx");
+  await writeFile(accessFile, (await readFile(accessFile, "utf8")).replace('{ redirect }', '{ redirect, notFound }')
+    .replace('  const returnTo =', '  if ((await searchParams as Record<string, string>).fixture404 === "1") notFound();\n  const returnTo ='));
   // Registry-only and draft-MDX quarters exist only in this isolated test copy.
   const registryFile = path.join(root, "data/quarters.ts");
   const registered = [
@@ -56,7 +60,7 @@ try {
   const registry = (await readFile(registryFile, "utf8")).replace("export const quarters: readonly Quarter[] = [", `export const quarters: readonly Quarter[] = [\n${registered.map(q => JSON.stringify(q)).join(",\n")},`);
   await writeFile(registryFile, registry);
   const linkFile = path.join(root, "data/content-links.ts");
-  await writeFile(linkFile, (await readFile(linkFile, "utf8")).replace("export const contentLinks: readonly ContentLinkGroup[] = [];", 'export const contentLinks: readonly ContentLinkGroup[] = [{quarter:"2026-q4",pollSlugs:["land-priority","hidden","missing"],decisionPostIds:["90","1","999"]}];'));
+  await writeFile(linkFile, (await readFile(linkFile, "utf8")).replace("export const contentLinks: readonly ContentLinkGroup[] = [];", 'export const contentLinks: readonly ContentLinkGroup[] = [{quarter:"2026-q4",pollSlugs:["land-priority","hidden","missing"],decisionPostIds:["90","92","93","1","999"]}];'));
   const candidateFile = path.join(root, "data/land-candidates.ts");
   const candidateFixtures = ["A", "B"].map(key => ({ id: `fixture-${key}`, name: `합성 후보 ${key}`, location: "테스트 전용 가상 위치", areaPyeong: 200, access: "미확인", buildability: "미확인", road: "미확인", utilities: "미확인", terrain: "미확인", surroundings: "미확인", extraCosts: "미확인", needsVerification: "실제 후보지가 아닌 테스트 자료" }));
   await writeFile(candidateFile, (await readFile(candidateFile, "utf8")).replace("export const landCandidates: readonly LandCandidate[] = [];", `export const landCandidates: readonly LandCandidate[] = ${JSON.stringify(candidateFixtures)};`));
@@ -99,6 +103,11 @@ export default async function Page(){await requireAccessSession("/fixture-projec
   for (const route of ["/api/polls", "/api/comments?quarter=2026-q4", "/api/participants", "/api/board/session", "/api/access/session", "/api/site-images/boardBanner"]) await expectStatus(anonymous.call(route), 401);
   const names = await (await anonymous.call("/api/access/participants")).json();
   assert(names.length > 0 && names.every(p => Object.keys(p).sort().join(",") === "display_name,id"));
+  const public404 = await anonymous.call("/access?fixture404=1");
+  assert.equal(public404.status, 404, "Anonymous Next 404 must render without a ParticipantProvider");
+  const public404Html = await public404.text();
+  assert(public404Html.includes("아직 없는 기록입니다."));
+  assert(!public404Html.includes("Authenticated member required"));
   const failure = "이름과 비밀번호를 확인해주세요.";
   for (const [person, password] of [[1, "incorrect"], [6, ""], [7, shared]]) { const r = await anonymous.login(person, password); assert.equal(r.status, 401); assert.equal((await r.json()).error, failure); }
   const unrestricted = new Browser();
@@ -111,12 +120,17 @@ export default async function Page(){await requireAccessSession("/fixture-projec
   checks.push("Anonymous pages/APIs/images blocked; minimal public directory; uniform failure; exact strings; same-origin; legacy cookies rejected");
 
   const a = new Browser(), b = new Browser();
+  const manager = new Browser();
+  await expectStatus(manager.login(1, aPassword), 200);
+  await expectStatus(manager.call("/api/admin/access", "POST", { password: env.ADMIN_PASSWORD }), 200);
   const login = await a.login(1, aPassword, "/quarter/2026-q4?from=login"); assert.equal(login.status, 200); assert.equal((await login.json()).redirectTo, "/quarter/2026-q4?from=login");
   const issued = login.headers.getSetCookie().find(c => c.startsWith("project203_member="));
   assert(issued.includes("HttpOnly") && issued.includes("SameSite=lax") && issued.includes("Max-Age=2592000"));
   if (production) assert(issued.includes("Secure"));
   assert.equal((await (await a.call("/api/access/session")).json()).participant.id, id(1));
   await expectStatus(b.login(2, bPassword), 200);
+  const { runProjectAdminChecks } = await import("./project-admin.mjs");
+  checks.push(...await runProjectAdminChecks({ manager, member:b, anonymous, id }));
   const { runPollParticipationChecks } = await import("./poll-participation.mjs");
   checks.push(...await runPollParticipationChecks({ a, b, anonymous, id }));
   const home = await (await a.call("/")).text(), archive = await (await a.call("/archive")).text();
@@ -129,7 +143,7 @@ export default async function Page(){await requireAccessSession("/fixture-projec
   const homeOrder = [...home.matchAll(/<section\b[^>]*data-home-section="([^"]+)"/g)].map(match => match[1]);
   // Suspense can send a section in a later hidden HTML fragment; its byte
   // position is not DOM order. Chrome checks the settled, visible DOM below.
-  assert.deepEqual(homeOrder.slice(0, 4), ["intro", "presentation", "polls", "status"]);
+  assert.deepEqual(homeOrder.slice(0, 3), ["intro", "presentation", "polls"]);
   assert.deepEqual([...homeOrder].sort(), ["intro", "presentation", "polls", "status", "decisions", "notices", "roadmap", "candidates"].sort());
   const { runHomeStabilizationChecks } = await import("./home-stabilization.mjs");
   checks.push(...await runHomeStabilizationChecks({ a }));

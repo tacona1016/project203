@@ -13,6 +13,7 @@ next-env.d.ts
 *.sql.gz
 *.dump.enc
 *.sql.enc
+*.toc
 
 # Personal photos stay local until repository privacy has been independently verified.
 private-assets/site/**/*

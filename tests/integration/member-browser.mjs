@@ -73,10 +73,33 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
   try {
     let page = await launch(); await page.send("Network.clearBrowserCookies");
     await page.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
+    await page.go("/access?fixture404=1");
+    try { await page.wait("document.querySelector('h1')?.textContent==='아직 없는 기록입니다.'"); }
+    catch {
+      const capture = await page.send("Page.captureScreenshot", { format: "png" });
+      await writeFile(path.join(output, "public-404-failure.png"), Buffer.from(capture.data, "base64"));
+      await writeFile(path.join(output, "public-404-failure.json"), JSON.stringify({ diagnostics, page: await page.evaluate("({path:location.pathname,title:document.title,h1:document.querySelector('h1')?.textContent})") }, null, 2));
+      throw Error("Public 404 did not render; inspect the local anonymous-only diagnostic screenshot");
+    }
+    await pause(700);
+    assert(await page.evaluate("document.querySelector('h1')?.textContent==='아직 없는 기록입니다.'"), "Public 404 survives hydration without member context");
+    assert.equal(await page.evaluate("!!document.querySelector('.name-current')"), false);
+    assert.equal(diagnostics.uncaughtExceptions, 0, "Public 404 must not throw during hydration");
     await page.go("/quarter/2026-q4"); await page.wait("location.pathname==='/access'");
     await page.evaluate(`localStorage.setItem('project203_participant',JSON.stringify({id:${JSON.stringify(id(2))},display_name:'친구2'}))`);
     await rateLimitFeedback(page, "/api/access", aPassword, true);
     await login(page, 1, aPassword); await page.wait("location.pathname==='/quarter/2026-q4'");
+    for (const route of ["/missing-member-page", "/board/999999"]) {
+      await page.go(route); await page.wait("document.querySelector('h1')?.textContent==='아직 없는 기록입니다.'");
+      assert(await page.evaluate("!!document.querySelector('.name-current')"));
+      await page.send("Page.reload"); await page.wait("document.querySelector('h1')?.textContent==='아직 없는 기록입니다.'");
+    }
+    // Unpublished presentations deliberately return a plain proxy 404, not a
+    // rendered application page. Preserve that access control contract.
+    assert.equal(await page.evaluate("fetch('/quarter/2099-q4').then(r=>r.status)"), 404);
+    await page.evaluate("history.back()");
+    await page.wait("document.querySelector('h1')?.textContent==='아직 없는 기록입니다.'&&!!document.querySelector('.name-current')");
+    await page.go("/quarter/2026-q4");
     assert.equal(await page.evaluate("!!document.querySelector('dialog')"), false);
     assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
     assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"));
@@ -116,6 +139,8 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     const uiChecks = await runUiUxBrowserChecks({ page, base, output });
     const { runCompactBrowserChecks } = await import("./compact-browser.mjs");
     const compactChecks = await runCompactBrowserChecks({ page, base, output });
+    const { runProjectAdminBrowser } = await import("./project-admin-browser.mjs");
+    const projectChecks = await runProjectAdminBrowser({ page, base, output });
     const { runPresentationPollBrowser } = await import("./presentation-polls-browser.mjs");
     const presentationChecks = await runPresentationPollBrowser({ page, base, output });
     const { runBoardWorkflowBrowser } = await import("./board-workflow-browser.mjs");
@@ -137,6 +162,10 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     await page.evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='로그아웃').click()");
     await page.wait("location.pathname==='/access'"); await other.wait("location.pathname==='/access'");
     assert.equal(await other.evaluate("fetch('/api/access/session').then(r=>r.status)"), 401);
+    await page.go("/access?fixture404=1");
+    await page.wait("document.querySelector('h1')?.textContent==='아직 없는 기록입니다.'");
+    assert.equal(await page.evaluate("!!document.querySelector('.name-current')"), false);
+    await page.go("/access");
     await login(page, 2, bPassword); await page.go("/archive");
     await page.wait("document.querySelector('header .name-current')?.textContent==='친구2'");
     await page.send("Page.reload"); await page.wait("document.readyState==='complete'&&document.querySelector('header .name-current')?.textContent==='친구2'");
@@ -151,6 +180,6 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     await page.go("/board"); await page.wait("document.querySelector('header .name-current')?.textContent==='친구2'");
     assert.deepEqual(diagnostics, { uncaughtExceptions: 0, hydrationErrors: 0 });
     await writeFile(path.join(output, "stabilization-console.json"), JSON.stringify(diagnostics, null, 2));
-    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Member/admin HTML 429 shows safe Retry-After feedback", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, ...uiChecks, ...compactChecks, ...presentationChecks, ...workflowChecks, ...boardExtrasChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
+    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Member/admin HTML 429 shows safe Retry-After feedback", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, ...uiChecks, ...compactChecks, ...projectChecks, ...presentationChecks, ...workflowChecks, ...boardExtrasChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
   } finally { await close(); }
 }
