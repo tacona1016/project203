@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure, adminPassword }) {
+export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure, adminPassword, onlyBoardList = false }) {
   const output = path.resolve(".verification/member-browser"); await mkdir(output, { recursive: true });
   const pause = ms => new Promise(r => setTimeout(r, ms));
   let browser, sockets = [];
@@ -73,6 +73,16 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
   try {
     let page = await launch(); await page.send("Network.clearBrowserCookies");
     await page.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
+    if (onlyBoardList) {
+      await page.go("/access");
+      assert.equal(await page.evaluate(`fetch('/api/access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(${JSON.stringify({participantId:id(1),password:aPassword,next:"/board"})})}).then(r=>r.status)`),200);
+      await page.go("/board");await page.wait("document.querySelector('header .name-current')?.textContent==='친구1'");
+      const { runBoardListLikeBrowser } = await import("./board-list-likes-browser.mjs");
+      const checks = await runBoardListLikeBrowser({ page, base, output, id, bPassword, adminPassword });
+      assert.deepEqual(diagnostics, { uncaughtExceptions: 0, hydrationErrors: 0 });
+      await writeFile(path.join(output, "board-list-focused.json"), JSON.stringify({ status: "passed", diagnostics, checks }, null, 2));
+      return;
+    }
     await page.go("/access?fixture404=1");
     try { await page.wait("document.querySelector('h1')?.textContent==='아직 없는 기록입니다.'"); }
     catch {
@@ -147,6 +157,8 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     const workflowChecks = await runBoardWorkflowBrowser({ page, base, output, id });
     const { runBoardEngagementBrowser } = await import("./board-engagement-browser.mjs");
     const boardExtrasChecks = await runBoardEngagementBrowser({ page, base, output });
+    const { runBoardListLikeBrowser } = await import("./board-list-likes-browser.mjs");
+    const listLikeChecks = await runBoardListLikeBrowser({ page, base, output, id, bPassword, adminPassword });
     await page.go("/board/new"); await page.wait("!!document.querySelector('.board-editor fieldset')&&!document.querySelector('.board-editor fieldset').disabled");
     assert.equal(await page.evaluate("!!document.querySelector('.board-identity input[type=password]')"), false);
     await page.evaluate("(()=>{for(const [selector,value] of [['#board-title','Browser fixture story'],['#board-content','Browser fixture content']]){const el=document.querySelector(selector);Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}})()");
@@ -180,6 +192,6 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     await page.go("/board"); await page.wait("document.querySelector('header .name-current')?.textContent==='친구2'");
     assert.deepEqual(diagnostics, { uncaughtExceptions: 0, hydrationErrors: 0 });
     await writeFile(path.join(output, "stabilization-console.json"), JSON.stringify(diagnostics, null, 2));
-    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Member/admin HTML 429 shows safe Retry-After feedback", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, ...uiChecks, ...compactChecks, ...projectChecks, ...presentationChecks, ...workflowChecks, ...boardExtrasChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
+    await writeFile(path.join(output, "report.json"), JSON.stringify({ status: "passed", persistedFromDisk, restartMethod: persistedFromDisk ? "browser cookie store" : "synthetic persistent cookie restored in memory; OS persistence unverified", checks: ["Mobile login via autofill/Enter", "Member/admin HTML 429 shows safe Retry-After feedback", "Old localStorage ignored", "Original presentation return path and 12 slides", "DB outage stays on the same URL and recovers with the original member cookie", "Home/Archive/Presentation desktop and mobile layouts; Polls mobile layout", ...ballotChecks, ...uiChecks, ...compactChecks, ...projectChecks, ...presentationChecks, ...workflowChecks, ...boardExtrasChecks, ...listLikeChecks, "Board creation without extra password", "Two-tab logout and API denial", "Refresh and saved-cookie validity after browser restart"] }, null, 2));
   } finally { await close(); }
 }

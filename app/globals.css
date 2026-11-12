@@ -1265,6 +1265,9 @@
   .board-row-title .board-new-badge { margin-left:0; }
   .board-row-meta { display: flex; flex-wrap:nowrap; gap:.75rem; color: var(--color-muted); font-size: 0.75rem; }
   .board-row-meta time { white-space:nowrap; }
+  .board-row .board-row-author { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .board-row .board-row-counts { display:inline-flex; gap:.75rem; margin-left:auto; flex-shrink:0; white-space:nowrap; }
+  .board-row .board-like-count { color:var(--color-muted); }
   .board-pinned { padding-inline:1rem; }
   .board-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap:1.5rem; padding-top:1.5rem; font-size: 0.8125rem; }
   .board-identity { padding:1rem; margin-bottom:1.5rem; background: var(--color-surface); font-size: 0.875rem; line-height: 1.8; }

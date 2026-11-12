@@ -11,7 +11,7 @@ export type BoardPost = {
   created_at: string; updated_at: string; deleted_at: string | null; comment_count: number;
   likes?: LikeState | null; images?: BoardImage[] | null;
 };
-export type BoardListItem = Omit<BoardPost, "content" | "deleted_at">;
+export type BoardListItem = Omit<BoardPost, "content" | "deleted_at"> & { like_count?: number | null };
 export type BoardPage = { pinned: BoardListItem[]; posts: BoardListItem[]; total: number; page: number; page_size: number };
 export type BoardComment = {
   id: DatabaseId; post_id: DatabaseId; author_id: string; author_name: string;

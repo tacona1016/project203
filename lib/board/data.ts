@@ -6,6 +6,7 @@ import { canManageBoardPost } from "./validation";
 import type { BoardInput } from "./types";
 import type { DatabaseId } from "@/lib/supabase/types";
 import { getBoardEngagement } from "./engagement";
+import { boardPagePostIds, withBoardLikeCounts } from "./list-likes";
 
 function checked<T>({ data, error }: { data: T | null; error: { code?: string } | null }): T {
   if (error?.code === "P4030") throw new HttpError(403, "이 작업을 수행할 권한이 없습니다.");
@@ -15,7 +16,17 @@ function checked<T>({ data, error }: { data: T | null; error: { code?: string } 
   return data;
 }
 export async function getBoardPage(search: string, page: number) {
-  return checked(await (await protectedClient()).rpc("get_board_page", { p_search: search, p_page: page }));
+  const client = await protectedClient();
+  const result = checked(await client.rpc("get_board_page", { p_search: search, p_page: page }));
+  const ids = boardPagePostIds(result);
+  if (!ids.length) return result;
+  try {
+    const likes = await client.from("board_post_likes").select("post_id", { count: "exact" }).in("post_id", ids).retry(false);
+    return withBoardLikeCounts(result, likes.error ? null : likes.data, likes.count);
+  } catch {
+    // Keep search, pagination and notices usable during a likes-only outage.
+    return withBoardLikeCounts(result, null, null);
+  }
 }
 export async function getBoardPost(id: DatabaseId) {
   const result = await (await protectedClient()).rpc("get_board_post", { p_id: id });
