@@ -96,6 +96,11 @@ export default async function Page(){await requireAccessSession("/fixture-projec
   }
   child(["tests/fixtures/polls-server.mjs"]); child(["tests/fixtures/board-server.mjs"]);
   await ready("http://127.0.0.1:3102/_test"); await ready("http://127.0.0.1:3103/_test"); await start();
+  if (process.argv.includes("--board-list-browser")) {
+    const { runBrowser } = await import("./member-browser.mjs");
+    await runBrowser({ base, root, aPassword, bPassword, id, setDbFailure, adminPassword: env.ADMIN_PASSWORD, onlyBoardList: true });
+    console.log(JSON.stringify({status:"passed",scope:"board_list_browser",database:"local protocol fixtures only"}));
+  } else {
   const anonymous = new Browser();
   for (const route of ["/", "/archive", "/polls", "/board", "/admin", "/quarter/2026-q4", "/future-page"]) {
     const response = await anonymous.call(route); assert.equal(response.status, 307); assert.equal(new URL(response.headers.get("location"), base).pathname, "/access");
@@ -282,6 +287,8 @@ export default async function Page(){await requireAccessSession("/fixture-projec
   checks.push(...await runWebsiteFeatureChecks({ a, b, anonymous, id, adminPassword: env.ADMIN_PASSWORD }));
   const { runBoardEngagementChecks } = await import("./board-engagement.mjs");
   checks.push(...await runBoardEngagementChecks({ a, b, anonymous, id, adminPassword: env.ADMIN_PASSWORD }));
+  const { runBoardListLikeChecks } = await import("./board-list-likes.mjs");
+  checks.push(...await runBoardListLikeChecks({ a, b, id }));
   const sharedA = new Browser(), sharedB = new Browser(); await expectStatus(sharedA.login(3, shared), 200); await expectStatus(sharedB.login(4, shared), 200);
   assert.equal((await (await sharedA.call("/api/access/session")).json()).participant.id, id(3)); assert.equal((await (await sharedB.call("/api/access/session")).json()).participant.id, id(4));
   const expired = new Browser(); expired.cookies.set("project203_member", createMemberToken(secret, id(1), aPassword, Math.floor(Date.now() / 1000) - SESSION_DURATION).token); await expectStatus(expired.call("/api/access/session"), 401);
@@ -309,4 +316,5 @@ export default async function Page(){await requireAccessSession("/fixture-projec
   checks.push("Password configuration rotation and invalid JSON reject sessions/login without revealing settings");
   await writeFile(".verification/member-auth-report.json", JSON.stringify({ status: "passed", database: "synthetic HTTP protocol fixtures, not live PostgreSQL", checks }, null, 2));
   console.log(JSON.stringify({ status: "passed", production, checks, database: "local protocol fixtures only" }));
+  }
 } finally { for (const p of children.reverse()) await stop(p); if (log !== undefined) closeSync(log); }

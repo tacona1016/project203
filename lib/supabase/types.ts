@@ -121,6 +121,7 @@ type Table<Row, Insert, Relations extends Relationship[] = []> = {
 export type Database = {
   public: {
     Tables: {
+      board_post_likes: Table<{ post_id: DatabaseId; participant_id: string; created_at: string }, never>;
       board_posts: Table<Omit<BoardPost, "author_name" | "comment_count" | "likes" | "images">, never>;
       participants: Table<Participant, Omit<Participant, "id" | "created_at">>;
       polls: Table<PollRecord, Omit<PollRecord, "created_at">>;

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { LikeState } from "@/lib/board/types";
 import { useBoard } from "./BoardProvider";
 
@@ -7,6 +8,13 @@ export function BoardLikeButton({ url, initial }: { url: string; initial?: LikeS
   const { viewer, loading } = useBoard();
   const [value, setValue] = useState(initial ?? null), [pending, setPending] = useState(false), [uncertain, setUncertain] = useState(false), [error, setError] = useState("");
   const busy = useRef(false);
+  const router = useRouter();
+  function confirmed(value: LikeState) {
+    setValue(value);
+    // Next's refresh invalidates its dynamic back/forward cache. Do this only
+    // for post likes after a server acknowledgement (including reconciliation).
+    if (/^\/api\/board\/posts\/\d+\/like$/.test(url)) router.refresh();
+  }
   useEffect(() => { if (!busy.current) setValue(initial ?? null); }, [initial?.count, initial?.liked, initial]);
   async function request(method: string) {
     const response = await fetch(url, { method, credentials: "same-origin", cache: "no-store" });
@@ -21,12 +29,12 @@ export function BoardLikeButton({ url, initial }: { url: string; initial?: LikeS
     busy.current = true; setPending(true); setError("");
     const before = value;
     try {
-      if (!before || uncertain) { setValue(await request("GET")); setUncertain(false); return; }
+      if (!before || uncertain) { confirmed(await request("GET")); setUncertain(false); return; }
       setValue({ count: Math.max(0, before.count + (before.liked ? -1 : 1)), liked: !before.liked });
-      try { setValue(await request(before.liked ? "DELETE" : "PUT")); }
+      try { confirmed(await request(before.liked ? "DELETE" : "PUT")); }
       catch (failure) {
         setValue(before);
-        try { setValue(await request("GET")); setError("최신 좋아요 상태를 다시 확인했습니다."); }
+        try { confirmed(await request("GET")); setError("최신 좋아요 상태를 다시 확인했습니다."); }
         catch { setUncertain(true); setError(failure instanceof Error ? failure.message : "상태를 확인하지 못했습니다. 다시 확인해주세요."); }
       }
     } catch (failure) { setError(failure instanceof Error ? failure.message : "좋아요를 불러오지 못했습니다."); }

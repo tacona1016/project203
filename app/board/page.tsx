@@ -11,8 +11,11 @@ import { boardPostHref, boardReturnTo, isRecentBoardPost } from "@/lib/board/vie
 
 export const metadata = { title: "자유게시판" };
 function PostRow({ post, returnTo }: { post: BoardListItem; returnTo: string }) {
-  return <li className="board-row"><Link href={boardPostHref(post.id, returnTo)} className="board-row-title" title={post.title}>{post.post_type === "notice" && <span className="board-notice-badge">공지</span>}<span className="board-row-subject">{post.title}</span>{isRecentBoardPost(post.created_at) && <span className="board-new-badge" title="최근 7일 이내 작성 · 읽지 않음 표시가 아닙니다.">NEW</span>}<span className="board-comment-count" aria-label={`댓글 ${post.comment_count}개`}>{post.comment_count}</span></Link>
-    <div className="board-row-meta"><span>{post.author_name}</span><time dateTime={post.created_at}>{formatKoreanDate(post.created_at)}</time></div>
+  return <li className="board-row"><Link href={boardPostHref(post.id, returnTo)} className="board-row-title" title={post.title}>{post.post_type === "notice" && <span className="board-notice-badge">공지</span>}<span className="board-row-subject">{post.title}</span>{isRecentBoardPost(post.created_at) && <span className="board-new-badge" title="최근 7일 이내 작성 · 읽지 않음 표시가 아닙니다.">NEW</span>}</Link>
+    <div className="board-row-meta"><span className="board-row-author">{post.author_name}</span><time dateTime={post.created_at}>{formatKoreanDate(post.created_at)}</time><span className="board-row-counts">
+      <span className="board-comment-count" aria-label={`댓글 ${post.comment_count}개`}>댓글 {post.comment_count}</span>
+      <span className="board-like-count" role="img" aria-label={post.like_count == null ? "좋아요 수 확인 불가" : `좋아요 ${post.like_count}개`} title={post.like_count == null ? "좋아요 수를 불러오지 못했습니다." : undefined}><span aria-hidden="true">♡</span> {post.like_count ?? "—"}</span>
+    </span></div>
   </li>;
 }
 export default async function BoardPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {

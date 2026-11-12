@@ -1,5 +1,21 @@
 # 세션 인계
 
+## 2026-11-12 — BOARD 목록 좋아요 수 구현
+
+- 최종 로컬: npm test95/95, typecheck·lint(오류0/기존경고1)·build(checks포함) PASS. test:integration23, test:browser Chrome45+HTTP24 PASS, Production 모드 집중Chrome도PASS. 예외0/hydration0. 캐시 add/cancel 뒤로가기·목록Link의 최신숫자, 3뷰포트/0·핀·일반·실패/검색/페이지/배치1회 검증. 운영실DB/회원 E2E는미검증. 기능15파일 명시적commit/원격tree검증·PR/Preview 준비. Production·DB/schema·Secret미변경.
+
+- 최신: 합성HTTP23 PASS, Production 모드 실제Chrome 집중 PASS(390/768/1440,0/1/실패·핀·일반·행전체클릭·실제뒤로가기/목록Link add/cancel반영), 예외0/hydration0. 모바일행75.5px·PC51.5px. 화면검사는 숨은스트리밍DOM이아닌보이는행을기다리게 보완. 전체npm run test:browser 재실행중. 기존단위95/type/lint/build PASS. root 코드/운영은미변경.
+
+- 목표: get_board_page는 유지하고 현재 페이지+고정 공지의 post_id만 서버 배치 조회하여 like_count 결합. UI는 댓글/하트+숫자를 메타영역에 표시하며0은0·조회 실패/응답 잘림은—로 구분한다. 데이터/DB/schema/저장 방식 변경 없음. Production 배포는 별도 승인 대기.
+- 작업 위치: .verification/board-feature-branch / feat/board-list-like-counts-20261112, 시작47088f3 tree=실제main c74edc6 tree. root feat/phase2-improvements의 인계/릴리스 문서 및 기존 PR#1은 보존한다. fetch443실패는 반복하지 않는다.
+- 구현: lib/board/list-likes.ts(count exact/잘림·알수없는ID 검증), data.ts1배치, BoardListItem.like_count, 서버Supabase 테이블 타입, PostRow/CSS, BoardLikeButton은 post좋아요 서버ACK/상태재확인 후에만 router.refresh하여 dynamic back/forward cache 갱신. 댓글좋아요/저장API/낙관적·오류복구는 유지한다.
+- 테스트: 단위95/95 PASS, typecheck·lint(기존경고1) PASS, Production Build PASS(conflict/presentation 포함). 통합HTTP 실행 중, Chrome390/768/1440·상세변경후뒤로가기/목록링크는 아직 미검증. 추가 테스트파일은board-list-likes.test·HTTP·browser fixture/시나리오.
+- 환경 오류/해결: 검토repo의 외부 node_modules junction을 Turbopack이 project-root 밖으로 판정해 최초 build/dev가 실패했다. 이 작업이 만든 junction 자체만 제거하고 같은 잠금 의존성23693파일을 로컬 hardlink/copy로 준비한 뒤 빌드 성공. package/config/검사 비활성화·라이브러리 추가0.
+- DB 읽기 확인: participants10, postlikes3, PK(post_id,participant_id), serviceSELECT만허용. 현재 데이터에서1배치 적합. API행제한보다늘면 count exact 불일치를 감지해과소집계하지않으며향후aggregateRPC는별도검토. 실제PG/신규앱운영E2E는미검증.
+- 다음: 통합결과→Chrome·필요한수정→보존diff·최종검사→명확한기능commit/PR/CI/Preview→docs/BOARD_LIST_LIKE_COUNTS.md·최종인계. main/Production/운영DB/Secret을 변경하지 않는다.
+
+---
+
 ## 2026-11-11 — Phase2 안정화·관리 기능 진행
 
 - 최종 PR/Preview: https://github.com/tacona1016/project203/pull/3 open·미병합. 기능 원격84b690e8c9d305560cd5c75c90eb5d15f8db42e3/tree1c2b5334628c4cf7c52707de512725eeaf246203 = 로컬fe279f3 tree, 전체 앱/검사262파일 차이0.38파일·삭제0. 연결 도구로 전체tree를 검증해 전송했고 force/mainpush 없음.

@@ -2,6 +2,7 @@
 import { createHash, randomUUID } from "node:crypto";
 export function boardExtras({ posts, comments, active, now }) {
   const likes = new Map(), commentLikes = new Map(), images = new Map(), objects = new Map(), failures = {};
+  let listLikesRequests = 0, lastListLikesQuery = null;
   const consume = key => { if (!failures[key]) return false; failures[key]--; return true; };
   const visible = row => Object.fromEntries(Object.entries(row).filter(([k]) => !["storage_path", "uploaded_by", "sha256", "state", "upload_token", "updated_at"].includes(k)));
   const state = (map, id, actor) => ({ count: map.get(String(id))?.size ?? 0, liked: map.get(String(id))?.has(actor) ?? false });
@@ -18,9 +19,20 @@ export function boardExtras({ posts, comments, active, now }) {
         objects.set(storage_path, bytes);
       }
     },
-    stats() { return { images: [...images.values()], storageCount: objects.size, postLikes: [...likes.values()].reduce((n,s) => n+s.size,0), commentLikes: [...commentLikes.values()].reduce((n,s) => n+s.size,0) }; },
-    reset() { likes.clear(); commentLikes.clear(); images.clear(); objects.clear(); },
+    stats() { return { images: [...images.values()], storageCount: objects.size, postLikes: [...likes.values()].reduce((n,s) => n+s.size,0), commentLikes: [...commentLikes.values()].reduce((n,s) => n+s.size,0), listLikesRequests, lastListLikesQuery }; },
+    reset() { likes.clear(); commentLikes.clear(); images.clear(); objects.clear(); listLikesRequests=0; lastListLikesQuery=null; },
     handle({ req, res, url, raw, body, json, fail }) {
+      if (url.pathname === "/rest/v1/board_post_likes") {
+        if (req.headers.apikey !== "fixture-only-backend-key" || req.method !== "GET") { fail("42501",403); return true; }
+        listLikesRequests++;
+        const ids=(url.searchParams.get("post_id")??"").slice(4,-1).split(",");
+        lastListLikesQuery={ids,select:url.searchParams.get("select"),exact:req.headers.prefer?.includes("count=exact")??false};
+        if(consume("listLikes")){fail("fixture-private-like-list-outage",503);return true;}
+        const rows=ids.flatMap(id=>Array.from(likes.get(id)??[]).map(()=>({post_id:id})));
+        res.setHeader("Content-Range",`0-${Math.max(0,rows.length-1)}/${rows.length}`);
+        if(consume("listLikesTruncated")){json(rows.slice(0,-1));return true;}
+        json(rows);return true;
+      }
       const action = url.pathname.split("/").at(-1);
       const methods = ["get_board_engagement", "set_board_like", "reserve_board_image", "finish_board_image", "get_board_image", "begin_board_image_delete", "abort_board_image", "purge_board_image"];
       const storage = url.pathname.startsWith("/storage/v1/");
