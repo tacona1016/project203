@@ -1,5 +1,16 @@
 # 세션 인계
 
+## 2026-11-17 — 투표 질문·선택지 이미지 개발
+
+- 목표: 질문3장/실제선택지ID별1장, private poll-attachments, WebP500000bytes, 기존 투표/응답/Board/회원 정책 보존. 운영 SQL/Production은 별도 승인.
+- 시작 main a5e8f83 tree69091e와 검토repo f5ad90c 동일. root dirty/refs/과거문서 보존. 작업repo .verification/board-feature-branch, feat/poll-images. fetch 네트워크 실패1회 후 GitHub연결 사용.
+- 완료구현: 공통 lib/images 엔진(Boardwrapper유지), lib/poll-images, 관리자/회원API, PollImageManager/Gallery, 상세/결과 연결, SQL제안/RLS/복합FK/부분UNIQUE/락/lease/교체/정리. 기존 ballot RPC·마이그레이션·Storage·회원정보 수정0.
+- 검증: 단위100/100, type/lint(신규0·기존경고1)/build PASS. 이미지HTTP8묶음·Production-mode 실제Chrome4묶음/5뷰포트 PASS(예외0/hydration0). 최초fileinput선택테스트를실제optionID로수정. 전체 browser의신규생성후 /edit 이동기대값갱신하여재실행중.
+- 운영읽기확인: 기존Production dpl_ERVfvHXxZZkWwsdFkfU6PTn3QhQf READY/a5e8유지. poll_images/버킷없음, poll_options복합unique index있음. 독립TEST프로젝트없음. CLI/psql/docker·offlineCLI없어서SQL은supabase/proposals/poll_images.sql, TEST SQL준비만. 실제PG/Storage/운영회원E2E미검증.
+- 최종검증: 단위100/100·type/lint(기존경고1)/build·충돌/발표 검사 PASS. Production-mode 전체HTTP+Chrome45 PASS, 신규 이미지HTTP8묶음+Chrome4묶음(5폭) PASS. 개발-mode도 최종 전체HTTP24·Chrome45 PASS(중간404안정성실패이력은보고서기록). 신규SQL/버킷·실PG/Storage는미적용/미검증.
+- 남은일: 기능commit/PR/CI/Preview 확인과 외부결과기록. 최종diff/보존리뷰·보고서 완료. 실제PG/Storage는 독립TEST환경준비후실행. main merge/운영적용금지.
+
+
 ## 2026-11-12 — BOARD 목록 좋아요 수 구현
 
 - 최종 로컬: npm test95/95, typecheck·lint(오류0/기존경고1)·build(checks포함) PASS. test:integration23, test:browser Chrome45+HTTP24 PASS, Production 모드 집중Chrome도PASS. 예외0/hydration0. 캐시 add/cancel 뒤로가기·목록Link의 최신숫자, 3뷰포트/0·핀·일반·실패/검색/페이지/배치1회 검증. 운영실DB/회원 E2E는미검증. 기능15파일 명시적commit/원격tree검증·PR/Preview 준비. Production·DB/schema·Secret미변경.

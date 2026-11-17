@@ -1,4 +1,5 @@
 import type { BoardPage, BoardPost, BoardComment, BoardEngagement, BoardImageRecord, LikeState } from "@/lib/board/types";
+import type { PollImageRecord, PollImageSet } from "@/lib/poll-images/model";
 
 // 기존 숫자 ID를 유지하고 SDK·폼에서 사용하는 문자열/숫자 표현을 처리합니다.
 export type DatabaseId = string | number;
@@ -121,6 +122,7 @@ type Table<Row, Insert, Relations extends Relationship[] = []> = {
 export type Database = {
   public: {
     Tables: {
+      poll_images: Table<PollImageRecord, never>;
       board_post_likes: Table<{ post_id: DatabaseId; participant_id: string; created_at: string }, never>;
       board_posts: Table<Omit<BoardPost, "author_name" | "comment_count" | "likes" | "images">, never>;
       participants: Table<Participant, Omit<Participant, "id" | "created_at">>;
@@ -138,6 +140,7 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      manage_poll_image: { Args: { p_poll_id: DatabaseId; p_actor_id: string; p_action: string; p_data: Record<string, unknown> }; Returns: PollImageRecord | { deleted: boolean } | null };
       get_board_engagement: { Args: { p_post_id: DatabaseId; p_actor_id: string; p_comment_ids: DatabaseId[] }; Returns: BoardEngagement };
       set_board_like: { Args: { p_post_id: DatabaseId; p_comment_id: DatabaseId | null; p_actor_id: string; p_liked: boolean }; Returns: LikeState };
       reserve_board_image: { Args: { p_post_id: DatabaseId; p_id: string; p_actor_id: string; p_is_admin: boolean; p_token: string; p_hash: string; p_bytes: number; p_width: number; p_height: number }; Returns: BoardImageRecord };
@@ -182,6 +185,7 @@ export type Database = {
 };
 
 export type PollData = {
+  attachments?: PollImageSet;
   poll: PollRecord;
   options: PollOption[];
   results: PollResultsData | null;

@@ -4,9 +4,11 @@ import { useId, useState, useSyncExternalStore } from "react";
 import type { PollOption, PollResultsData } from "@/lib/supabase/types";
 import { choiceResultRows } from "@/lib/poll-view";
 import { ParticipationRate } from "@/components/polls/ParticipationRate";
+import { PollImageGallery } from "@/components/polls/PollImageGallery";
+import { optionImage, type PollImage } from "@/lib/poll-images/model";
 const subscribe = () => () => {};
 
-export function PollResults({ options, results, multiple = false }: { options: PollOption[]; results: PollResultsData; multiple?: boolean }) {
+export function PollResults({ options, results, multiple = false, images = [], slug }: { options: PollOption[]; results: PollResultsData; multiple?: boolean; images?: PollImage[]; slug?: string }) {
   const { total_votes: total, participant_count: participantCount } = results;
   const [order, setOrder] = useState<"options" | "votes">("options");
   const id = useId();
@@ -27,12 +29,14 @@ export function PollResults({ options, results, multiple = false }: { options: P
       </label>
       <ol className="mt-7 grid gap-6">
         {rows.map(({ option, count, percentage, leader }) => {
+          const image = optionImage(images, option.id);
           return (
             <li key={option.id}>
               <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-sm">
                 <span>{option.label}{leader && <span className="ml-2 text-xs text-accent">{leader}</span>}</span>
                 <span className="text-muted tabular-nums">{count}표 · {percentage}%</span>
               </div>
+              {slug && image && <PollImageGallery slug={slug} images={[image]} label={`${option.label} 결과 사진`} />}
               <div className="h-1.5 overflow-hidden bg-line" aria-hidden="true">
                 <div className="h-full bg-accent" style={{ width: `${Math.min(percentage, 100)}%` }} />
               </div>

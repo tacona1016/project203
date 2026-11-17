@@ -4,6 +4,7 @@ import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { PollData } from "@/lib/supabase/types";
 import { fromSeoulInput, parsePollInput, toSeoulInput } from "@/lib/polls";
+import { PollImageManager } from "./PollImageManager";
 
 const subscribe = () => () => {};
 
@@ -63,7 +64,7 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
       const result = await response.json();
       if (response.status === 401 || response.status === 403) { router.push("/admin"); router.refresh(); return; }
       if (!response.ok) throw new Error(result.error || "저장하지 못했습니다. 다시 시도해주세요.");
-      router.push(`/admin/polls/${result.slug}`); router.refresh();
+      router.push(initial ? `/admin/polls/${result.slug}` : `/admin/polls/${result.slug}/edit`); router.refresh();
     } catch (error) { setError(error instanceof Error ? error.message : "저장하지 못했습니다."); submitting.current = false; setPending(false); }
   }
 
@@ -83,6 +84,7 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
         <label htmlFor="poll-description">설명</label><textarea id="poll-description" rows={4} value={description} onChange={(event) => setDescription(event.target.value)} aria-invalid={descriptionInvalid} aria-describedby={descriptionInvalid ? "poll-description-error" : undefined} />
         {descriptionInvalid && <p id="poll-description-error" className="form-error mt-3">설명은 2,000자 이내로 입력해주세요.</p>}
       </section>
+      {initial ? <PollImageManager initial={initial} /> : <section><h2>투표 이미지</h2><p className="form-note">먼저 투표를 만들면 실제 투표·선택지 ID가 확정된 수정 화면에서 질문 사진 최대 3장과 선택지별 사진 1장을 첨부할 수 있습니다.</p></section>}
       <section><h2>투표 유형</h2>
         <fieldset className="form-choices" disabled={quarterLocked}><legend className="sr-only">질문 유형</legend>
           <label><input type="radio" name="poll-type" checked={pollType === "choice"} onChange={() => setPollType("choice")} />객관식</label>

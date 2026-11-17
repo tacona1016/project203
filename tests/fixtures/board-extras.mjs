@@ -36,6 +36,7 @@ export function boardExtras({ posts, comments, active, now }) {
       const action = url.pathname.split("/").at(-1);
       const methods = ["get_board_engagement", "set_board_like", "reserve_board_image", "finish_board_image", "get_board_image", "begin_board_image_delete", "abort_board_image", "purge_board_image"];
       const storage = url.pathname.startsWith("/storage/v1/");
+      if (storage && !url.pathname.includes("board-attachments")) return false;
       if (!storage && !methods.includes(action)) return false;
       if (req.headers.apikey !== "fixture-only-backend-key") { fail("42501",403); return true; }
       const reply = value => { json(value); return true; }, reject = (code, status=400) => { fail(code,status); return true; };
