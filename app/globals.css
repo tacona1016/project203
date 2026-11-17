@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Authenticated poll attachments: compact, no changes to presentation/Board. */
+.poll-image-gallery { margin-block:12px; min-width:0; }
+.poll-image-grid, .poll-image-admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); gap:12px; }
+.poll-image-open { position:relative; display:block; width:100%; overflow:hidden; text-align:left; background:#f2f2ed; }
+.poll-image-open img { display:block; width:100%; height:auto; max-height:240px; object-fit:contain; }
+.poll-image-open span { position:absolute; right:8px; bottom:8px; padding:3px 7px; background:#fffefa; font-size:12px; color:#2453df; }
+.poll-option-with-image .poll-image-gallery, .poll-results .poll-image-gallery { max-width:280px; margin:8px 0 16px 0; }
+.poll-image-admin { min-width:0; }
+.poll-image-admin-item { min-width:0; padding-block:12px; }
+.poll-image-option-admin { margin-top:16px; padding-top:12px; border-top:1px solid #dedfd8; }
+.poll-image-actions, .poll-image-dialog-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-block:10px; }
+.poll-image-file { display:block; max-width:100%; font-size:14px; margin-block:10px; }
+.poll-image-file input { display:block; width:100%; max-width:100%; margin-top:6px; font-size:13px; }
+.poll-image-dialog { max-width:min(1100px,95vw); }
+.poll-image-dialog img { max-height:78dvh; width:auto; max-width:100%; object-fit:contain; }
+@media print { .poll-image-open span, .poll-image-dialog, .poll-image-admin { display:none; } }
+
 @theme {
   --color-paper: #fffefa;
   --color-surface: #f2f2ed;

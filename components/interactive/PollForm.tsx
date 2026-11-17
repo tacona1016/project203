@@ -12,6 +12,8 @@ import { TextBallot } from "./TextBallot";
 import { TextResponses } from "./TextResponses";
 import { CopyLink } from "@/components/CopyLink";
 import { ParticipationRate } from "@/components/polls/ParticipationRate";
+import { PollImageGallery } from "@/components/polls/PollImageGallery";
+import { optionImage } from "@/lib/poll-images/model";
 
 type Feedback = { tone: "success" | "error" | "uncertain"; message: string };
 const normalize = (ids: readonly DatabaseId[]) => [...new Set(ids.map(String))].sort();
@@ -52,6 +54,8 @@ export function PollForm({ pollId, initialData, initialError = "" }: { pollId: s
         <Link href={`/polls/${data.poll.quarter}`} className="text-link mb-6">Polls / {formatPollQuarter(data.poll.quarter)}</Link>
         <h2 className="section-title">{data.poll.title}</h2>
         {data.poll.description && <p className="mt-4 text-muted">{data.poll.description}</p>}
+        <PollImageGallery slug={data.poll.slug} images={(data.attachments?.images ?? []).filter(image => image.option_id === null)} />
+        {data.attachments?.error && <p className="form-error" role="alert">{data.attachments.error}</p>}
         <div className="mt-6"><PollMeta poll={data.poll} status={data.status} serverTime={data.server_time} /></div>
         <div className="mt-5"><CopyLink label="투표 링크 복사" /></div>
       </header>
@@ -64,7 +68,7 @@ export function PollForm({ pollId, initialData, initialError = "" }: { pollId: s
           {data.poll.poll_type === "text" ? <TextBallot key={`${participant.id}-${data.poll.id}`} data={data} onRefresh={refresh} />
             : <Ballot key={`${participant.id}-${data.poll.id}`} data={data} onRefresh={refresh} />}
         </div>
-        {data.results ? data.poll.poll_type === "text" ? <div className="min-w-0"><ParticipationRate results={data.results} /><TextResponses responses={data.responses ?? []} /></div> : <PollResults options={data.options} results={data.results} multiple={data.poll.vote_mode === "multiple"} />
+        {data.results ? data.poll.poll_type === "text" ? <div className="min-w-0"><ParticipationRate results={data.results} /><TextResponses responses={data.responses ?? []} /></div> : <PollResults options={data.options} results={data.results} multiple={data.poll.vote_mode === "multiple"} images={data.attachments?.images} slug={data.poll.slug} />
           : <p className="interaction-notice">{data.poll.poll_type === "text" ? "전체 응답은 투표 종료 후 공개됩니다." : "결과는 투표 종료 후 공개됩니다."}</p>}
       </div>
     </>}
@@ -74,6 +78,10 @@ export function PollForm({ pollId, initialData, initialError = "" }: { pollId: s
 }
 
 function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<boolean> }) {
+  function renderImage(id: DatabaseId, label: string) {
+    const image = optionImage(data.attachments?.images ?? [], id);
+    return image ? <PollImageGallery slug={data.poll.slug} images={[image]} label={`${label} 사진`} /> : null;
+  }
   const { participant, invalidateParticipant } = useParticipant();
   const single = data.poll.vote_mode === "single";
   const active = data.status === "ACTIVE";
@@ -170,7 +178,7 @@ function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<
     {uncertain ? <p className="form-note">전송한 선택의 등록 여부를 확인할 때까지 추가 제출을 잠시 멈춥니다.</p>
       : voted && (!editing || !changeAllowed) ? <section aria-label="내 선택" className="py-4">
         <h3 className="font-medium text-accent">✓ 투표에 참여했습니다.</h3><p className="mt-5 text-sm text-muted">현재 선택</p>
-        <ul className="mt-2 grid gap-2 text-lg font-medium">{currentOptions.map(option => <li key={option.id}>{option.label}</li>)}</ul>
+        <ul className="mt-2 grid gap-2 text-lg font-medium">{currentOptions.map(option => <li key={option.id}>{option.label}{renderImage(option.id, option.label)}</li>)}</ul>
         {!!currentOptions.length && <p className="form-note mt-3">{single ? "1개 선택을 저장했습니다." : `${currentOptions.length}개 항목에 각각 1표가 반영되어 있습니다.`} {changeAllowed ? "투표가 진행 중인 동안 선택을 변경할 수 있습니다." : "현재 설정에서는 선택을 변경할 수 없습니다."}</p>}
         {!currentOptions.length && <p className="form-note mt-3">기존 참여 기록을 확인해주세요.</p>}
         {changeAllowed ? <button type="button" className="text-link mt-6" disabled={pending || checking} onClick={() => { setSelected(currentIds); setEditing(true); setFeedback(null); }}>선택 변경하기</button>
@@ -178,10 +186,10 @@ function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<
       </section> : active ? <form onSubmit={submit} aria-busy={pending}>
         <fieldset className="poll-options" disabled={pending || checking || !participation}>
           <legend className="sr-only">{single ? "선택지 한 가지" : "선택지 여러 개 선택 가능"}</legend>
-          {data.options.map(option => <label key={option.id} className="poll-option">
+          {data.options.map(option => <div key={option.id} className="poll-option-with-image"><label className="poll-option">
             <input type={single ? "radio" : "checkbox"} name={id} required={single} value={String(option.id)} checked={selected.includes(String(option.id))}
               onChange={() => { const value = String(option.id); setSelected(current => single ? [value] : current.includes(value) ? current.filter(item => item !== value) : [...current, value]); }} /><span>{option.label}</span>
-          </label>)}
+          </label>{renderImage(option.id, option.label)}</div>)}
         </fieldset>
         {!single && <p className="form-note mt-4">여러 항목을 한 번에 선택할 수 있습니다. 같은 선택지에는 한 사람당 1표만 반영됩니다.</p>}
         {!single && selected.length > 0 && <section className="ballot-selection-summary mt-5" aria-label="제출할 선택">

@@ -17,6 +17,8 @@ export async function PATCH(request: Request, { params }: Context) {
       throw new HttpError(409, "이미 투표가 존재하는 Poll은 분기를 변경할 수 없습니다.");
     }
     const hasVotes = (target.results?.total_votes ?? 0) > 0;
+    const changesOptions = target.poll.poll_type !== data.poll_type || data.options.length > 0 && JSON.stringify(target.options.map(option => option.label)) !== JSON.stringify(data.options);
+    if (changesOptions && target.attachments?.images.some(image => image.option_id !== null)) throw new HttpError(409, "선택지 사진을 먼저 삭제한 뒤 선택지를 수정해주세요. 기존 응답이 있는 선택지는 변경할 수 없습니다.");
     if (hasVotes && (target.poll.poll_type !== data.poll_type || target.poll.vote_mode !== data.vote_mode)) {
       throw new HttpError(409, "응답이 있는 Poll은 유형과 투표 방식을 변경할 수 없습니다.");
     }

@@ -1,3 +1,4 @@
+import { pollImageFixture } from "./poll-images.mjs";
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 let people, polls, options, votes, comments, sequence, choiceSelections;
@@ -27,13 +28,15 @@ function results(id) { const p = polls.find(p => p.id === Number(id)); const row
 const canSee = (p, admin) => admin || p.results_visibility === "live" || status(p) === "CLOSED";
 const summary = (p, admin) => ({ poll: p, status: status(p), results: canSee(p, admin) ? results(p.id) : null, server_time: now() });
 const detail = (p, admin) => !p || p.is_hidden && !admin ? null : ({ ...summary(p, admin), options: p.poll_type === "choice" ? options.filter(o => o.poll_id === p.id) : [], responses: p.poll_type === "text" && canSee(p, admin) ? votes.filter(v => v.poll_id === p.id).map(v => ({ ...v, participant_name: people.find(person => person.id === v.participant_id).display_name })) : null });
+const imageFixture=pollImageFixture({polls:()=>polls,options:()=>options,active:id=>people.some(p=>p.id===id&&p.is_active)});
 http.createServer(async (req, res) => {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   const json = (value, code = 200) => res.writeHead(code).end(JSON.stringify(value));
   const fail = code => json({ code, message: "fixture validation rejected" }, 400);
-  const url = new URL(req.url, "http://127.0.0.1:3102"); let body = {};
-  if (req.method === "POST") { const chunks = []; for await (const chunk of req) chunks.push(chunk); body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); }
-  if (url.pathname === "/_test") { if(Object.hasOwn(body,"participationFailure")) participationFailure=body.participationFailure; if (body.reset) { reset(); participantFailure = null; participantFailureAfter = 0; } if (Object.hasOwn(body, "participantFailure")) { participantFailure = body.participantFailure; participantFailureAfter = body.participantFailureAfter ?? 0; participantRequestCount = 0; } if (Object.hasOwn(body, "voteFailure")) { voteFailure = body.voteFailure; voteRequestCount = 0; } if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, choiceSelections, comments, participantRequestCount, voteRequestCount, participationRequests }); }
+  const url = new URL(req.url, "http://127.0.0.1:3102"); const chunks=[]; for await(const chunk of req)chunks.push(chunk); const raw=Buffer.concat(chunks); const body=raw.length&&(!url.pathname.startsWith("/storage/v1/")||req.method==="DELETE")?JSON.parse(raw.toString()):{};
+  if(url.pathname==="/_test"){if(body.reset)imageFixture.reset();imageFixture.configure(body);}
+  if(imageFixture.handle({req,res,url,raw,body,json}))return;
+  if (url.pathname === "/_test") { if(Object.hasOwn(body,"participationFailure")) participationFailure=body.participationFailure; if (body.reset) { reset(); participantFailure = null; participantFailureAfter = 0; } if (Object.hasOwn(body, "participantFailure")) { participantFailure = body.participantFailure; participantFailureAfter = body.participantFailureAfter ?? 0; participantRequestCount = 0; } if (Object.hasOwn(body, "voteFailure")) { voteFailure = body.voteFailure; voteRequestCount = 0; } if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, choiceSelections, comments, participantRequestCount, voteRequestCount, participationRequests, ...imageFixture.stats() }); }
   if (req.headers.apikey !== "fixture-only-backend-key") return json({ message: "server only" }, 403);
   const table = url.pathname.replace("/rest/v1/", "");
   const match = row => [...url.searchParams].every(([key, value]) => value.startsWith("eq.") ? String(row[key]) === value.slice(3) : value.startsWith("in.(") ? value.slice(4, -1).split(",").includes(String(row[key])) : true);

@@ -96,7 +96,17 @@ export default async function Page(){await requireAccessSession("/fixture-projec
   }
   child(["tests/fixtures/polls-server.mjs"]); child(["tests/fixtures/board-server.mjs"]);
   await ready("http://127.0.0.1:3102/_test"); await ready("http://127.0.0.1:3103/_test"); await start();
-  if (process.argv.includes("--board-list-browser")) {
+  if (process.argv.includes("--poll-images")) {
+    const a = new Browser(), b = new Browser(), anonymous = new Browser();
+    await a.login(1,aPassword); await b.login(2,bPassword);
+    const { runPollImageChecks } = await import("./poll-images.mjs");
+    const result = await runPollImageChecks({ a,b,anonymous,adminPassword:env.ADMIN_PASSWORD });
+    if(process.argv.includes("--browser")) {
+      const {runBrowser}=await import("./member-browser.mjs");
+      await runBrowser({base,id,aPassword,bPassword,setDbFailure,adminPassword:env.ADMIN_PASSWORD,onlyPollImages:result});
+    }
+    console.log(JSON.stringify({status:"passed",scope:"poll_images",checks:result.checks,database:"local protocol fixtures only"}));
+  } else if (process.argv.includes("--board-list-browser")) {
     const { runBrowser } = await import("./member-browser.mjs");
     await runBrowser({ base, root, aPassword, bPassword, id, setDbFailure, adminPassword: env.ADMIN_PASSWORD, onlyBoardList: true });
     console.log(JSON.stringify({status:"passed",scope:"board_list_browser",database:"local protocol fixtures only"}));

@@ -4,6 +4,7 @@ import { HttpError } from "@/lib/auth/http";
 import type { Database, DatabaseId, PollData } from "./types";
 import { canShowPollResults } from "@/lib/polls";
 import { requireAccessSession } from "@/lib/auth/session";
+import { getPollImages } from "@/lib/poll-images/data";
 
 type Client = SupabaseClient<Database>;
 export const COMMENTS_PAGE_SIZE = 20;
@@ -77,9 +78,10 @@ export async function getPoll(client: Client, slug: string, includeHidden = fals
   if (error) throw error;
   if (!data) throw new HttpError(404, "투표를 찾지 못했습니다.");
   if (data.poll.poll_type === "choice" && !data.options.length) throw new Error("POLL_OPTIONS_MISSING");
-  if (!includeHidden && !canShowPollResults(data.poll, data.status)) return { ...data, results: null, responses: null };
+  const attachments = await getPollImages(client, data.poll.id);
+  if (!includeHidden && !canShowPollResults(data.poll, data.status)) return { ...data, attachments, results: null, responses: null };
   const denominator = data.results ? await registeredParticipantCount(client) : undefined;
-  return data.results && denominator !== undefined ? { ...data, results: { ...data.results, eligible_participant_count: denominator } } : data;
+  return data.results && denominator !== undefined ? { ...data, attachments, results: { ...data.results, eligible_participant_count: denominator } } : { ...data, attachments };
 }
 
 export async function submitTextResponse(client: Client, pollId: DatabaseId, participantId: string, text: string) {
