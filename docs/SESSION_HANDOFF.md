@@ -1,5 +1,12 @@
 # 세션 인계
 
+## 2026-11-17 — 승인된 투표 이미지 운영 반영 진행
+
+- 사용자가 운영 반영 승인. PR5/main/CI 재확인. SQL pg_temp 격리검사에서 CASE 괄호 42601 발견·수정 후 실제PG 임시테이블 검증 PASS, 운영테스트데이터0/전체rollback. scripts/check-poll-images-sql.mjs 재현 가능.
+- 신규 migration poll_images 실제적용 성공, server version20261117101400 조회→동일SQL파일보관. 기존11테이블 rows+fingerprint동일. 새metadata0/RLS·서버전용권한·private bucket500000 WebP확인. 기존migration/BOARD/환경/회원 변경0.
+- 다음: 수정SQL+실제migration파일 PR업데이트→새HEAD CI성공→Draft해제/정상merge→Git Production 새SHA/READY/alias·HTTP·로그 확인. 기존운영 dpl_ERV READY보존. 실제회원/Storage쓰기 E2E미검증유지.
+
+
 ## 2026-11-17 — 투표 질문·선택지 이미지 개발
 
 - 목표: 질문3장/실제선택지ID별1장, private poll-attachments, WebP500000bytes, 기존 투표/응답/Board/회원 정책 보존. 운영 SQL/Production은 별도 승인.

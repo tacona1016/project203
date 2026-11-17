@@ -88,3 +88,13 @@ GitHub PR/CI/Preview의 최종 URL·상태와 전체 검증 결과는 작업 종
 | 운영 회원 E2E | 미실행, 운영 테스트 데이터0 |
 
 Preview 필수5변수는 현재도 Production에만 존재한다(이름·대상만 확인). 값 조회·복사·설정 변경 없음. Preview READY는 빌드 검증이며 실제 회원/Storage E2E 완료를 뜻하지 않는다. 공개 저장소에는 소스·문서·합성 fixture만 반영하며 .verification/개인사진/환경변수/쿠키/백업은 제외한다.
+
+## 2026-11-17 운영 반영 승인 및 실제 PostgreSQL 검증
+
+- 사용자가 운영 반영을 명시적으로 승인했다. 기존회원/응답/데이터 삭제·재작성, 비밀번호·환경변수 변경은 수행하지 않는다.
+- 실제 PostgreSQL 세션 임시 테이블(pg_temp)에서 제안 SQL을 실행해 IF의 CASE 표현식 괄호 누락(42601)을 발견·수정했다. 실제 운영 앱 테이블에는 테스트 데이터를 넣지 않았다. 수정 후 질문3장/초과차단·선택지1장·잘못된옵션·순서·교체·lease·비활성actor·500KB·삭제·멱등 재시도 검사가 PASS했고 전체 ROLLBACK했다. 이는 별도 TEST DB/실제 Storage E2E와 구분한다. 재현 SQL은 scripts/check-poll-images-sql.mjs가 생성한다.
+- Supabase MCP apply_migration으로 poll_images를 한 번 적용했다. 실제 생성된 migration version **20261117101400**을 조회하고 동일 SQL을 supabase/migrations/20261117101400_poll_images.sql에 보관했다. CLI로 임의 version을 만든 것이 아니다. 기존 migration 재실행0.
+- 기존11테이블 행수·내용지문 적용 전후 동일. 새 poll_images0행, RLS=true, anon SELECT/RPC=false, authenticated INSERT=false, service_role RPC=true. poll-attachments private=true, 한도500000bytes, MIME image/webp만 허용. 기존 BOARD 버킷·파일 변경0.
+- SQL 수정과 실제 migration 기록을 PR에 반영해 CI 후 정상 merge commit/Production으로 진행한다. 운영 회원 로그인·실제 업로드 E2E는 테스트계정 부재로 미검증이며 운영에 가짜 사진/글/투표를 만들지 않는다.
+
+- 운영 반영 준비 최종 로컬 검사: 단위 **102/102 PASS**(기존100+실제등록SQL일치/임시검증SQL안전성2), lint 신규0·기존경고1. 앱 TSX/API 변경0으로 기존 Chrome45+신규5폭 검증을 재사용하고 새 HEAD의 CI 전체 검사를 수행한다. 신규 보안 Advisor INFO rls_enabled_no_policy는 서버 전용 테이블의 의도된 무정책이며 anon/authenticated 권한은 회수됐다.

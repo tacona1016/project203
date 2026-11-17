@@ -6,6 +6,8 @@ import { encodePrivateImage, ImageInputError } from "../lib/images/codec.ts";
 import { encodeBoardImage } from "../lib/board/image-codec.ts";
 import { POLL_IMAGES, optionImage, publicPollImage, missingPollImageSchema } from "../lib/poll-images/model.ts";
 import { choiceResultRows } from "../lib/poll-view.ts";
+import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 
 test("Poll policy is independent; shared encoder preserves exact Board behavior", async () => {
   const input=await sharp({create:{width:240,height:120,channels:4,background:'#2453df88'}}).png().withMetadata({orientation:6}).toBuffer();
@@ -36,4 +38,14 @@ test("Option images use stable IDs through result sorting, never array index",()
   const options=[{id:101,label:'A'},{id:102,label:'B'}],images=[{id:'B-photo',option_id:'102'},{id:'question',option_id:null}];
   const rows=choiceResultRows(options,{counts:{101:1,102:3},total_votes:4,participant_count:4},false,'votes');
   assert.equal(rows[0].option.id,102);assert.equal(optionImage(images,rows[0].option.id).id,'B-photo');assert.equal(optionImage(images,101),undefined);
+});
+
+test("Registered production migration matches reviewed SQL exactly",()=>{
+  assert.equal(readFileSync('supabase/migrations/20261117101400_poll_images.sql','utf8'),readFileSync('supabase/proposals/poll_images.sql','utf8'));
+});
+test("PostgreSQL verification generator cannot touch application or Storage tables",()=>{
+  const sql=execFileSync(process.execPath,['scripts/check-poll-images-sql.mjs'],{encoding:'utf8'});
+  assert.match(sql,/^begin;/);assert.match(sql,/rollback;\s*$/);
+  assert(!/\bpublic\.|\bstorage\.|\bcommit\s*;/i.test(sql));
+  assert.match(sql,/create temp table poll_images/);assert.match(sql,/isolated_postgres_checks_passed/);
 });

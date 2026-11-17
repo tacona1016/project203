@@ -37,7 +37,7 @@ begin
   if new.option_id is not null and not exists(select 1 from public.poll_options where id=new.option_id and poll_id=new.poll_id) then
     raise exception using errcode='23503',message='Image option does not belong to poll';
   end if;
-  if new.storage_path <> 'polls/'||new.poll_id||'/'||case when new.option_id is null then 'questions/' else 'options/'||new.option_id||'/' end||new.id||'.webp' then
+  if new.storage_path <> ('polls/'||new.poll_id||'/'||(case when new.option_id is null then 'questions/' else 'options/'||new.option_id||'/' end)||new.id||'.webp') then
     raise exception using errcode='22023',message='Invalid image path';
   end if;
   return new;
