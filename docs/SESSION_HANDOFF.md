@@ -1,5 +1,22 @@
 # 세션 인계
 
+## 2026-11-18 — 생성 이미지 원클릭 저장 로컬 검증 완료
+
+- 완료구현: 생성전 File/ObjectURL 미리보기 질문3·선택지1, 고유clientKey/실제option_id 수·순서·소속·문구 검증, 생성POST1회, 임시숨김→순차저장→ready/공개확인, 상세성공안내/질문갤러리. 공통client.ts로수정UI재사용, 기존API/SQL/회원/BOARD/MDX변경0.
+- 실패안전: slug보관·성공사진보존/실패만재시도, ACK유실확인·uncertain재POST금지, reload URL표시(파일/본문저장0)·기존edit복구. 취소가능탐색/링크/닫기경고, 이동승인시추가업로드·공개중단. 초기popstate실패는Navigation이벤트로수정후ChromePASS.
+- 최종검증: 단위118/118, type/lint(기존경고1)/build/checks PASS. 신규HTTP5+Chrome5묶음·5폭/실제이미지로딩·ID/임시숨김/부분실패/메모리해제 PASS. 기존수정이미지HTTP8+Chrome4, 전체ProdHTTP23+Chrome45/DevHTTP24+Chrome45 PASS. 예외0/hydration0. 실제PG는option필드·ordinality메타만읽음. 실제PG/Storage쓰기/운영E2E미실행.
+- 다음: 명시stage/기능commit→GitHub新branch PR/CI/Preview→root최종문서갱신. 원격main1645/운영기존유지, 운영DB/Storage/환경변수변경금지. 작업 .verification/board-feature-branch feat/poll-images-on-create.
+
+
+## 2026-11-18 — 생성 화면 이미지 원클릭 저장 개발 중
+
+- 목표: 브라우저 File/ObjectURL 초안→기존 create API 1회→실제 option ID 매핑검증→기존 이미지 API 순차저장→ready검증/공개→상세. 신규 DB/migration·Production 변경 금지.
+- 기준: 원격 main1645aad5/tree43eba84c=로컬a6f16cb 확인. root dirty/refs보존. 실제작업 .verification/board-feature-branch feat/poll-images-on-create. fetch네트워크실패1회 후 GitHub사용.
+- 구현: lib/poll-images/client.ts 공통 업로드·ACK재조회, create-flow.ts 단계/부분실패/생성불확실성·숨김/공개재확인. PollEditor 고유clientKey/초안/preview revoke/생성 중 잠금/이탈경고/URL복구표시. PollDraftImages 선택·제거·순서, 기존 PollImageManager 공유클라이언트재사용. 관리자상세 성공안내/질문갤러리 추가.
+- 검사: 신규단위14 PASS(전체 기존102 아직최종재실행전), 초기type/lint(기존경고1)PASS. 실제PG/Storage/운영 E2E아직미실행, DB/Storage SQL변경0.
+- 진행중/다음: 브라우저5폭 파일선택→생성→숨김/이미지→공개/상세·실패/지연/ACK테스트, 전체unit/type/lint/build/integration/browser, 문서docs/POLL_IMAGES_CREATE_FLOW.md, 별도commit/PR/CI/Preview. main병합/Production/운영테스트데이터 금지.
+
+
 ## 2026-11-17 — 승인된 투표 이미지 운영 반영 진행
 
 - 사용자가 운영 반영 승인. PR5/main/CI 재확인. SQL pg_temp 격리검사에서 CASE 괄호 42601 발견·수정 후 실제PG 임시테이블 검증 PASS, 운영테스트데이터0/전체rollback. scripts/check-poll-images-sql.mjs 재현 가능.

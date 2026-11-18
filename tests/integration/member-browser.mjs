@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure, adminPassword, onlyBoardList = false, onlyPollImages = null }) {
+export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure, adminPassword, onlyBoardList = false, onlyPollImages = null, onlyPollCreate = false }) {
   const output = path.resolve(".verification/member-browser"); await mkdir(output, { recursive: true });
   const pause = ms => new Promise(r => setTimeout(r, ms));
   let browser, sockets = [];
@@ -73,6 +73,12 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
   try {
     let page = await launch(); await page.send("Network.clearBrowserCookies");
     await page.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
+    if(onlyPollCreate){
+      await page.go("/access");assert.equal(await page.evaluate(`fetch('/api/access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(${JSON.stringify({participantId:id(1),password:aPassword,next:"/admin"})})}).then(r=>r.status)`),200);
+      await page.go("/admin");await page.wait("document.querySelector('header .name-current')?.textContent==='친구1'");
+      const {runPollCreateBrowser}=await import("./poll-create-browser.mjs");const checks=await runPollCreateBrowser({page,output,adminPassword});
+      assert.deepEqual(diagnostics,{uncaughtExceptions:0,hydrationErrors:0});await writeFile(path.join(output,"poll-create-focused.json"),JSON.stringify({status:"passed",checks,diagnostics},null,2));return;
+    }
     if (onlyPollImages) {
       await page.go("/access");
       assert.equal(await page.evaluate(`fetch('/api/access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(${JSON.stringify({participantId:id(1),password:aPassword,next:"/polls"})})}).then(r=>r.status)`),200);
