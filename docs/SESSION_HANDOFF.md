@@ -1,5 +1,26 @@
 # 세션 인계
 
+## 2026-11-20 — 복수선택 제한 로컬 구현·최종 검증 완료
+
+- 완료: 관리자 NULL/2~5·요약·참여 이력 잠금, 회원 안내/카운터/N+1차단·해제/키보드, API 고유 ID개수400·구클라이언트 제한 보존·DB미적용non-null503. 사진 포함 생성 PR6 기반 유지.
+- SQL 준비: 현재 운영 함수 정의 기반 additive proposal, canonical 집합 RPC·deferred 최종 count/옵션수·부모 락·직접쓰기/수정잠금·기존결과/RLS보존. 미적용. CLI등록/실제TEST PG가 없어 준비와 검증을 구분한다. 실제2연결 TEST runner 및 SQL 보존조회 포함.
+- 검증: 단위122/122, type/lint(오류0·기존경고1)/build/checks PASS. 전체HTTP23·devHTTP24+Chrome45 PASS. 신규최종Production-mode HTTP4묶음+Chrome5폭 PASS(390은 cap+질문/선택지사진원클릭). 예외0/hydration0, 보호61파일 hash동일. 신규 dev 집중2회 HMR/완료대기 실패는 별도 미해결 개발환경 항목으로 기록·Production모드에서 재검증함.
+- 미검증: 실제TEST PostgreSQL/동시성·Storage·운영회원E2E/Safari. TEST runner는 설정없음으로코드2, 운영17.11/신규컬럼없음/RLS·CHECK는읽기만확인. Preview필수5변수Production전용, Secret복사금지.
+- 다음: 명시stage/기능commit→PR6 HEAD223e69e5를부모로한정상새원격branch/동일tree대조→Draft PR/CI/Preview. main1645·운영dpl_2T5 READY유지, DB/Storage/환경/회원/migration/Production 변경0. root기존dirty/refs보존. 보고서 docs/POLL_MULTIPLE_SELECTION_LIMIT.md.
+
+
+
+## 2026-11-20 — 복수선택 최대 개수 개발 중
+
+- 목표: NULL(제한 없음)/2~5개를 관리자·회원 UI/API/PostgreSQL에서 강제. 기존 응답·결과·이미지·인증 보존. 운영 DB/migration/Production 변경은 미승인.
+- 기반: 원격 main1645aad5, PR6 OPEN/head223e69e5. 작업 .verification/board-feature-branch feat/poll-multiple-selection-limit, 부모로컬4f94dcb2/tree43f128b2=PR6. PR6 원클릭 이미지 생성 기능 보존·새 PR에 의존성 명시 예정. root dirty/브랜치 보존.
+- 구현 중: 타입/공통 검증·관리자 설정/요약/참여 이력 잠금·회원 카운터/초과 차단·API dedup 후 제한. DB 미적용 시 non-null 설정은 저장 전503, 구클라이언트의 제한 필드 생략은 기존값 보존. 초기 typecheck PASS(최종 검사 아님).
+- SQL: 실제 운영 pg_get_functiondef 읽기 전용 스냅샷을 기반으로 additive proposal 작성 중. 정규화 집합 RPC 검사·설정 이력 잠금·deferred 최종 집합/선택지 수 제약·기존 부모 락 유지. 기존 RLS/결과 집계·과거 migration 변경 없음. 실제 적용 안 함.
+- 제약: 연결된 별도203 TEST 프로젝트 없음, psql/Postgres/docker/Supabase CLI 없음, shell fetch/npm 네트워크 실패. 독립 TEST 지정 질문 대기(없어도 코드·SQL TEST·합성/Chrome 계속). 실제 PG·Storage 쓰기 및 동시성 검증은 아직 미실행이며 합성 테스트와 구분할 것.
+- 다음: SQL/TEST 작성 마무리→fixture/단위/API/5폭 Chrome·기존 회귀/빌드→보고서→명시 stage/commit/GitHub PR/CI/Preview. 운영 테이블/Storage/Secret 변경·main 병합 금지.
+
+
+
 ## 2026-11-18 — 생성 이미지 원클릭 저장 로컬 검증 완료
 
 - 완료구현: 생성전 File/ObjectURL 미리보기 질문3·선택지1, 고유clientKey/실제option_id 수·순서·소속·문구 검증, 생성POST1회, 임시숨김→순차저장→ready/공개확인, 상세성공안내/질문갤러리. 공통client.ts로수정UI재사용, 기존API/SQL/회원/BOARD/MDX변경0.

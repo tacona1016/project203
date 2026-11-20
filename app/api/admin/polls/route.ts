@@ -1,5 +1,5 @@
 import { handleApi, readJson, requireSameOrigin } from "@/lib/auth/http";
-import { adminClient, adminPollInput, checkAdminResult } from "@/lib/supabase/poll-admin";
+import { adminClient, adminPollInput, checkAdminResult, requireChoiceLimitSchema } from "@/lib/supabase/poll-admin";
 import { getPollCatalog } from "@/lib/supabase/queries";
 
 export async function GET() { return handleApi(async () => getPollCatalog(await adminClient(), true)); }
@@ -8,6 +8,7 @@ export async function POST(request: Request) {
     const client = await adminClient();
     requireSameOrigin(request);
     const data = adminPollInput(await readJson(request), true);
+    await requireChoiceLimitSchema(client, data.max_choices_per_participant);
     return checkAdminResult(await client.rpc("admin_create_poll", { p_data: data }));
   });
 }

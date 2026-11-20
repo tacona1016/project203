@@ -8,6 +8,7 @@ import { PollImageManager } from "./PollImageManager";
 import Link from "next/link";
 import { PollDraftImages } from "./PollDraftImages";
 import { PollCreateFlow, type CreateProgress, type DraftImage, type DraftOption } from "@/lib/poll-images/create-flow";
+import type { ChoiceLimit } from "@/lib/poll-choice-limit";
 
 const subscribe = () => () => {};
 
@@ -17,7 +18,7 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
   const ready = useSyncExternalStore(subscribe, () => true, () => false);
   const poll = initial?.poll;
   const [quarter, setQuarter] = useState(poll?.quarter ?? quarterChoices.find((item) => item.current)?.slug ?? "");
-  const quarterLocked = (initial?.results?.total_votes ?? 0) > 0;
+  const quarterLocked = initial?.has_responses ?? (initial?.results?.total_votes ?? 0) > 0;
   const [pollType, setPollType] = useState(poll?.poll_type ?? "choice");
   const [visibility, setVisibility] = useState(poll?.results_visibility ?? "live");
   const [textMaxLength, setTextMaxLength] = useState(poll?.text_max_length ?? 1000);
@@ -29,6 +30,9 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
   const creator = useRef<PollCreateFlow | null>(null), objectUrls = useRef(new Set<string>()), allowLeave = useRef(false);
   const mounted = useRef(true);
   const [mode, setMode] = useState(poll?.vote_mode ?? "single");
+  const [maxChoices, setMaxChoices] = useState<ChoiceLimit>(poll?.max_choices_per_participant ?? null);
+  const appliedLimit = pollType === "choice" && mode === "multiple" ? maxChoices : null;
+  const limitInvalid = appliedLimit !== null && appliedLimit > options.length;
   const [allowChange, setAllowChange] = useState(poll?.allow_vote_change ?? false);
   const [scheduled, setScheduled] = useState(!!(poll?.voting_starts_at || poll?.voting_ends_at));
   const [start, setStart] = useState(toSeoulInput(poll?.voting_starts_at ?? null));
@@ -102,9 +106,10 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
     event.preventDefault();
     if (!ready || pending || submitting.current || creationLocked) return;
     setAttempted(true);
+    if (limitInvalid) { setError(`최대 선택 개수는 현재 선택지 ${options.length}개를 넘을 수 없습니다.`); return; }
     const body = { quarter, title, description, options: quarterLocked ? [] : options.map(option => option.label),
       poll_type: pollType, results_visibility: visibility, text_max_length: pollType === "text" ? textMaxLength : poll?.text_max_length ?? 1000,
-      vote_mode: pollType === "text" ? "single" : mode, allow_vote_change: allowChange, scheduled, start, end, is_hidden: hidden };
+      vote_mode: pollType === "text" ? "single" : mode, max_choices_per_participant: appliedLimit, allow_vote_change: allowChange, scheduled, start, end, is_hidden: hidden };
     try { parsePollInput(body, !initial, quarterChoices); } catch (error) {
       setError((error as Error).message);
       const form = event.currentTarget;
@@ -171,6 +176,13 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
           <label><input type="radio" name="vote-mode" checked={mode === "single"} onChange={() => setMode("single")} />1인 1표</label>
           <label><input type="radio" name="vote-mode" checked={mode === "multiple"} onChange={() => setMode("multiple")} />복수선택 허용</label>
         </fieldset>
+        {mode === "multiple" && <div>
+          <label htmlFor="poll-max-choices">최대 선택 개수</label>
+          <select id="poll-max-choices" value={maxChoices ?? ""} disabled={quarterLocked} aria-invalid={limitInvalid} aria-describedby="poll-max-choices-note" onChange={event => setMaxChoices(event.target.value === "" ? null : Number(event.target.value) as ChoiceLimit)}>
+            <option value="">제한 없음</option>{[2, 3, 4, 5].map(limit => <option key={limit} value={limit}>최대 {limit}개</option>)}
+          </select>
+          <p id="poll-max-choices-note" className={limitInvalid ? "form-error mt-3" : "form-note mt-3"}>{quarterLocked ? "이미 참여 기록이 있어 최대 선택 개수를 변경할 수 없습니다." : limitInvalid ? `최대 선택 개수는 현재 선택지 ${options.length}개를 넘을 수 없습니다.` : "1개부터 설정한 개수까지 선택할 수 있습니다. 제한 없음은 모든 선택지를 허용합니다."}</p>
+        </div>}
         <label className="check-label"><input type="checkbox" checked={allowChange} onChange={(event) => setAllowChange(event.target.checked)} />선택 변경 허용</label>
         {mode === "multiple" && <p className="form-note mt-3">여러 선택지를 한 번에 제출합니다. 변경을 허용하면 기존 선택 전체를 새 선택으로 바꿀 수 있습니다.</p>}
       </section> : <section><h2>응답 설정</h2><p className="mb-4">1인 1응답</p>
@@ -206,6 +218,7 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
           <div><dt>분기</dt><dd>{quarterChoices.find((item) => item.slug === quarter)?.label ?? "분기를 선택해주세요"}</dd></div>
           <div><dt>유형</dt><dd>{pollType === "choice" ? "객관식" : "주관식"}</dd></div>
           <div><dt>참여 방식</dt><dd>{pollType === "text" ? "1인 1응답" : mode === "multiple" ? "복수선택 · 선택지당 1표" : "단일선택 · 1인 1표"}</dd></div>
+          {pollType === "choice" && mode === "multiple" && <div><dt>최대 선택 개수</dt><dd>{appliedLimit === null ? "제한 없음" : `최대 ${appliedLimit}개`}</dd></div>}
           <div><dt>{pollType === "text" ? "응답 수정" : "선택 변경"}</dt><dd>{allowChange ? "허용" : "허용하지 않음"}</dd></div>
           {pollType === "text" && <div><dt>최대 응답 길이</dt><dd>{textMaxLength}자</dd></div>}
           <div><dt>결과 공개</dt><dd>{visibility === "live" ? "진행 중에도 실시간 공개" : "투표 종료 후 공개"}</dd></div>
@@ -214,7 +227,7 @@ export function PollEditor({ initial, quarterChoices }: { initial?: PollData; qu
         </dl>
       </section>
       {error && <p className="form-error mb-5" role="alert">{error}</p>}
-      <button type="submit" className="interaction-button">{pending ? "저장 중..." : initial ? "변경 저장" : "투표 만들기"}</button>
+      <button type="submit" className="interaction-button" disabled={limitInvalid}>{pending ? "저장 중..." : initial ? "변경 저장" : "투표 만들기"}</button>
     </fieldset>
     {!initial && (creation || resumeSlug || uncertainReload) && <section className="interaction-notice mt-5" aria-label="투표 생성 진행" aria-live="polite">
       {creation && <><p role="status">{creation.stage}</p>{creation.slug && <p>✓ 투표 생성 완료 · 같은 투표에서 사진을 저장합니다.</p>}

@@ -14,6 +14,7 @@ import { CopyLink } from "@/components/CopyLink";
 import { ParticipationRate } from "@/components/polls/ParticipationRate";
 import { PollImageGallery } from "@/components/polls/PollImageGallery";
 import { optionImage } from "@/lib/poll-images/model";
+import { choiceLimitMessage, effectiveChoiceLimit } from "@/lib/poll-choice-limit";
 
 type Feedback = { tone: "success" | "error" | "uncertain"; message: string };
 const normalize = (ids: readonly DatabaseId[]) => [...new Set(ids.map(String))].sort();
@@ -84,6 +85,7 @@ function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<
   }
   const { participant, invalidateParticipant } = useParticipant();
   const single = data.poll.vote_mode === "single";
+  const limit = effectiveChoiceLimit(data.poll);
   const active = data.status === "ACTIVE";
   const [participation, setParticipation] = useState<PollParticipation | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -92,6 +94,7 @@ function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<
   const [checking, setChecking] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [selectionNotice, setSelectionNotice] = useState("");
   const submission = useRef(false), readBusy = useRef(false), readRequest = useRef(0);
   const unconfirmed = useRef<string[] | null>(null);
   const id = useId();
@@ -141,6 +144,7 @@ function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<
     event.preventDefault();
     if (submission.current || unconfirmed.current || pending || checking || !active || !participation || !selected.length) return;
     const optionIds = normalize(selected);
+    if (limit !== null && optionIds.length > limit) { setSelectionNotice(choiceLimitMessage(limit)); return; }
     submission.current = true; readRequest.current++; setPending(true); setFeedback(null);
     try {
       const status = await submitVote(data.poll.slug, optionIds);
@@ -184,14 +188,23 @@ function Ballot({ data, onRefresh }: { data: PollData; onRefresh: () => Promise<
         {changeAllowed ? <button type="button" className="text-link mt-6" disabled={pending || checking} onClick={() => { setSelected(currentIds); setEditing(true); setFeedback(null); }}>선택 변경하기</button>
           : active && <p className="form-note mt-5">참여 후에는 선택을 변경할 수 없습니다.</p>}
       </section> : active ? <form onSubmit={submit} aria-busy={pending}>
+        {!single && <div className="mb-4">
+          <p className="form-note">{limit === null ? "여러 항목을 한 번에 선택할 수 있습니다." : `최대 ${limit}개까지 선택할 수 있습니다.`} 같은 선택지에는 한 사람당 1표만 반영됩니다.</p>
+          <p className="form-note mt-2" aria-live="polite" aria-atomic="true">선택한 항목: {selected.length}{limit === null ? "개" : ` / ${limit}`}</p>
+          <p role="status" className={selectionNotice ? "form-error mt-2" : "sr-only"}>{selectionNotice}</p>
+        </div>}
         <fieldset className="poll-options" disabled={pending || checking || !participation}>
           <legend className="sr-only">{single ? "선택지 한 가지" : "선택지 여러 개 선택 가능"}</legend>
           {data.options.map(option => <div key={option.id} className="poll-option-with-image"><label className="poll-option">
             <input type={single ? "radio" : "checkbox"} name={id} required={single} value={String(option.id)} checked={selected.includes(String(option.id))}
-              onChange={() => { const value = String(option.id); setSelected(current => single ? [value] : current.includes(value) ? current.filter(item => item !== value) : [...current, value]); }} /><span>{option.label}</span>
+              onChange={() => {
+                const value = String(option.id);
+                if (!single && !selected.includes(value) && limit !== null && selected.length >= limit) { setSelectionNotice(choiceLimitMessage(limit)); return; }
+                setSelectionNotice("");
+                setSelected(current => single ? [value] : current.includes(value) ? current.filter(item => item !== value) : [...current, value]);
+              }} /><span>{option.label}</span>
           </label>{renderImage(option.id, option.label)}</div>)}
         </fieldset>
-        {!single && <p className="form-note mt-4">여러 항목을 한 번에 선택할 수 있습니다. 같은 선택지에는 한 사람당 1표만 반영됩니다.</p>}
         {!single && selected.length > 0 && <section className="ballot-selection-summary mt-5" aria-label="제출할 선택">
           <h3 className="text-sm font-medium">제출할 선택 · {selected.length}개</h3>
           <ul className="mt-2 flex flex-wrap gap-2 text-sm">{data.options.filter(option => selected.includes(String(option.id))).map(option => <li key={option.id}>{option.label}</li>)}</ul>

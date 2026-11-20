@@ -49,7 +49,7 @@ export const getPollResults = (slug: string) => request<PollOutcome>(`${pollPath
 export const getParticipation = (slug: string) => request<PollParticipation>(`${pollPath(slug)}/participation`);
 async function submitBallot(slug: string, body: unknown): Promise<VoteStatus> {
   const result = await request<unknown>(`${pollPath(slug)}/votes`, body);
-  const statuses: VoteStatus[] = ["success", "vote_changed", "unchanged", "already_voted", "inactive_participant", "poll_not_found", "invalid_option", "invalid_selection", "poll_upcoming", "poll_closed", "legacy_votes_conflict", "invalid_poll_type", "invalid_response", "response_too_long"];
+  const statuses: VoteStatus[] = ["selection_limit_exceeded", "success", "vote_changed", "unchanged", "already_voted", "inactive_participant", "poll_not_found", "invalid_option", "invalid_selection", "poll_upcoming", "poll_closed", "legacy_votes_conflict", "invalid_poll_type", "invalid_response", "response_too_long"];
   if (typeof result !== "string" || !statuses.includes(result as VoteStatus)) throw new SiteApiError("등록 여부를 확인하지 못했습니다. 저장된 내역을 확인해주세요.", { status: 200, uncertain: true });
   return result as VoteStatus;
 }

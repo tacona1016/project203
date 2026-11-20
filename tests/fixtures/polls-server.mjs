@@ -2,6 +2,7 @@ import { pollImageFixture } from "./poll-images.mjs";
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 let people, polls, options, votes, comments, sequence, choiceSelections;
+let choiceLimitSchema = true;
 let voteFailure = null, voteRequestCount = 0;
 let participantFailure = null;
 let participantFailureAfter = 0;
@@ -10,11 +11,11 @@ let participationFailure = false, participationRequests = [];
 const now = () => new Date().toISOString();
 function reset() {
   people = Array.from({ length: 10 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`, display_name: `친구${i + 1}`, is_active: true, display_order: i + 1, created_at: now() }));
-  polls = []; options = []; votes = []; comments = []; choiceSelections = []; sequence = 100; voteFailure = null; voteRequestCount = 0; participationFailure = false; participationRequests = [];
+  choiceLimitSchema = true; polls = []; options = []; votes = []; comments = []; choiceSelections = []; sequence = 100; voteFailure = null; voteRequestCount = 0; participationFailure = false; participationRequests = [];
   const slugs = ["land-priority", "changeable", "repeat", "upcoming", "closed", "hidden", "current-poll", "text-live", "text-private", "text-fixed", "choice-private", "multi-edit", "multi-private", "ui-multi", "ui-uncertain", "ui-failure", "ui-double"];
   slugs.forEach((slug, i) => {
     const id = i + 1, text = slug.startsWith("text-");
-    polls.push({ id, slug, quarter: i === 6 ? "2027-q1" : "2026-q4", title: ["우선순위", "변경 가능 투표", "중복 투표", "예정 투표", "종료 투표", "숨긴 투표", "Current poll", "공개 의견", "종료 후 공개 의견", "수정 불가 의견", "비공개 집계"][i], description: "함께 검토할 기준입니다.", poll_type: text ? "text" : "choice", results_visibility: i >= 8 ? "after_close" : "live", text_max_length: 1000, vote_mode: i === 2 ? "multiple" : "single", allow_repeat_vote: i === 2, allow_vote_change: i === 1 || i === 8, is_closed: false, is_hidden: i === 5, created_at: now(), updated_at: now(), voting_starts_at: i === 3 ? new Date(Date.now() + 86400000).toISOString() : i === 4 ? new Date(Date.now() - 172800000).toISOString() : null, voting_ends_at: i === 3 ? new Date(Date.now() + 172800000).toISOString() : i === 4 ? new Date(Date.now() - 86400000).toISOString() : null });
+    polls.push({ max_choices_per_participant: null, id, slug, quarter: i === 6 ? "2027-q1" : "2026-q4", title: ["우선순위", "변경 가능 투표", "중복 투표", "예정 투표", "종료 투표", "숨긴 투표", "Current poll", "공개 의견", "종료 후 공개 의견", "수정 불가 의견", "비공개 집계"][i], description: "함께 검토할 기준입니다.", poll_type: text ? "text" : "choice", results_visibility: i >= 8 ? "after_close" : "live", text_max_length: 1000, vote_mode: i === 2 ? "multiple" : "single", allow_repeat_vote: i === 2, allow_vote_change: i === 1 || i === 8, is_closed: false, is_hidden: i === 5, created_at: now(), updated_at: now(), voting_starts_at: i === 3 ? new Date(Date.now() + 86400000).toISOString() : i === 4 ? new Date(Date.now() - 172800000).toISOString() : null, voting_ends_at: i === 3 ? new Date(Date.now() + 172800000).toISOString() : i === 4 ? new Date(Date.now() - 86400000).toISOString() : null });
     const p = polls.at(-1);
     if (i >= 11) Object.assign(p, { title: slug, vote_mode: "multiple", allow_repeat_vote: true, allow_vote_change: ["multi-edit", "multi-private", "ui-multi"].includes(slug), results_visibility: slug === "multi-private" ? "after_close" : "live" });
     if (!text) (p.vote_mode === "multiple" ? ["접근성", "환경", "토지 상태"] : ["접근성", "환경"]).forEach((label, j) => options.push({ id: id * 100 + j + 1, poll_id: id, label, display_order: j + 1 }));
@@ -27,8 +28,12 @@ const status = p => p.is_hidden ? "HIDDEN" : p.is_closed || (p.voting_ends_at &&
 function results(id) { const p = polls.find(p => p.id === Number(id)); const rows = p.poll_type === "choice" ? choiceSelections.filter(v => v.poll_id === p.id && v.is_selected) : votes.filter(v => v.poll_id === p.id); const counts = {}; rows.filter(v => v.option_id != null).forEach(v => counts[v.option_id] = (counts[v.option_id] || 0) + 1); return { counts, total_votes: rows.length, participant_count: new Set(rows.map(v => v.participant_id)).size }; }
 const canSee = (p, admin) => admin || p.results_visibility === "live" || status(p) === "CLOSED";
 const summary = (p, admin) => ({ poll: p, status: status(p), results: canSee(p, admin) ? results(p.id) : null, server_time: now() });
-const detail = (p, admin) => !p || p.is_hidden && !admin ? null : ({ ...summary(p, admin), options: p.poll_type === "choice" ? options.filter(o => o.poll_id === p.id) : [], responses: p.poll_type === "text" && canSee(p, admin) ? votes.filter(v => v.poll_id === p.id).map(v => ({ ...v, participant_name: people.find(person => person.id === v.participant_id).display_name })) : null });
+const detail = (p, admin) => !p || p.is_hidden && !admin ? null : ({ ...summary(p, admin), ...(admin ? {has_responses: votes.some(v=>v.poll_id===p.id)||choiceSelections.some(v=>v.poll_id===p.id)} : {}), options: p.poll_type === "choice" ? options.filter(o => o.poll_id === p.id) : [], responses: p.poll_type === "text" && canSee(p, admin) ? votes.filter(v => v.poll_id === p.id).map(v => ({ ...v, participant_name: people.find(person => person.id === v.participant_id).display_name })) : null });
 const imageFixture=pollImageFixture({polls:()=>polls,options:()=>options,active:id=>people.some(p=>p.id===id&&p.is_active)});
+function validLimit(data, optionCount) {
+  const limit=data.max_choices_per_participant;
+  return limit==null || typeof limit==="number" && Number.isInteger(limit) && limit>=2 && limit<=5 && limit<=optionCount && data.poll_type==="choice" && data.vote_mode==="multiple";
+}
 http.createServer(async (req, res) => {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   const json = (value, code = 200) => res.writeHead(code).end(JSON.stringify(value));
@@ -36,7 +41,7 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://127.0.0.1:3102"); const chunks=[]; for await(const chunk of req)chunks.push(chunk); const raw=Buffer.concat(chunks); const body=raw.length&&(!url.pathname.startsWith("/storage/v1/")||req.method==="DELETE")?JSON.parse(raw.toString()):{};
   if(url.pathname==="/_test"){if(body.reset)imageFixture.reset();imageFixture.configure(body);}
   if(imageFixture.handle({req,res,url,raw,body,json}))return;
-  if (url.pathname === "/_test") { if(Object.hasOwn(body,"participationFailure")) participationFailure=body.participationFailure; if (body.reset) { reset(); participantFailure = null; participantFailureAfter = 0; } if (Object.hasOwn(body, "participantFailure")) { participantFailure = body.participantFailure; participantFailureAfter = body.participantFailureAfter ?? 0; participantRequestCount = 0; } if (Object.hasOwn(body, "voteFailure")) { voteFailure = body.voteFailure; voteRequestCount = 0; } if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, choiceSelections, comments, participantRequestCount, voteRequestCount, participationRequests, ...imageFixture.stats() }); }
+  if (url.pathname === "/_test") { if(Object.hasOwn(body,"choiceLimitSchema"))choiceLimitSchema=body.choiceLimitSchema; if(Object.hasOwn(body,"participationFailure")) participationFailure=body.participationFailure; if (body.reset) { reset(); participantFailure = null; participantFailureAfter = 0; } if (Object.hasOwn(body, "participantFailure")) { participantFailure = body.participantFailure; participantFailureAfter = body.participantFailureAfter ?? 0; participantRequestCount = 0; } if (Object.hasOwn(body, "voteFailure")) { voteFailure = body.voteFailure; voteRequestCount = 0; } if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, choiceSelections, comments, participantRequestCount, voteRequestCount, participationRequests, ...imageFixture.stats() }); }
   if (req.headers.apikey !== "fixture-only-backend-key") return json({ message: "server only" }, 403);
   const table = url.pathname.replace("/rest/v1/", "");
   const match = row => [...url.searchParams].every(([key, value]) => value.startsWith("eq.") ? String(row[key]) === value.slice(3) : value.startsWith("in.(") ? value.slice(4, -1).split(",").includes(String(row[key])) : true);
@@ -65,7 +70,10 @@ http.createServer(async (req, res) => {
       return json({ code: participantFailure === "timeout" ? "57014" : "XX000", message: "fixture-upstream-sensitive-detail-must-not-be-returned" }, 503);
     }
     if (table === "participants") { const fields=url.searchParams.get("select"); const rows=people.filter(match).map(p=>fields&&fields!=="*"?Object.fromEntries(fields.split(",").map(k=>[k,p[k]])):p); return json(single(rows)); }
-    if (table === "polls") return json(single(polls.filter(match)));
+    if (table === "polls") {
+      if (url.searchParams.get("select") === "max_choices_per_participant" && !choiceLimitSchema) return fail("42703");
+      return json(single(polls.filter(match)));
+    }
     if (table === "poll_options") return json(options.filter(match));
     if (table === "votes") { const rows = votes.filter(match); res.setHeader("Content-Range", `0-${Math.max(rows.length - 1, 0)}/${rows.length}`); return json(rows.slice(0, Number(url.searchParams.get("limit") || rows.length))); }
     if (table === "comments") return json(comments.filter(match).map(joined));
@@ -91,6 +99,7 @@ http.createServer(async (req, res) => {
     if (status(p) === "CLOSED") return json({ status: "poll_closed" });
     if (status(p) === "UPCOMING") return json({ status: "poll_upcoming" });
     if (!ids.length || ids.length > 20 || p.vote_mode === "single" && ids.length !== 1 || table.endsWith("submit_vote") && p.vote_mode !== "single") return json({ status: "invalid_selection" });
+    if (p.vote_mode === "multiple" && p.max_choices_per_participant != null && ids.length > p.max_choices_per_participant) return json({status:"selection_limit_exceeded"});
     if (ids.some(id => !options.some(o => o.poll_id === p.id && o.id === id))) return json({ status: "invalid_option" });
     const previous = choiceSelections.filter(v => v.poll_id === p.id && v.participant_id === body.p_participant_id);
     const before = previous.filter(v => v.is_selected).map(v=>v.option_id).sort((a,b)=>a-b);
@@ -131,12 +140,16 @@ http.createServer(async (req, res) => {
   if (table === "rpc/admin_create_poll") {
     const d = body.p_data, id = ++sequence, slug = "poll-" + randomUUID();
     if (d.poll_type === "choice" && d.options.length < 2) return fail("22023");
-    polls.push({ id, slug, ...d, allow_repeat_vote: d.vote_mode === "multiple", is_closed: false, created_at: now(), updated_at: now() });
+    if (!validLimit(d, d.options.length)) return fail("22023");
+    polls.push({ max_choices_per_participant: null, id, slug, ...d, allow_repeat_vote: d.vote_mode === "multiple", is_closed: false, created_at: now(), updated_at: now() });
     if (d.poll_type === "choice") d.options.forEach((label, i) => options.push({ id: ++sequence, poll_id: id, label, display_order: i + 1 }));
     return json({ slug });
   }
   if (table === "rpc/admin_update_poll") {
     const p = polls.find(p => p.id === Number(body.p_poll_id)), d = body.p_data, previous = [...votes.filter(v => v.poll_id === p.id), ...choiceSelections.filter(v => v.poll_id === p.id)], voted = previous.length > 0;
+    const nextLimit = Object.hasOwn(d,"max_choices_per_participant") ? d.max_choices_per_participant : p.max_choices_per_participant ?? null;
+    if (voted && nextLimit !== (p.max_choices_per_participant ?? null)) return fail("P2035");
+    if (!validLimit({...d,max_choices_per_participant:nextLimit},d.options.length || options.filter(o=>o.poll_id===p.id).length)) return fail("22023");
     if (voted && p.quarter !== d.quarter) return fail("P2031");
     if (voted && (p.poll_type !== d.poll_type || p.vote_mode !== d.vote_mode)) return fail("P2032");
     if (previous.some(v => v.text_response && Array.from(v.text_response).length > d.text_max_length)) return fail("P2033");
