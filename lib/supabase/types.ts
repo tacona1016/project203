@@ -1,5 +1,6 @@
 import type { BoardPage, BoardPost, BoardComment, BoardEngagement, BoardImageRecord, LikeState } from "@/lib/board/types";
 import type { PollImageRecord, PollImageSet } from "@/lib/poll-images/model";
+import type { ChoiceLimit } from "@/lib/poll-choice-limit";
 
 // 기존 숫자 ID를 유지하고 SDK·폼에서 사용하는 문자열/숫자 표현을 처리합니다.
 export type DatabaseId = string | number;
@@ -13,6 +14,7 @@ export type Participant = {
 };
 
 export type PollRecord = {
+  max_choices_per_participant: ChoiceLimit;
   id: DatabaseId;
   slug: string;
   quarter: string;
@@ -78,7 +80,7 @@ export type PollResultsData = {
   participant_count: number;
 };
 
-export type VoteStatus = "success" | "vote_changed" | "unchanged" | "already_voted" | "inactive_participant" | "poll_not_found" | "invalid_option" | "invalid_selection" | "poll_upcoming" | "poll_closed" | "legacy_votes_conflict" | "invalid_poll_type" | "invalid_response" | "response_too_long";
+export type VoteStatus = "selection_limit_exceeded" | "success" | "vote_changed" | "unchanged" | "already_voted" | "inactive_participant" | "poll_not_found" | "invalid_option" | "invalid_selection" | "poll_upcoming" | "poll_closed" | "legacy_votes_conflict" | "invalid_poll_type" | "invalid_response" | "response_too_long";
 export type PollStatus = "UPCOMING" | "ACTIVE" | "CLOSED" | "HIDDEN";
 export type PollSummary = {
   poll: PollRecord; status: PollStatus; results: PollResultsData | null; server_time: string;
@@ -96,6 +98,7 @@ export type PollParticipation = {
 export type TextResponse = Pick<Vote, "id" | "participant_id" | "text_response" | "created_at" | "updated_at"> & { participant_name: string };
 export type PollOutcome = { results: PollResultsData | null; responses: TextResponse[] | null };
 export type PollInput = {
+  max_choices_per_participant: ChoiceLimit;
   quarter: string;
   poll_type: "choice" | "text"; results_visibility: "live" | "after_close"; text_max_length: number;
   title: string; description: string; vote_mode: "single" | "multiple";
@@ -185,6 +188,7 @@ export type Database = {
 };
 
 export type PollData = {
+  has_responses?: boolean;
   attachments?: PollImageSet;
   poll: PollRecord;
   options: PollOption[];

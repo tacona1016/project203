@@ -98,7 +98,7 @@ export async function runChoiceBrowserChecks({ page, base, output, adminPassword
   await page.evaluate("Array.from(document.querySelectorAll('.admin-form .check-label')).find(l=>l.textContent.includes('선택 변경 허용')).querySelector('input').click()");
   await page.evaluate("(()=>{for(const [selector,value] of [['#poll-title','Browser multiple fixture'],['#poll-option-0','A'],['#poll-option-1','B']]){const el=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}})()");
   await page.evaluate("document.querySelector('.admin-form button[type=submit]').click()");
-  await page.wait("location.pathname.startsWith('/admin/polls/poll-')&&location.pathname.endsWith('/edit')&&!!document.querySelector('[aria-label=\"투표 이미지 관리\"]')");
+  await page.wait("location.pathname.startsWith('/admin/polls/poll-')&&!location.pathname.endsWith('/edit')&&document.body.textContent.includes('투표를 저장했습니다.')");
   state = await control({});
   const created = state.polls.find(p=>p.title==="Browser multiple fixture");
   assert.equal(created.vote_mode, "multiple"); assert.equal(created.allow_vote_change, true);

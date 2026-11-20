@@ -2,6 +2,7 @@ import { databaseId, handleApi, HttpError, readJson, requireSameOrigin, requireA
 import { pollSlug, protectedClient } from "@/lib/site-data";
 import { getPoll, submitTextResponse, submitVote } from "@/lib/supabase/queries";
 import { validateTextResponse } from "@/lib/polls";
+import { choiceLimitMessage, effectiveChoiceLimit } from "@/lib/poll-choice-limit";
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   return handleApi(async () => {
@@ -28,6 +29,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     if (!Array.isArray(submitted) || !submitted.length) throw new HttpError(400, "선택지를 선택해주세요.");
     const optionIds = [...new Set(submitted.map(databaseId))];
     if (optionIds.length > 20 || (poll.vote_mode === "single" && optionIds.length !== 1)) throw new HttpError(400, "투표 방식에 맞는 선택지를 선택해주세요.");
-    return submitVote(client, poll.id, optionIds, participantId);
+    const limit = effectiveChoiceLimit(poll);
+    if (limit !== null && optionIds.length > limit) throw new HttpError(400, choiceLimitMessage(limit));
+    const status = await submitVote(client, poll.id, optionIds, participantId);
+    // The RPC independently checks its locked, current poll configuration.
+    if (status === "selection_limit_exceeded") throw new HttpError(400, "최대 선택 개수를 초과했습니다. 투표 정보를 새로고침한 뒤 선택해주세요.");
+    return status;
   });
 }

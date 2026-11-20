@@ -1,4 +1,5 @@
 import type { PollRecord, PollInput, PollSummary } from "./supabase/types";
+import { parseChoiceLimit } from "./poll-choice-limit.ts";
 
 export const POLL_STATUS_LABELS = { ACTIVE: "진행 중", UPCOMING: "투표 예정", CLOSED: "투표 종료", HIDDEN: "숨김" };
 
@@ -46,9 +47,12 @@ export function parsePollInput(value: Record<string, unknown>, creating: boolean
   const end = value.scheduled ? fromSeoulInput(value.end) : null;
   if (value.scheduled && (!start || !end || end <= start)) throw new Error("종료 시간은 시작 시간보다 늦어야 합니다.");
   const options = Array.isArray(value.options) ? value.options.map((item) => typeof item === "string" ? item.trim() : "") : [];
+  const maxChoices = parseChoiceLimit(value.max_choices_per_participant);
+  if (maxChoices !== null && (value.poll_type !== "choice" || value.vote_mode !== "multiple")) throw new Error("최대 선택 개수는 객관식 복수선택에만 설정할 수 있습니다.");
+  if (maxChoices !== null && options.length > 0 && maxChoices > options.length) throw new Error("최대 선택 개수는 실제 선택지 수를 넘을 수 없습니다.");
   // On edit, options are required only if the server finds zero existing votes.
   if (value.poll_type === "choice" && (creating || options.length > 0) && (options.length < 2 || options.length > 20 || options.some((item) => !item || Array.from(item).length > 100))) throw new Error("선택지는 2~20개, 각 1~100자로 입력해주세요.");
-  return { quarter: value.quarter, title, description, poll_type: value.poll_type, results_visibility: value.results_visibility, text_max_length: Number(textMaxLength),
+  return { max_choices_per_participant: maxChoices, quarter: value.quarter, title, description, poll_type: value.poll_type, results_visibility: value.results_visibility, text_max_length: Number(textMaxLength),
     vote_mode: value.poll_type === "text" ? "single" : value.vote_mode, allow_vote_change: value.allow_vote_change,
     voting_starts_at: start, voting_ends_at: end, is_hidden: value.is_hidden, options: value.poll_type === "choice" ? options : [] };
 }

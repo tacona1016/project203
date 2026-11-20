@@ -1,5 +1,62 @@
 # 세션 인계
 
+## 2026-11-20 — 승인된 선택 제한 신규 DB 적용 완료·앱 배포 준비
+
+- Supabase 신규20261120092941_poll_multiple_selection_limit 1회적용완료·실제version으로동일SQL파일저장. 과거migration재실행0. 기존투표cap모두NULL/14영역행수·지문전후동일·시퀀스동일·RLS/서버전용권한확인. DB/결과보존assert포함.
+- 실제PG17.11 pg_temp테이블/함수/독립temp identity sequence로cap2~5+N+1/중복/수정잠금/직접쓰기/deferred최종집합/실패rollback/비공개검사PASS(적용전·후모두). fullDDL 사전ROLLBACK검사PASS. 달러구분자조립오류1회는 dry-run에서수정후검증. 운영테스트행/시퀀스변경0. 독립TEST/실제두연결검증은아님.
+- 새파일 migrations/20261120092941...sql, scripts/check-poll-choice-limit-sql.mjs; TEST SQL cap5→6 경계추가. 앱TSX/API코드변경없음, 기존검증사용. 다음local unit/type/lint/build→기능후속commit/PR7갱신→최신CI/Preview→Draft해제·정상merge(PR6포함)→Git Production 새SHA/READY/HTTP/로그. 현재Production기존dpl_2T5유지.
+- 실제DB메타/지문은ignored .verification/choice-limit-approved-db-result.json. 공개보고서에원문/회원/사진/Secret보관금지. rootdirty/과거refs보존.
+
+
+
+## 2026-11-20 — 승인된 복수선택 제한 운영 반영 진행
+
+- 사용자 최신 ‘운영에도 적용해줘’로 신규 additive SQL·PR 정상병합·Production 반영 승인. 기존 데이터 삭제/초기화·Secret/Storage/RLS 완화는 금지. root dirty/refs 보존.
+- 재확인: main1645aad5/기존Productiondpl_2T5 READY, PR7b9087d66 Draft/mergeable/CI44706588455 SUCCESS, 선행PR6 OPEN/head223e69e5 포함.
+- 실제PG17.11: 최신 함수/트리거/CHECK와 제안의 기초 정의 동일. session pg_temp·전용temp identity sequence로 SQL(2~5/N+1 포함) 검사 PASS·전체ROLLBACK, 운영 테스트행/시퀀스 변경0. 전체 신규DDL+원본지문/집계/RPC보존 assert도 적용전 ROLLBACK dry-run PASS. SQL 조립의달러구분자오류1회는 dry-run에서발견/수정·재통과. 실제2연결/독립TEST/Storage/회원E2E미검증유지.
+- baseline: public12테이블+Storage2영역14지문 확보. polls10/options38/votes46/canonical37/participants10, 나머지BOARD·이미지도 보존대상. Security Advisor 기존 INFO1(poll_images는서버전용RLS정책없음), WARN/ERROR없음.
+- 다음: 승인된새migration1회적용(원본5테이블·집계transaction assert/락포함)→실제server version으로동일migration파일보관→지문14영역/권한검증→PR7추가commit/CI/Preview→정상merge commit(선행PR6코드포함)→Git Production 신규SHA/READY/HTTP/로그확인. 과거migration재실행금지.
+
+
+
+## 2026-11-20 — 복수선택 제한 로컬 구현·최종 검증 완료
+
+- 완료: 관리자 NULL/2~5·요약·참여 이력 잠금, 회원 안내/카운터/N+1차단·해제/키보드, API 고유 ID개수400·구클라이언트 제한 보존·DB미적용non-null503. 사진 포함 생성 PR6 기반 유지.
+- SQL 준비: 현재 운영 함수 정의 기반 additive proposal, canonical 집합 RPC·deferred 최종 count/옵션수·부모 락·직접쓰기/수정잠금·기존결과/RLS보존. 미적용. CLI등록/실제TEST PG가 없어 준비와 검증을 구분한다. 실제2연결 TEST runner 및 SQL 보존조회 포함.
+- 검증: 단위122/122, type/lint(오류0·기존경고1)/build/checks PASS. 전체HTTP23·devHTTP24+Chrome45 PASS. 신규최종Production-mode HTTP4묶음+Chrome5폭 PASS(390은 cap+질문/선택지사진원클릭). 예외0/hydration0, 보호61파일 hash동일. 신규 dev 집중2회 HMR/완료대기 실패는 별도 미해결 개발환경 항목으로 기록·Production모드에서 재검증함.
+- 미검증: 실제TEST PostgreSQL/동시성·Storage·운영회원E2E/Safari. TEST runner는 설정없음으로코드2, 운영17.11/신규컬럼없음/RLS·CHECK는읽기만확인. Preview필수5변수Production전용, Secret복사금지.
+- 다음: 명시stage/기능commit→PR6 HEAD223e69e5를부모로한정상새원격branch/동일tree대조→Draft PR/CI/Preview. main1645·운영dpl_2T5 READY유지, DB/Storage/환경/회원/migration/Production 변경0. root기존dirty/refs보존. 보고서 docs/POLL_MULTIPLE_SELECTION_LIMIT.md.
+
+
+
+## 2026-11-20 — 복수선택 최대 개수 개발 중
+
+- 목표: NULL(제한 없음)/2~5개를 관리자·회원 UI/API/PostgreSQL에서 강제. 기존 응답·결과·이미지·인증 보존. 운영 DB/migration/Production 변경은 미승인.
+- 기반: 원격 main1645aad5, PR6 OPEN/head223e69e5. 작업 .verification/board-feature-branch feat/poll-multiple-selection-limit, 부모로컬4f94dcb2/tree43f128b2=PR6. PR6 원클릭 이미지 생성 기능 보존·새 PR에 의존성 명시 예정. root dirty/브랜치 보존.
+- 구현 중: 타입/공통 검증·관리자 설정/요약/참여 이력 잠금·회원 카운터/초과 차단·API dedup 후 제한. DB 미적용 시 non-null 설정은 저장 전503, 구클라이언트의 제한 필드 생략은 기존값 보존. 초기 typecheck PASS(최종 검사 아님).
+- SQL: 실제 운영 pg_get_functiondef 읽기 전용 스냅샷을 기반으로 additive proposal 작성 중. 정규화 집합 RPC 검사·설정 이력 잠금·deferred 최종 집합/선택지 수 제약·기존 부모 락 유지. 기존 RLS/결과 집계·과거 migration 변경 없음. 실제 적용 안 함.
+- 제약: 연결된 별도203 TEST 프로젝트 없음, psql/Postgres/docker/Supabase CLI 없음, shell fetch/npm 네트워크 실패. 독립 TEST 지정 질문 대기(없어도 코드·SQL TEST·합성/Chrome 계속). 실제 PG·Storage 쓰기 및 동시성 검증은 아직 미실행이며 합성 테스트와 구분할 것.
+- 다음: SQL/TEST 작성 마무리→fixture/단위/API/5폭 Chrome·기존 회귀/빌드→보고서→명시 stage/commit/GitHub PR/CI/Preview. 운영 테이블/Storage/Secret 변경·main 병합 금지.
+
+
+
+## 2026-11-18 — 생성 이미지 원클릭 저장 로컬 검증 완료
+
+- 완료구현: 생성전 File/ObjectURL 미리보기 질문3·선택지1, 고유clientKey/실제option_id 수·순서·소속·문구 검증, 생성POST1회, 임시숨김→순차저장→ready/공개확인, 상세성공안내/질문갤러리. 공통client.ts로수정UI재사용, 기존API/SQL/회원/BOARD/MDX변경0.
+- 실패안전: slug보관·성공사진보존/실패만재시도, ACK유실확인·uncertain재POST금지, reload URL표시(파일/본문저장0)·기존edit복구. 취소가능탐색/링크/닫기경고, 이동승인시추가업로드·공개중단. 초기popstate실패는Navigation이벤트로수정후ChromePASS.
+- 최종검증: 단위118/118, type/lint(기존경고1)/build/checks PASS. 신규HTTP5+Chrome5묶음·5폭/실제이미지로딩·ID/임시숨김/부분실패/메모리해제 PASS. 기존수정이미지HTTP8+Chrome4, 전체ProdHTTP23+Chrome45/DevHTTP24+Chrome45 PASS. 예외0/hydration0. 실제PG는option필드·ordinality메타만읽음. 실제PG/Storage쓰기/운영E2E미실행.
+- 다음: 명시stage/기능commit→GitHub新branch PR/CI/Preview→root최종문서갱신. 원격main1645/운영기존유지, 운영DB/Storage/환경변수변경금지. 작업 .verification/board-feature-branch feat/poll-images-on-create.
+
+
+## 2026-11-18 — 생성 화면 이미지 원클릭 저장 개발 중
+
+- 목표: 브라우저 File/ObjectURL 초안→기존 create API 1회→실제 option ID 매핑검증→기존 이미지 API 순차저장→ready검증/공개→상세. 신규 DB/migration·Production 변경 금지.
+- 기준: 원격 main1645aad5/tree43eba84c=로컬a6f16cb 확인. root dirty/refs보존. 실제작업 .verification/board-feature-branch feat/poll-images-on-create. fetch네트워크실패1회 후 GitHub사용.
+- 구현: lib/poll-images/client.ts 공통 업로드·ACK재조회, create-flow.ts 단계/부분실패/생성불확실성·숨김/공개재확인. PollEditor 고유clientKey/초안/preview revoke/생성 중 잠금/이탈경고/URL복구표시. PollDraftImages 선택·제거·순서, 기존 PollImageManager 공유클라이언트재사용. 관리자상세 성공안내/질문갤러리 추가.
+- 검사: 신규단위14 PASS(전체 기존102 아직최종재실행전), 초기type/lint(기존경고1)PASS. 실제PG/Storage/운영 E2E아직미실행, DB/Storage SQL변경0.
+- 진행중/다음: 브라우저5폭 파일선택→생성→숨김/이미지→공개/상세·실패/지연/ACK테스트, 전체unit/type/lint/build/integration/browser, 문서docs/POLL_IMAGES_CREATE_FLOW.md, 별도commit/PR/CI/Preview. main병합/Production/운영테스트데이터 금지.
+
+
 ## 2026-11-17 — 승인된 투표 이미지 운영 반영 진행
 
 - 사용자가 운영 반영 승인. PR5/main/CI 재확인. SQL pg_temp 격리검사에서 CASE 괄호 42601 발견·수정 후 실제PG 임시테이블 검증 PASS, 운영테스트데이터0/전체rollback. scripts/check-poll-images-sql.mjs 재현 가능.

@@ -1,15 +1,11 @@
 "use client";
 import { useRef, useState } from "react";
 import type { PollData } from "@/lib/supabase/types";
-import { POLL_IMAGES, type PollImage, type PollImageSet } from "@/lib/poll-images/model";
-import { IMAGE_TYPES } from "@/lib/images/signature";
+import { type PollImage, type PollImageSet } from "@/lib/poll-images/model";
+import { pollImageRequest as request, sendPollImage } from "@/lib/poll-images/client";
 import { PollImageGallery } from "@/components/polls/PollImageGallery";
 
 type Upload = { id: string; file: File; optionId: string | null; replacesId: string | null; error: string };
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(url, { credentials: "same-origin", cache: "no-store", ...init });
-  const value = await r.json(); if (!r.ok) throw new Error(value.error ?? "사진 처리를 확인하지 못했습니다."); return value;
-}
 export function PollImageManager({ initial }: { initial: PollData }) {
   const slug = initial.poll.slug, base = `/api/admin/polls/${slug}/images`;
   const [state, setState] = useState<PollImageSet>(initial.attachments ?? { available: false, images: [] });
@@ -27,15 +23,8 @@ export function PollImageManager({ initial }: { initial: PollData }) {
     // At most one in-flight encode/upload, even for 20 option images.
     for (const item of items) {
       try {
-        if (!IMAGE_TYPES.some(type => type === item.file.type) || !item.file.size || item.file.size > POLL_IMAGES.bytes) throw new Error("JPG·PNG·WebP 원본 3MiB 이하 사진을 선택해주세요.");
         setMessage(`${item.file.name} · 사진 압축 및 업로드 중`);
-        const headers: Record<string, string> = { "Content-Type": item.file.type, "Idempotency-Key": item.id };
-        if (item.optionId) headers["X-Option-Id"] = item.optionId;
-        if (item.replacesId) headers["X-Replaces-Image-Id"] = item.replacesId;
-        let saved: PollImage;
-        try { saved = await request<PollImage>(base, { method: "POST", headers, body: item.file }); }
-        catch (error) { const next = await reload().catch(() => null); const confirmed = next?.images.find(image => image.id === item.id); if (!confirmed) throw error; saved = confirmed; }
-        if (saved.id !== item.id || saved.byte_size > POLL_IMAGES.storedBytes) throw new Error("저장 결과를 확인하지 못했습니다.");
+        const saved = await sendPollImage(slug, item);
         await reload(); setMessage(`사진 업로드 완료 · ${Math.ceil(saved.byte_size / 1000)}KB`);
       } catch (error) { failures.push({ ...item, error: error instanceof Error ? error.message : "사진 저장 실패" }); }
     }
