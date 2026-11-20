@@ -32,7 +32,7 @@ begin
     (person,'QA-limit-'||person,true),(other_person,'QA-limit-'||other_person,true),(inactive,'QA-limit-'||inactive,false);
   input:=jsonb_build_object('quarter','2026-q4','title','TEST maximum choices','description','','poll_type','choice','vote_mode','multiple',
     'text_max_length',1000,'results_visibility','after_close','allow_vote_change',true,'is_hidden',false,
-    'voting_starts_at',null,'voting_ends_at',null,'options','["A","B","C","D","E"]'::jsonb);
+    'voting_starts_at',null,'voting_ends_at',null,'options','["A","B","C","D","E","F"]'::jsonb);
   for bad in select value from jsonb_array_elements('[1,6,-2,2.5,"3",false,{},[]]'::jsonb) loop
     caught:=false;
     begin perform public.admin_create_poll(input||jsonb_build_object('max_choices_per_participant',bad));
@@ -62,10 +62,8 @@ begin
       assert (public.get_poll_participation(pid,person)->>'selection_count')::integer=k,'Incorrect count';
     end loop;
     before_state:=public.get_poll_participation(pid,person);
-    if n<5 then
-      assert public.submit_choice_ballot(pid,ids[1:n+1],person)->>'status'='selection_limit_exceeded','N+1 accepted';
-      assert before_state=public.get_poll_participation(pid,person),'Rejected RPC modified selections';
-    end if;
+    assert public.submit_choice_ballot(pid,ids[1:n+1],person)->>'status'='selection_limit_exceeded','N+1 accepted';
+    assert before_state=public.get_poll_participation(pid,person),'Rejected RPC modified selections';
     assert public.submit_choice_ballot(pid,array[ids[1],ids[1]],other_person)->>'status'='success','Distinct normalization failed';
     assert public.submit_choice_ballot(pid,array[ids[1]],other_person)->>'status'='unchanged','Replay appended';
     assert public.submit_choice_ballot(pid,array[ids[1]],inactive)->>'status'='inactive_participant';
@@ -88,7 +86,7 @@ begin
     set constraints all immediate; set constraints all deferred;
   end loop;
 
-  -- Unlimited old polls can still select all five; no implicit cap.
+  -- Unlimited old polls can still select all six; no implicit cap.
   created_slug:=public.admin_create_poll(input)->>'slug';
   select id into pid from public.polls where polls.slug=created_slug;
   select array_agg(id order by display_order,id) into ids from public.poll_options where poll_id=pid;

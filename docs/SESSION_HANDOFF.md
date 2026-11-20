@@ -1,5 +1,24 @@
 # 세션 인계
 
+## 2026-11-20 — 승인된 선택 제한 신규 DB 적용 완료·앱 배포 준비
+
+- Supabase 신규20261120092941_poll_multiple_selection_limit 1회적용완료·실제version으로동일SQL파일저장. 과거migration재실행0. 기존투표cap모두NULL/14영역행수·지문전후동일·시퀀스동일·RLS/서버전용권한확인. DB/결과보존assert포함.
+- 실제PG17.11 pg_temp테이블/함수/독립temp identity sequence로cap2~5+N+1/중복/수정잠금/직접쓰기/deferred최종집합/실패rollback/비공개검사PASS(적용전·후모두). fullDDL 사전ROLLBACK검사PASS. 달러구분자조립오류1회는 dry-run에서수정후검증. 운영테스트행/시퀀스변경0. 독립TEST/실제두연결검증은아님.
+- 새파일 migrations/20261120092941...sql, scripts/check-poll-choice-limit-sql.mjs; TEST SQL cap5→6 경계추가. 앱TSX/API코드변경없음, 기존검증사용. 다음local unit/type/lint/build→기능후속commit/PR7갱신→최신CI/Preview→Draft해제·정상merge(PR6포함)→Git Production 새SHA/READY/HTTP/로그. 현재Production기존dpl_2T5유지.
+- 실제DB메타/지문은ignored .verification/choice-limit-approved-db-result.json. 공개보고서에원문/회원/사진/Secret보관금지. rootdirty/과거refs보존.
+
+
+
+## 2026-11-20 — 승인된 복수선택 제한 운영 반영 진행
+
+- 사용자 최신 ‘운영에도 적용해줘’로 신규 additive SQL·PR 정상병합·Production 반영 승인. 기존 데이터 삭제/초기화·Secret/Storage/RLS 완화는 금지. root dirty/refs 보존.
+- 재확인: main1645aad5/기존Productiondpl_2T5 READY, PR7b9087d66 Draft/mergeable/CI44706588455 SUCCESS, 선행PR6 OPEN/head223e69e5 포함.
+- 실제PG17.11: 최신 함수/트리거/CHECK와 제안의 기초 정의 동일. session pg_temp·전용temp identity sequence로 SQL(2~5/N+1 포함) 검사 PASS·전체ROLLBACK, 운영 테스트행/시퀀스 변경0. 전체 신규DDL+원본지문/집계/RPC보존 assert도 적용전 ROLLBACK dry-run PASS. SQL 조립의달러구분자오류1회는 dry-run에서발견/수정·재통과. 실제2연결/독립TEST/Storage/회원E2E미검증유지.
+- baseline: public12테이블+Storage2영역14지문 확보. polls10/options38/votes46/canonical37/participants10, 나머지BOARD·이미지도 보존대상. Security Advisor 기존 INFO1(poll_images는서버전용RLS정책없음), WARN/ERROR없음.
+- 다음: 승인된새migration1회적용(원본5테이블·집계transaction assert/락포함)→실제server version으로동일migration파일보관→지문14영역/권한검증→PR7추가commit/CI/Preview→정상merge commit(선행PR6코드포함)→Git Production 신규SHA/READY/HTTP/로그확인. 과거migration재실행금지.
+
+
+
 ## 2026-11-20 — 복수선택 제한 로컬 구현·최종 검증 완료
 
 - 완료: 관리자 NULL/2~5·요약·참여 이력 잠금, 회원 안내/카운터/N+1차단·해제/키보드, API 고유 ID개수400·구클라이언트 제한 보존·DB미적용non-null503. 사진 포함 생성 PR6 기반 유지.

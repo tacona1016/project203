@@ -1,5 +1,21 @@
 # 복수선택 투표의 최대 선택 개수
 
+## 2026-11-20 운영 적용 진행 — DB 적용·보존 검증 완료
+
+사용자의 후속 ‘운영에도 적용해줘’로 운영 migration과 앱 배포가 승인되었다. 아래 미적용/승인 대기 기록은 이전 개발 시점의 상태다.
+
+- 신규 migration **20261120092941_poll_multiple_selection_limit**을 Supabase에 한 번 적용했다. 실제 서버 이력의 version을 조회해 같은 SQL을 supabase/migrations/20261120092941_poll_multiple_selection_limit.sql에 기록했다. 과거 migration은 재실행하지 않았다.
+- migration은 부모/관련 테이블의 짧은 잠금과 원본 행·기존 집계·변경하지 않는 RPC 정의 비교 assert를 포함한다. 기존 투표는 NULL=무제한으로 그대로 유지되며 설정 backfill이나 응답 재계산은 없다. 적용 중 assert 실패 시 전체 transaction이 롤백된다.
+- 실제 PostgreSQL17.11의 **pg_temp 테이블/함수/identity sequence**만 사용해 cap2~5와 N+1(최대5에서6개도 거부), 중복ID, 설정 잠금, 직접 쓰기 제한, 일시적 초과 후 최종 정상 교체, 오류 시 원상복구, 공개 정책을 검증했다. 적용 전·후 모두 PASS/전체ROLLBACK이며 운영 테스트 행·시퀀스 변경0이다. 독립 TEST 프로젝트/실제 두 연결 동시성 테스트를 수행한 것은 아니다.
+- 전체 DDL의 사전 ROLLBACK dry-run도 통과했다. 조립 도구의 달러 구분자 오류1회는 dry-run에서 발견·수정해 실제 migration 적용 전에 재검증했다. 테스트와 실제 적용을 구분한다.
+- 앱12테이블+Storage2영역 **14영역의 행 수와 전체 데이터 지문이 모두 적용 전후 동일**하다. 기존 선택지/투표/회원/BOARD/이미지·객체 및 public sequence 값을 보존했다. 원문 데이터·회원 정보·사진·Secret을 Git에 넣지 않았다.
+- 새 nullable smallint/5개 guard, RLS, 서버 전용 EXECUTE/컬럼 SELECT 권한을 확인했다. anon/authenticated 새 컬럼 접근은 차단된다. 실제 기존 투표 상세/catalog 조회와 일반 회원의 이력 flag 비노출도 읽기 전용 검사 PASS다.
+- Security Advisor는 기존 INFO1(서버 전용 poll_images의 RLS 정책 없음)만 유지, WARN/ERROR없음. 이를 해결하려고 브라우저 정책을 추가하지 않았다.
+- PR7은 선행 PR6 커밋을 포함한다. 최종 CI 성공 후 PR7을 정상 merge commit으로 병합하면 이미지 원클릭 생성과 선택 제한 코드가 함께 포함된다. PR6/기존 커밋 이력을 보존하며 별도 중간 Production을 만들지 않는다.
+- 앱 배포·Production SHA/READY/HTTP/로그 확인은 다음 단계다. 회원 로그인 후 쓰기 E2E·실Storage 업로드·Safari·독립 TEST/두 연결은 미검증이다. Preview의 Production 전용 Secret을 복사하지 않는다.
+
+
+
 2026-11-20. 개발·TEST 검증용 변경이며 운영 DB·Production 적용은 별도 승인 대상이다.
 
 ## 현재 상태와 기반
