@@ -1,5 +1,78 @@
 # 세션 인계
 
+## 2026-11-28 — 운영용 Q4 연결 및 릴리스 검증
+
+- 사용자 명시 승인: GitHub 정상 PR/merge와 Production 배포. DB/Storage/Secret/인증 변경은 하지 않는다. release/devicebook-q4-20261128 브랜치, root 과거 dirty 파일/refs 보존.
+- 원래12개 Slide byte 동일 확인, DeviceBook theme를 운영 Presentation에 opt-in 연결, 설문 요약을13번째로 추가. 댓글/회원 메뉴/관련 링크 보존, 발표 모드에서 chrome 숨김/복원.
+- 공개 GitHub에 실제 snapshot을 넣지 않도록 서버 전용 survey-data + 순수 survey-overview 구현. 기존 결과 공개 RPC로 대상7건 gate→조회→정책 재확인, 원문/신원 미전달, 실제 DB server_time·등록 인원 사용. 데이터 없음/오류/비공개 구분. 신규 SQL/환경 설정 없음.
+- 현재 unit134/134, typecheck, lint오류0/기존경고1, conflict/presentation/Production Build PASS. 운영경로 합성HTTP+실제Chrome40검사(390/768/1440/1920) PASS. Production-mode 및 더 많은 합성 선택지 레이아웃 검증 중. 초기 Chrome 자동 로그인 화면 이동 타이밍 검사는 테스트 세션 전달 방식으로 보완했으며 앱 인증 정책 변경 없음.
+- 원격main c49cf5f tree d9f85fdc가 로컬 ab8696d tree와 정확히 동일. Gitfetch443차단1회 확인, 정상 GitHub MCP로 파일blob/tree 대조와 원격main부모 커밋/PR을 구성할 예정. 기존 Production dpl_5iQiRepVLMVqupZTHQnMjJPBFEW6 READY. 운영집계 대상7건 모두 CLOSED/public 결과 확인(SELECT만).
+- 다음: 남은 통합/Production-mode/browser→명시stage·commit→원격SHA재확인/정확tree 업로드→PR/CI/Preview→정상merge→Production exactSHA/READY/alias/HTTP/로그. 실제회원E2E는 수행 가능 범위만 보고. 현재 Push/Production 아직 미수행.
+
+## 2026-11-28 — 명시 승인된 GitHub/Production 반영 진행
+
+- 사용자가 ‘git에 배포하고 운영에도 반영’ 명시승인. 검증/정상PR·merge·GitProduction 수행, force·기존작업폐기·DB/Secret변경은 안함. 이전시안noPush규칙은 이번릴리스에한해승인으로대체.
+- 로컬0a9ea17은검토13장완료지만운영MDX미반영상태. 공개repo에실제집계JSON을넣지않기위해, 기존 get_poll_catalog/get_poll_detail RPC의서버시각·공개정책을지키는서버전용집계adapter+같은요약UI로운영13장구성필요. DB migration/환경설정추가없이연결. 기존로그인/댓글/연관링크유지.
+- 작업release/devicebook-q4-20261128(기존reviewbranch보존). Gitfetch는네트워크443차단1회실패, 반복안함. GitHub MCP로원격main기준tree와정확한blob대조→정상기능branch/PR/CI/merge방법사용할것. rootdirty/.git보존.
+- 다음: 운영adapter/UI/MDX연결→권한·정책/집계·합성HTTP/Chrome·type/lint/build→공개파일검토/localcommit→원격SHA재확인·MCP정확tree반영→PR/CI/Preview→정상merge→Production새SHA/READY/HTTP/로그. 실제회원E2E는가능한읽기범위만, 운영테스트행작성금지.
+
+## 2026-11-28 — Q4 13장 통합 완료
+
+- 최종 사용자 목표 완료: 상세10장 화면/링크/생성코드 제거, 기존Q4리디자인12장 뒤에 ‘설문 조사 결과’를13번째로 추가. 원래12개 Slide 본문·순서·SVG·출처는 byte동일. 원본 운영MDX 미수정, 집계JSON SHA ab26822cae993e25d39ef4c4b0560ce85f25513c006bf5b11aec85c0ed87b000 동일.
+- 실제주소: /presentation-review/existing 전체13장, /presentation-review/existing#results-overview 마지막장. /results는마지막장으로307연결, /results-detail은404. 예전생성MDX/PPTX/로컬Route 파일은ignored archive로보관. 정상앱Build에검토Route0.
+- 재개시 인계는a431d59까지만있었고 실제diff가남아있었다. 기존구현은반복하지않고 중단된redirect검사를수정했다. browser fetch manual의opaque응답은status/headers를읽을수없어검사가실패했으며, 실제브라우저이동검사로수정해PASS. 서버307은정상이었다.
+- 검증: unit130/130·typecheck·lint오류0/기존경고1·conflict/presentation check·Production Build PASS. 통합실제Chrome323항목/390·768·1440·1920 PASS. 13장/마지막장/목차/이전다음/키보드/발표모드/데이터/인증/호환redirect/상세404/가로넘침·예외·hydration0 확인. API/Storage전체합성검사는변경없어이번에재실행하지않음. 운영회원E2E·Safari·nativeFullscreen은미검증유지.
+- root .verification/presentation-review/로MDX·분석·현재스크린샷·검증보고서미러완료. 현재안내 review/INTEGRATED_REVIEW.md, review/DESIGN_REVIEW.md. 활성10장PPTX/독립MDX는archive로이동. 비밀번호/Secret/원문응답은Git/보고서에넣지않음.
+- 2026-11-28 외부읽기확인: GitHub main c49cf5f3833658138f981ef42ef296257f5ce443; Production dpl_5iQiRepVLMVqupZTHQnMjJPBFEW6 READY/같은SHA; Supabase xpyyyqqfnlmgxxlenxua ACTIVE_HEALTHY. 운영 DB/Storage/환경/Production/Push 변경0.
+- 현재브랜치 feat/devicebook-presentation-review, 작업저장소 .verification/board-feature-branch. root의feat/phase2-improvements 및기존dirty파일보존. 준비명령 node --experimental-strip-types scripts/prepare-presentation-review.mjs, 서버 node --experimental-strip-types scripts/presentation-review.mjs, 검증 node tests/integration/presentation-review-browser.mjs --connect.
+- 다음: 사용자13장시안검토. 운영발표자료교체/배포는별도최종승인후. 서버재시작시로컬테스트로그인정보가갱신되므로작업저장소 .verification/presentation-review/review-access.local.json의최신값사용(공개금지).
+
+## 2026-11-28 — 중단 작업 재개: Q4 13장 통합 검증 중
+
+- 실제 diff에 13장 통합 미커밋 변경이 있으며, 기존 인계는 a431d59까지만 반영되어 있었다. 완료된 집계·항목명 작업을 다시 만들지 않는다.
+- 준비된 변경: 원본12개 Slide byte보존 + 설문요약13번, 상세10장 생성/Route/링크 제거, 과거파일 ignored archive로 이동, /results는 /existing#results-overview 호환 redirect. helper scripts/presentation-review-routes.mjs 및 새통합Chrome 검사 작성 중.
+- 중단점: 브라우저 fetch redirect:manual은 opaque redirect이므로 status/header 직접검사가 실패. 실제서버307정상, 앞선4뷰포트·13장·이전다음/발표모드 검증은 진행됨. 실제브라우저 이동으로 검사 수정 후 최종 rerun할 것.
+- unit130/130 및 typecheck/lint(오류0·기존경고1)는 완료. 최종Build/브라우저/문서·root산출물미러/로컬commit 남음. root기존dirty 보존. 운영 DB/Production/Push 금지 유지.
+
+## 2026-11-27 — 설문 제목·성향 명칭 및 번호형 답변 집계 보완
+
+- 최신 사용자 요구: 제목 ‘설문 조사 결과’, 성향 A/B/C/D를 거리(접근성)/토지 넓이/주변 환경/건축시기로 지정, 기존 제외 답변 확인 후 최대한 반영.
+- 실제 DB SELECT로 제외 응답 형식을 확인했다. 문항번호를 점수와 함께 세던 파서 문제였고, 명확한1~4번 네 줄에서 번호와 값을 구분해 기존 점수 그대로 집계했다. 원문/회원신원은 파일·Git에 보관하지 않는다. 원본 DB 변경0.
+- lib/presentation/poll-analysis.ts의 순서별 파싱과 scripts/presentation-poll-snapshot.sql SELECT 보완, SQL parser version2·format_counts·user_confirmed labels. 이전JSON은 ignored archive에 보존, 나머지6투표집계 동일 확인. 새 스냅샷22:29:01KST, 실제 수치는 ignored ALLOCATION_CORRECTION.md/JSON 참조.
+- Compact·상세10장·PPTX/분석파일을 재생성했다. 기존Q4원본(토지상태 등) 내용은 수정하지 않는다. 정상로컬로그인 유지 /results에서 새제목·이름 표시, /results-detail 상세 유지.
+- 검증 완료: unit130/130, 실제PG 파서 합성SELECT11종 PASS(쓰기/테스트행0), JS분포통계교차검증 PASS, typecheck/lint(오류0·기존경고1)/conflict/presentation/Production Build PASS. Compact Chrome310항목 및 기존/상세 Chrome74항목/4뷰포트 PASS. root미러 갱신, review/ALLOCATION_CORRECTION.md와 allocation-reconciliation.json에 근거 보관. 원문은 보관하지 않음. 코드 로컬 커밋 후 사용자 검토 단계.
+- 승인대기 운영반영 없음: Production/Push/DB/Storage/환경/회원정책 변경0. 다음은 사용자 결과검토, 원문/개인별응답을 공개저장소에 추가하지 않는다.
+
+## 2026-11-27 — 투표 결과 1장 compact 요약 · 완료
+
+- 사용자 후속 요청: 결과 검토를 슬라이드1장으로 압축. 기존10장/집계JSON/운영자료 보존. 기본 /presentation-review/results를 단일 Slide로 변경, 원래10장은 /presentation-review/results-detail에 분리.
+- scripts/templates/poll-results-compact.mdx + 준비/launcher에 연결, 전용 CSS만추가. 방향전환strip과6개패널, 모든7대상/실제인원·비율/0표/성향임시명·오류/고정시각·주의사항 보존. 같은JSON재사용, DB조회/변경0. 기존로컬로그인 유지.
+- 새 actual Chrome286항목/390·768·1440·1920 PASS. 1440×1000/1920×1080 한 viewport, 모바일 세로읽기, 원래10장접근·인증·표시값·오류0 확인. screenshots/compact/overview-*.png.
+- 최종: unit128/128, typecheck PASS, lint 오류0/기존경고1, conflict/presentation check와 Production Build PASS. 기존JSON SHA256 6f17f154a2eb7e402b78ec64ecc88d4b59827489d2858a1563dc1d96d0317fff 동일. root미러 compact MDX·4스크린샷·검증report/COMPACT_REVIEW.md. 다음은 사용자 디자인 확인, Production/Push없음.
+
+## 2026-11-27 — DeviceBook 1차 시안·집계·검증 완료
+
+- 검토 전용 개발 완료. 브랜치 feat/devicebook-presentation-review / 작업 저장소 .verification/board-feature-branch. 운영 Q4/사이트 전역CSS/회원·BOARD·투표 API/SQL·Storage·환경·Production 변경 없음. push/배포 안 함.
+- 실제 운영 SELECT 스냅샷(고정 서버 UTC/KST)7건 집계, canonical 선택만 사용. 점수는 엄격 유효성 검사 및 분포 기반 통계 교차검증. 사용자 승인 A~D 임시명 적용, 의미 해석 보류. 원본12개 Slide 본문·SVG·순서 byte동일, 결과MDX10장. 실제 수치는 ignored 분석 파일에만 보관.
+- 공통 Theme/Hero/Chart/Callout/Summary/Source + MetricGrid alias, scoped CSS, 기존 Navigator book opt-in 및 전체화면 실패 시 화면 내 발표 대체. AGENTS/로컬203-presentation Skill/템플릿/참고분석 문서 작성, Skill validator PASS.
+- 최종 검증: npm test128/128, typecheck PASS, lint 오류0/기존경고1, check:conflicts/check:presentations/Production Build PASS, test:integration 합성HTTP PASS, test:browser 기존HTTP+Chrome PASS. 새 실Chrome74항목/390·768·1440·1920×1080 PASS, 스크린샷93개. 모바일 통계표 숫자 줄바꿈 보완 후 재검증. Noto Sans KR 실제 fallback 확인. 운영 회원 E2E 아님.
+- 네이티브 Fullscreen API는 현 Chrome 실행환경 거부: 미검증. 대체 발표모드/방향키/PageDown/ESC/목차/읽기복귀 검증. Pretendard 외부파일·다크모드 미포함. PPTX10장 같은JSON으로 생성/ZIP CRC·XML PASS, Office 렌더링 미검증.
+- 시안/데이터/전체집계/스크린샷/검증: root .verification/presentation-review 및 작업 저장소 내부 같은 경로. 실제 접근: http://127.0.0.1:3210/presentation-review/existing 또는 /results 또는 /original. 앱은 ignored 복사본에만 생성, 정상 로그인+합성 로컬 계정 사용. 접속 정보는 작업 저장소 .verification/presentation-review/review-access.local.json(공개/로그 금지). 운영 Secret 복사 안함. 실행 node --experimental-strip-types scripts/presentation-review.mjs.
+- 다음: 사용자 디자인 검토 및 실제 A~D 의미 확인(원하면), 필요 시 네이티브Fullscreen/Safari/Office 확인. 원본 발표자료 교체/새 결과 게시·Production 배포는 현재 요청 범위 밖이므로 별도 최종 승인 후. 운영 DB migration 불필요. 실제 집계/사진/QA/계정정보를 공개GitHub에 올리지 않는다.
+
+
+
+## 2026-11-27 — DeviceBook 발표 검토 시안 · 진행 중
+
+- 현재 목표: 기존 Q4 12장 보존 리디자인 및 실제 투표7건 집계·10장 결과 MDX. 운영 발표 원본/DB/Production 변경·push 금지.
+- 작업 저장소: C:/project203/.verification/board-feature-branch, branch feat/devicebook-presentation-review, base ab8696d(원격 main c49cf5f와 tree동일). root dirty·과거 브랜치/파일 보존. Production dpl_5iQiRepVLMVqupZTHQnMjJPBFEW6 READY 확인.
+- 완료: DeviceBook 소스9개+라이선스 분석(SHA09db5d4), 실제 DB 읽기전용 스냅샷7건, SQL/JS 교차 검증. 집계2026-11-27 21:23:18KST. 개인별 원문/회원정보 미저장. 결과 파일은 ignored .verification/presentation-review.
+- 사용자 답변: ID11 항목명은 적당한 가명 승인. 질문순서1~4를 항목A~D로 표시, 의미 추정 금지. 엄격10점 검증의 실제 수치는 ignored 분석 파일 참조. private 첨부이미지 네트워크 미확인 유지.
+- 구현: scoped presentation/theme, 기존Navigator book opt-in 확장, 기존 MDX컴포넌트 유지; 공통 Skill/AGENTS 지침 추가. 생성 script는 Q4 Slide12개 byte동일 검증, 결과10장 생성. 초기 단위6개 PASS.
+- 다음: 인증 유지하는 별도 localhost 검토앱/합성 로그인 backend, 실제 Chrome 390/768/1440/1920 검사·원본비교 캡처, 전체 tests/type/lint/build/integration/browser, 검토문서 및 최종 handoff. 합성 인증/실제 DB 집계/Production E2E 구분. 폰트는 설치스택fallback, 외부폰트 미다운로드.
+
+
+
 ## 2026-11-20 — 승인된 선택 제한 신규 DB 적용 완료·앱 배포 준비
 
 - Supabase 신규20261120092941_poll_multiple_selection_limit 1회적용완료·실제version으로동일SQL파일저장. 과거migration재실행0. 기존투표cap모두NULL/14영역행수·지문전후동일·시퀀스동일·RLS/서버전용권한확인. DB/결과보존assert포함.

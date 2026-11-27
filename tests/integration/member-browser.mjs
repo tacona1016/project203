@@ -133,7 +133,7 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
     await page.wait("document.querySelector('h1')?.textContent==='아직 없는 기록입니다.'&&!!document.querySelector('.name-current')");
     await page.go("/quarter/2026-q4");
     assert.equal(await page.evaluate("!!document.querySelector('dialog')"), false);
-    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
+    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 13);
     assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"));
     if (setDbFailure) {
       await setDbFailure("timeout");
@@ -161,7 +161,7 @@ export async function runBrowser({ base, id, aPassword, bPassword, setDbFailure,
       await page.wait(`location.pathname===${JSON.stringify(route)}&&document.querySelector('header .name-current')?.textContent==='친구1'`);
       assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"), `Desktop overflow: ${route}`);
     }
-    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
+    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 13);
     await page.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
     await page.go("/admin");
     await rateLimitFeedback(page, "/api/admin/access", adminPassword);

@@ -18,7 +18,7 @@ export const quarters: readonly Quarter[] = [
     year: 2026,
     quarter: 4,
     title: "방향 전환과 토지 검토 기준",
-    description: "시골 아파트 전세에서 건축 가능한 토지로. 10명의 친구가 Phase 1의 범위를 좁히는 12장짜리 의사결정 프레임워크입니다.",
+    description: "시골 아파트 전세에서 건축 가능한 토지로. Phase 1의 의사결정 프레임워크와 설문 조사 결과를 담은 13장 발표자료입니다.",
     publishedAt: "2026-10-19",
     presentationPublished: true,
   },

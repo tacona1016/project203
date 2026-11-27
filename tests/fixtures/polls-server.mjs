@@ -8,6 +8,7 @@ let participantFailure = null;
 let participantFailureAfter = 0;
 let participantRequestCount = 0;
 let participationFailure = false, participationRequests = [];
+let surveyFailure = false;
 const now = () => new Date().toISOString();
 function reset() {
   people = Array.from({ length: 10 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`, display_name: `친구${i + 1}`, is_active: true, display_order: i + 1, created_at: now() }));
@@ -24,6 +25,24 @@ function reset() {
   choiceSelections = votes.filter(v => v.option_id !== null).map(v => ({ poll_id: v.poll_id, option_id: v.option_id, participant_id: v.participant_id, is_selected: true, created_at: v.created_at, updated_at: v.updated_at }));
 }
 reset();
+function seedSurvey() {
+  reset(); surveyFailure = false;
+  for (const id of [1,9,10,11,12,13,14]) {
+    const p = polls.find(p => p.id === id);
+    Object.assign(p, { slug: `survey-${id}`, title: `Synthetic survey ${id}`, poll_type: id === 11 ? "text" : "choice", vote_mode: "single", is_hidden: false, is_closed: true, results_visibility: "after_close", quarter: "2026-q4" });
+    options = options.filter(o => o.poll_id !== id); votes = votes.filter(v => v.poll_id !== id); choiceSelections = choiceSelections.filter(v => v.poll_id !== id);
+    if (id === 11) {
+      for (let i=0;i<2;i++) votes.push({ id: 9000+i, poll_id:id, option_id:null, text_response:i ? "1. 1\n2. 2\n3. 3\n4. 4" : "4/3/2/1", participant_id:people[i].id, created_at:now(), updated_at:now() });
+    } else {
+      const count = id===14 ? 9 : id===12 ? 6 : id===10 ? 4 : 3;
+      if([12,14].includes(id))p.vote_mode="multiple";
+      for (let i=0;i<count;i++) {
+        options.push({id:id*100+i+1,poll_id:id,label:id===14?`합성 지역 · 북동부 교통권 ${i+1}`:`Synthetic option ${i+1}`,display_order:i+1});
+        if(i < ([12,14].includes(id) ? 5 : Math.min(count,4)))choiceSelections.push({poll_id:id,option_id:id*100+i+1,participant_id:people[i%4].id,is_selected:true});
+      }
+    }
+  }
+}
 const status = p => p.is_hidden ? "HIDDEN" : p.is_closed || (p.voting_ends_at && new Date(p.voting_ends_at) <= new Date()) ? "CLOSED" : p.voting_starts_at && new Date(p.voting_starts_at) > new Date() ? "UPCOMING" : "ACTIVE";
 function results(id) { const p = polls.find(p => p.id === Number(id)); const rows = p.poll_type === "choice" ? choiceSelections.filter(v => v.poll_id === p.id && v.is_selected) : votes.filter(v => v.poll_id === p.id); const counts = {}; rows.filter(v => v.option_id != null).forEach(v => counts[v.option_id] = (counts[v.option_id] || 0) + 1); return { counts, total_votes: rows.length, participant_count: new Set(rows.map(v => v.participant_id)).size }; }
 const canSee = (p, admin) => admin || p.results_visibility === "live" || status(p) === "CLOSED";
@@ -39,7 +58,7 @@ http.createServer(async (req, res) => {
   const json = (value, code = 200) => res.writeHead(code).end(JSON.stringify(value));
   const fail = code => json({ code, message: "fixture validation rejected" }, 400);
   const url = new URL(req.url, "http://127.0.0.1:3102"); const chunks=[]; for await(const chunk of req)chunks.push(chunk); const raw=Buffer.concat(chunks); const body=raw.length&&(!url.pathname.startsWith("/storage/v1/")||req.method==="DELETE")?JSON.parse(raw.toString()):{};
-  if(url.pathname==="/_test"){if(body.reset)imageFixture.reset();imageFixture.configure(body);}
+  if(url.pathname==="/_test"){if(body.reset)imageFixture.reset();if(body.seedSurvey)seedSurvey();if(Object.hasOwn(body,"surveyFailure"))surveyFailure=body.surveyFailure;imageFixture.configure(body);}
   if(imageFixture.handle({req,res,url,raw,body,json}))return;
   if (url.pathname === "/_test") { if(Object.hasOwn(body,"choiceLimitSchema"))choiceLimitSchema=body.choiceLimitSchema; if(Object.hasOwn(body,"participationFailure")) participationFailure=body.participationFailure; if (body.reset) { reset(); participantFailure = null; participantFailureAfter = 0; } if (Object.hasOwn(body, "participantFailure")) { participantFailure = body.participantFailure; participantFailureAfter = body.participantFailureAfter ?? 0; participantRequestCount = 0; } if (Object.hasOwn(body, "voteFailure")) { voteFailure = body.voteFailure; voteRequestCount = 0; } if(body.changeParticipant) Object.assign(people.find(p=>p.id===body.changeParticipant.id),body.changeParticipant); if (body.changePoll) Object.assign(polls.find(p => p.slug === body.changePoll.slug), body.changePoll); return json({ participants: people, polls, options, votes, choiceSelections, comments, participantRequestCount, voteRequestCount, participationRequests, ...imageFixture.stats() }); }
   if (req.headers.apikey !== "fixture-only-backend-key") return json({ message: "server only" }, 403);
@@ -74,11 +93,11 @@ http.createServer(async (req, res) => {
       if (url.searchParams.get("select") === "max_choices_per_participant" && !choiceLimitSchema) return fail("42703");
       return json(single(polls.filter(match)));
     }
-    if (table === "poll_options") return json(options.filter(match));
+    if (table === "poll_options") return surveyFailure ? json({message:"synthetic outage"},503) : json(options.filter(match));
     if (table === "votes") { const rows = votes.filter(match); res.setHeader("Content-Range", `0-${Math.max(rows.length - 1, 0)}/${rows.length}`); return json(rows.slice(0, Number(url.searchParams.get("limit") || rows.length))); }
     if (table === "comments") return json(comments.filter(match).map(joined));
   }
-  if (table === "rpc/get_poll_catalog") return json(polls.filter(p => (!body.p_slug || p.slug === body.p_slug) && (body.p_include_hidden || !p.is_hidden)).map(p => summary(p, body.p_include_hidden)).reverse());
+  if (table === "rpc/get_poll_catalog") { const serverTime=now(); return json(polls.filter(p => (!body.p_slug || p.slug === body.p_slug) && (body.p_include_hidden || !p.is_hidden)).map(p => ({...summary(p, body.p_include_hidden),server_time:serverTime})).reverse()); }
   if (table === "rpc/get_poll_detail") return json(detail(polls.find(p => p.slug === body.p_slug), body.p_admin));
   if (table === "rpc/get_poll_results") return json(results(body.p_poll_id));
   if (table === "rpc/get_poll_participation") {

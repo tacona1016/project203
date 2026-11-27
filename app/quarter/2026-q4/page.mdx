@@ -2,7 +2,7 @@ import { getQuarter, getQuarterMetadata } from "@/data/quarters";
 
 export const metadata = getQuarterMetadata(getQuarter("2026-q4"));
 
-<Presentation quarter={getQuarter("2026-q4")}>
+<Presentation quarter={getQuarter("2026-q4")} theme="devicebook">
 <div className="quarter-deck">
 
 <Slide id="cover" number="01" label="방향 전환">
@@ -311,6 +311,8 @@ export const metadata = getQuarterMetadata(getQuarter("2026-q4"));
 </Slide>
 
 </div>
+
+<PresentationSurveyResults />
 
 <section id="comments" className="deck-comments" aria-labelledby="comments-heading">
 <div className="site-container">
