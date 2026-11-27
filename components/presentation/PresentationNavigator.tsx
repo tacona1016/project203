@@ -4,15 +4,31 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 type Section = { id: string; number: string; label: string };
 
-export function PresentationNavigator() {
+export function PresentationNavigator({ book = false }: { book?: boolean }) {
   const [sections, setSections] = useState<Section[]>([]);
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [bookMode, setBookMode] = useState(false);
   const [message, setMessage] = useState("");
   const root = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   const tocId = useId();
+  const bookPresenting = useRef(false);
+
+  useEffect(() => {
+    const wasPresenting = bookPresenting.current;
+    bookPresenting.current = book && bookMode;
+    const theme = root.current?.closest<HTMLElement>(".presentation-theme");
+    if (!book || !theme) return;
+    theme.dataset.mode = bookMode ? "presentation" : "reading";
+    sections.forEach((section, index) => {
+      const element = document.getElementById(section.id);
+      if (element) element.dataset.deckActive = String(index === active);
+    });
+    if (bookMode) theme.querySelector("main")?.scrollTo({ top: 0 });
+    else if (wasPresenting) document.getElementById(sections[active]?.id)?.scrollIntoView({ behavior: "instant", block: "start" });
+  }, [active, book, bookMode, sections]);
 
   useEffect(() => {
     let observer: IntersectionObserver | undefined;
@@ -22,6 +38,7 @@ export function PresentationNavigator() {
         .filter((item, index, all) => item.id && item.label && all.findIndex(other => other.id === item.id) === index);
       setSections(previous => previous.map(item => item.id).join("|") === items.map(item => item.id).join("|") ? previous : items);
       const update = () => {
+        if (bookPresenting.current) return;
         const padding = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
         const reference = Math.min(window.innerHeight - 1, Math.max(window.innerHeight * 0.3, padding + 1));
         let index = 0;
@@ -47,7 +64,7 @@ export function PresentationNavigator() {
     if (window.location.hash !== hash) window.history.pushState(window.history.state, "", hash);
     // Immediate movement keeps rapid previous/next actions and the observer's
     // visible section in sync; normal page scrolling remains native.
-    target.scrollIntoView({ behavior: "instant", block: "start" });
+    if (!bookPresenting.current) target.scrollIntoView({ behavior: "instant", block: "start" });
     setActive(index); setOpen(false);
   }, [sections]);
 
@@ -55,6 +72,7 @@ export function PresentationNavigator() {
     const sync = () => {
       const value = document.fullscreenElement === document.documentElement;
       setFullscreen(value);
+      if (book) setBookMode(value);
       document.documentElement.classList.toggle("presentation-fullscreen", value);
     };
     document.addEventListener("fullscreenchange", sync);
@@ -62,12 +80,13 @@ export function PresentationNavigator() {
       document.removeEventListener("fullscreenchange", sync); document.documentElement.classList.remove("presentation-fullscreen");
       if (document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => undefined);
     };
-  }, []);
+  }, [book]);
 
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
       if (event.key === "Escape" && open) { setOpen(false); toggle.current?.focus(); return; }
-      if (!fullscreen || event.altKey || event.ctrlKey || event.metaKey
+      if (event.key === "Escape" && bookMode && !fullscreen) { setBookMode(false); return; }
+      if (!(fullscreen || bookMode) || event.altKey || event.ctrlKey || event.metaKey
         || event.target instanceof HTMLElement && (event.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName))) return;
       if (event.key === "ArrowRight" || event.key === "PageDown") { event.preventDefault(); goTo(Math.min(active + 1, sections.length - 1)); }
       if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); goTo(Math.max(active - 1, 0)); }
@@ -76,15 +95,22 @@ export function PresentationNavigator() {
     document.addEventListener("keydown", keydown);
     if (open) document.addEventListener("pointerdown", outside);
     return () => { document.removeEventListener("keydown", keydown); document.removeEventListener("pointerdown", outside); };
-  }, [active, fullscreen, goTo, open, sections.length]);
+  }, [active, bookMode, fullscreen, goTo, open, sections.length]);
 
   async function toggleFullscreen() {
     setMessage("");
+    if (bookMode && !fullscreen) { setBookMode(false); return; }
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
       else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
-      else setMessage("이 브라우저는 전체화면을 지원하지 않습니다. 아래 이동 버튼으로 발표해주세요.");
-    } catch { setMessage("전체화면을 시작하지 못했습니다. 아래 이동 버튼을 사용할 수 있습니다."); }
+      else {
+        if (book) setBookMode(true);
+        setMessage("이 브라우저는 전체화면을 지원하지 않습니다. 아래 이동 버튼으로 발표해주세요.");
+      }
+    } catch {
+      if (book) setBookMode(true);
+      setMessage(book ? "브라우저 전체화면을 사용할 수 없어 화면 내 발표 모드로 표시합니다. ESC로 종료할 수 있습니다." : "전체화면을 시작하지 못했습니다. 아래 이동 버튼을 사용할 수 있습니다.");
+    }
   }
 
   return <nav ref={root} className="presentation-navigation" aria-label="발표자료 탐색">
@@ -95,7 +121,7 @@ export function PresentationNavigator() {
         <button type="button" className="text-link" disabled={!sections.length || active === 0} onClick={() => goTo(active - 1)} aria-label="이전 섹션">← 이전</button>
         <button type="button" className="text-link" disabled={!sections.length || active >= sections.length - 1} onClick={() => goTo(active + 1)} aria-label="다음 섹션">다음 →</button>
         <button type="button" className="text-link presentation-top" onClick={() => goTo(0)} disabled={!sections.length}>맨 위로</button>
-        <button type="button" className="text-link presentation-mode-toggle" onClick={toggleFullscreen}>{fullscreen ? "발표 종료" : "발표 모드"}</button>
+        <button type="button" className="text-link presentation-mode-toggle" onClick={toggleFullscreen}>{fullscreen || bookMode ? "발표 종료" : "발표 모드"}</button>
       </div>
       <div className="presentation-progress" role="progressbar" aria-label="발표자료 읽기 진행률" aria-valuemin={0} aria-valuemax={sections.length || 1} aria-valuenow={sections.length ? active + 1 : 0}><span style={{ width: sections.length ? `${(active + 1) / sections.length * 100}%` : "0%" }} /></div>
       <ol id={tocId} className="presentation-toc" hidden={!open}>

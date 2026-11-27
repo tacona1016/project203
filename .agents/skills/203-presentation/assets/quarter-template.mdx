@@ -1,0 +1,22 @@
+export const metadata = { title: "분기 발표 검토" };
+
+{/* PresentationTheme requires a member session. Register a real quarter and its publication guard in the containing route/layout before publishing. */}
+
+<PresentationTheme title="분기 발표 검토">
+<Slide id="cover" number="01" label="핵심 주제">
+<PresentationHero eyebrow="203 PROJECT / 분기" title="이번 발표의 한 가지 핵심 메시지" description="확인한 사실과 검토할 제안을 구분합니다." />
+</Slide>
+
+<Slide id="context" number="02" label="검토 기준">
+<SectionTitle title="논의를 시작할 기준" description="출처와 기준일이 확인된 내용만 사용합니다." />
+<TwoColumn>
+<PresentationCallout label="확인된 사실" tone="fact">검증한 자료를 요약합니다.</PresentationCallout>
+<PresentationCallout label="해석 · 후속 검토">추가 논의가 필요한 지점을 적습니다.</PresentationCallout>
+</TwoColumn>
+</Slide>
+
+<Slide id="next" number="03" label="다음 행동">
+<SectionTitle title="다음 논의와 확인 과제" />
+<PresentationSummary items={[{ title: "확인 과제", detail: "담당자와 기한은 실제 합의된 경우에만 표시합니다." }]} />
+</Slide>
+</PresentationTheme>

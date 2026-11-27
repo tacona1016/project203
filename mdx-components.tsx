@@ -12,8 +12,12 @@ import { CommentSection } from "@/components/interactive/CommentSection";
 import { PhaseRoadmap } from "@/components/presentation/PhaseRoadmap";
 import { FactorGrid } from "@/components/presentation/FactorGrid";
 import { ScoreGuide } from "@/components/presentation/ScoreGuide";
+import * as theme from "@/components/presentation/theme";
+import { PresentationSurveyResults } from "@/components/presentation/PresentationSurveyResults";
 
 const presentationComponents = {
+  ...theme,
+  PresentationSurveyResults,
   Hero,
   Slide,
   SectionTitle,

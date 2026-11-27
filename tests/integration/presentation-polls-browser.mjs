@@ -18,16 +18,16 @@ export async function runPresentationPollBrowser({ page, base, output }) {
   };
   const noOverflow = async label => assert(await page.evaluate("document.documentElement.scrollWidth<=innerWidth"), `Horizontal overflow: ${label}`);
   const presentationReady = async () => {
-    await page.wait("document.querySelectorAll('[data-presentation-section]').length===12&&!document.querySelector('.presentation-toc-toggle')?.disabled");
+    await page.wait("document.querySelectorAll('[data-presentation-section]').length===13&&!document.querySelector('.presentation-toc-toggle')?.disabled");
     await page.wait("document.querySelector('.presentation-navigation')?.getBoundingClientRect().height>20");
   };
   await page.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
   for (const width of [390, 768, 1440]) {
     await viewport(width); await navigate("/quarter/2026-q4"); await presentationReady();
-    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 12);
+    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-slide').length"), 13);
     await page.evaluate("document.querySelector('.presentation-toc-toggle').click()");
     await page.wait("document.querySelector('.presentation-toc-toggle')?.getAttribute('aria-expanded')==='true'");
-    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-toc a').length"), 12);
+    assert.equal(await page.evaluate("document.querySelectorAll('.presentation-toc a').length"), 13);
     await page.evaluate("document.querySelector('.presentation-toc a[href=\"#scope\"]').click()");
     await page.wait("location.hash==='#scope'&&document.querySelector('.presentation-navigation [role=progressbar]')?.getAttribute('aria-valuenow')==='3'");
     assert.equal(await page.evaluate("document.querySelector('.presentation-toc-toggle').getAttribute('aria-expanded')"), "false");
@@ -78,7 +78,11 @@ export async function runPresentationPollBrowser({ page, base, output }) {
     await page.wait("location.hash==='#roadmap'");
     await page.send("Runtime.evaluate", { expression: "document.querySelector('.presentation-mode-toggle').click()", userGesture: true, awaitPromise: true, returnByValue: true });
     await page.wait("!document.fullscreenElement");
-  } else assert(await page.evaluate("/지원하지|시작하지 못/.test(document.querySelector('.presentation-mode-message').textContent)"));
+  } else {
+    assert(await page.evaluate("document.querySelector('.presentation-theme').dataset.mode==='presentation'"));
+    await page.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape" });
+    await page.wait("document.querySelector('.presentation-theme').dataset.mode==='reading'");
+  }
 
   await navigate("/archive?q=방향&year=2026");
   await page.wait("!!document.querySelector('.archive-filters')");
@@ -158,7 +162,7 @@ export async function runPresentationPollBrowser({ page, base, output }) {
   await pause(100);
   await noOverflow("private results and copy/summary controls");
   return [
-    "Presentation 12-section TOC/anchors/previous-next/top/scroll progress at 390/768/1440px",
+    "Presentation 13-section TOC/anchors/previous-next/top/scroll progress at 390/768/1440px",
     `Browser PDF print styles and artifact; fullscreen ${fullscreen ? "entered, keyboard navigated and exited" : "unsupported/rejected with usable feedback"}`,
     "Published Archive search/year hit and empty states",
     "Active/upcoming/all/personal/legacy-closed filters match the session-only API",

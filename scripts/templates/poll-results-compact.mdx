@@ -1,0 +1,66 @@
+import { getPoll, choiceRows, scoreRows, time, audience } from "@/review-data";
+
+<div className="presentation-compact-overview">
+<Slide id="results-overview" number="01" label="2026 Q4 · 투표 7건 한눈에">
+
+<header className="compact-overview-heading">
+<div>
+<h2>설문 조사 결과</h2>
+<p>2026 Q4 투표 7건 · 사실과 후속 논의를 구분한 요약</p>
+</div>
+</header>
+
+<section className="compact-direction" data-poll-id="1" aria-label="방향 전환 발의 결과">
+<div><strong>방향 전환 발의</strong><span>아파트 전세 → 별장용 토지 구매</span></div>
+<div className="compact-direction-votes">
+{choiceRows(1).map(row => <span key={row.id}><strong>{row.label} {row.detail}</strong></span>)}
+</div>
+<p>참여 {getPoll(1).respondents} / {audience.registered}명 · 참여율 {getPoll(1).participation_percentage}%</p>
+</section>
+
+<div className="compact-overview-grid">
+<article data-poll-id="9" className="compact-result-card">
+<h2>일시납 가능 금액</h2>
+<PresentationChart rows={choiceRows(9).filter(row => row.value > 0)} caption={"단일선택 · 응답 "+getPoll(9).respondents+"명 · 참여율 "+getPoll(9).participation_percentage+"%"} />
+<p className="compact-zero">0명: {choiceRows(9).filter(row => row.value === 0).map(row => row.label).join(" · ")}</p>
+<p className="compact-result-note">금액 구간은 납부 확약이나 평균 자금이 아닙니다.</p>
+</article>
+
+<article data-poll-id="10" className="compact-result-card">
+<h2>토지 소재지 거리 한도</h2>
+<PresentationChart rows={choiceRows(10)} caption={"단일선택 · 응답 "+getPoll(10).respondents+"명 · 참여율 "+getPoll(10).participation_percentage+"%"} />
+<p className="compact-result-note">최다 구간과 모든 회원의 수용 한도는 다릅니다.</p>
+</article>
+
+<article data-poll-id="13" className="compact-result-card">
+<h2>방문 가능 빈도</h2>
+<PresentationChart rows={choiceRows(13).filter(row => row.value > 0)} caption={"단일선택 · 응답 "+getPoll(13).respondents+"명 · 참여율 "+getPoll(13).participation_percentage+"%"} />
+<p className="compact-zero">0명: {choiceRows(13).filter(row => row.value === 0).map(row => row.label).join(" · ")}</p>
+<p className="compact-result-note">집에서 1시간 30분 거리 가정 · 연간 횟수 환산 안 함.</p>
+</article>
+
+<article data-poll-id="12" className="compact-result-card">
+<h2>얻고 싶은 가치</h2>
+<PresentationChart rows={choiceRows(12).filter(row => row.value > 0).sort((a,b) => b.value-a.value)} caption={"복수선택 · 최대 "+getPoll(12).max_choices_per_participant+"개 · 응답 "+getPoll(12).respondents+"명"} />
+<p className="compact-zero">0명: {choiceRows(12).filter(row => row.value === 0).map(row => row.label).join(" · ")}</p>
+</article>
+
+<article data-poll-id="14" className="compact-result-card">
+<h2>선호 지역</h2>
+<PresentationChart rows={choiceRows(14, true).filter(row => row.value > 0)} caption={"복수선택 · 최대 "+getPoll(14).max_choices_per_participant+"개 · 응답 "+getPoll(14).respondents+"명 · 동률 공동순위"} />
+<p className="compact-zero">0명: {choiceRows(14).filter(row => row.value === 0).map(row => row.label).join(" · ")}</p>
+</article>
+
+<article data-poll-id="11" className="compact-result-card">
+<h2>토지·별장 성향</h2>
+<PresentationChart rows={scoreRows()} maximum={4} unit="점" caption={"평균 / 4점 · 참여 "+getPoll(11).respondents+"명 · 유효 "+getPoll(11).allocation.valid_count+"건"} />
+<p className="compact-result-note">문항번호와 점수를 구분해 원래 답변을 반영했습니다.</p>
+<p className="compact-zero">{getPoll(11).allocation.invalid_count ? "오류 "+getPoll(11).allocation.invalid_count+"건 제외" : getPoll(11).allocation.valid_count+"명 모두 반영"} · 각 1~4점, 합계 10 검증.</p>
+</article>
+</div>
+
+<aside className="compact-next-step"><strong>후속 논의</strong><span>만남·쉼의 목적을 바탕으로 예산·이동·이용 빈도를 확인하고 후보지를 비교합니다. 공식 결정은 별도 합의가 필요합니다.</span></aside>
+<PresentationSource time={time}><span>비율의 분모: 각 투표 응답자 · 복수선택 선택률 합계는 100% 초과 가능 · 전체 대상은 현재 등록 회원 기준</span></PresentationSource>
+
+</Slide>
+</div>

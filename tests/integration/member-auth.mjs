@@ -96,7 +96,11 @@ export default async function Page(){await requireAccessSession("/fixture-projec
   }
   child(["tests/fixtures/polls-server.mjs"]); child(["tests/fixtures/board-server.mjs"]);
   await ready("http://127.0.0.1:3102/_test"); await ready("http://127.0.0.1:3103/_test"); await start();
-  if (process.argv.includes("--choice-limit")) {
+  if (process.argv.includes("--presentation-release")) {
+    const a=new Browser(),anonymous=new Browser();await a.login(1,aPassword);
+    const {runPresentationRelease}=await import("./presentation-release.mjs");
+    await runPresentationRelease({a,anonymous,base,id:id(1),password:aPassword,browser:process.argv.includes("--browser")});
+  } else if (process.argv.includes("--choice-limit")) {
     const a=new Browser(),b=new Browser(),anonymous=new Browser();await a.login(1,aPassword);await b.login(2,bPassword);
     const {runChoiceLimitChecks}=await import("./poll-choice-limit.mjs");
     const checks=await runChoiceLimitChecks({a,b,anonymous,adminPassword:env.ADMIN_PASSWORD,id});

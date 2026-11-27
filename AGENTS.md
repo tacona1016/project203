@@ -56,3 +56,7 @@ Keep Supabase server-only and direct browser access revoked. Document schema cha
 For long-running tasks, maintain `docs/SESSION_HANDOFF.md`. Record the current development goal, completed work, changed files, unfinished work, errors, next actions, and test results. Update it after each major work unit and before a planned pause or handoff.
 
 When resuming after a usage limit or interruption, read this file first, then compare it with the current Git diff. Continue unfinished work without repeating completed implementation. Distinguish completed tests from unverified checks and pending approvals. Never record secrets, credentials, cookie values, or personal data.
+
+## Presentation Design System
+
+203 PROJECT의 모든 신규/수정 웹 프레젠테이션은 203 DeviceBook Presentation 테마를 따른다. 디자인 레퍼런스: https://semi.euiyun.com/device/ . 작업 전에 .agents/skills/203-presentation/SKILL.md를 읽고 적용한다. 범위: 기존 2026 Q4 리디자인, 투표 결과 자료, 향후 분기 자료, 분석·보고·의사결정 웹 프레젠테이션. 기존 회원 인증·결과 공개 정책을 보존한다. 운영 발표자료 수정 및 배포는 현재 작업 범위에 명시된 경우에만 수행한다.
